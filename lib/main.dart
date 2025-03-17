@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'screens/intro_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(SaydoApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
+class SaydoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+    return MaterialApp(
+      title: 'Saydo',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => IntroScreen(),
+        '/login': (context) => LoginScreen(),
+        '/home': (context) => HomeScreen(),
+      },
     );
   }
 }
