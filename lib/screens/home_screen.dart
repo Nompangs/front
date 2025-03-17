@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
 import '../widgets/task_modal.dart';
+import 'task_priority_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -10,16 +11,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   String _taskText = "";
-  bool _taskGenerated = false;
-  bool _isModalVisible = false; // 모달이 실행 중인지 확인하는 변수
+  bool _isModalVisible = false; // 중복 실행 방지
+  bool _isTaskSaved = false; // Task 저장 여부 확인
 
   void _updateTask(String newText) {
     setState(() {
       _taskText = newText;
-      _taskGenerated = true;
+      _isTaskSaved = false;
     });
 
-    // 모달이 이미 실행 중이면 다시 띄우지 않음
     if (!_isModalVisible) {
       _showTaskModal();
     }
@@ -27,20 +27,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showTaskModal() {
     setState(() {
-      _isModalVisible = true; // 모달 실행 상태 업데이트
+      _isModalVisible = true;
     });
 
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => TaskModal(taskText: _taskText),
+      builder:
+          (context) => TaskModal(
+            taskText: _taskText,
+            onTaskUpdated: (updatedTask) {
+              setState(() {
+                _taskText = updatedTask; // Task 변경 반영
+              });
+            },
+            onTaskSaved: _moveToPriorityScreen,
+          ),
     ).then((_) {
-      // 모달이 닫히면 실행 상태 초기화
       setState(() {
         _isModalVisible = false;
       });
     });
+  }
+
+  void _moveToPriorityScreen() {
+    setState(() {
+      _isTaskSaved = true;
+    });
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TaskPriorityScreen(taskText: _taskText),
+      ),
+    );
   }
 
   @override
