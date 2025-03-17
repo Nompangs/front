@@ -1,66 +1,70 @@
 import 'package:flutter/material.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
-import '../widgets/task_modal.dart';
 import 'task_priority_screen.dart';
+import 'task_category_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  final List<Map<String, dynamic>> tasks;
+
+  HomeScreen({this.tasks = const []});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _taskText = "";
-  bool _isModalVisible = false; // 중복 실행 방지
-  bool _isTaskSaved = false; // Task 저장 여부 확인
+  List<Map<String, dynamic>> _tasks = [];
 
-  void _updateTask(String newText) {
-    setState(() {
-      _taskText = newText;
-      _isTaskSaved = false;
-    });
-
-    if (!_isModalVisible) {
-      _showTaskModal();
-    }
+  @override
+  void initState() {
+    super.initState();
+    _tasks = List.from(widget.tasks); // 기존 Task 리스트 유지
   }
 
-  void _showTaskModal() {
-    setState(() {
-      _isModalVisible = true;
-    });
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder:
-          (context) => TaskModal(
-            taskText: _taskText,
-            onTaskUpdated: (updatedTask) {
-              setState(() {
-                _taskText = updatedTask; // Task 변경 반영
-              });
-            },
-            onTaskSaved: _moveToPriorityScreen,
-          ),
-    ).then((_) {
-      setState(() {
-        _isModalVisible = false;
-      });
-    });
-  }
-
-  void _moveToPriorityScreen() {
-    setState(() {
-      _isTaskSaved = true;
-    });
-
+  void _addTask(String taskText) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => TaskPriorityScreen(taskText: _taskText),
+        builder:
+            (context) => TaskPriorityScreen(
+              taskText: taskText,
+              onPrioritySelected: (taskText, priority) {
+                _moveToCategoryScreen(taskText, priority);
+              },
+            ),
       ),
+    );
+  }
+
+  void _moveToCategoryScreen(String taskText, int priority) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => TaskCategoryScreen(
+              taskText: taskText,
+              priority: priority,
+              onCategorySelected: (taskText, priority, category) {
+                _saveTask(taskText, priority, category);
+              },
+            ),
+      ),
+    );
+  }
+
+  void _saveTask(String taskText, int priority, String category) {
+    setState(() {
+      _tasks.add({
+        "text": taskText,
+        "priority": priority,
+        "category": category,
+      });
+    });
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => HomeScreen(tasks: _tasks)),
+      (route) => false,
     );
   }
 
@@ -71,10 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
-          onPressed: () {},
-        ),
         centerTitle: true,
         title: Text(
           'Index',
@@ -85,7 +85,16 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 16),
         ],
       ),
-      body: Column(
+      body: _tasks.isEmpty ? _buildEmptyScreen() : _buildTaskListScreen(),
+      bottomNavigationBar: BottomNavBar(),
+      floatingActionButton: MicButton(onSpeechResult: _addTask),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildEmptyScreen() {
+    return Center(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Image.asset('assets/task_image.png', width: 250),
@@ -102,13 +111,63 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Speak and add tasks!',
             style: TextStyle(color: Colors.white60, fontSize: 16),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
-      bottomNavigationBar: BottomNavBar(),
-      floatingActionButton: MicButton(onSpeechResult: _updateTask),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildTaskListScreen() {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Column(
+        children: [
+          TextField(
+            decoration: InputDecoration(
+              filled: true,
+              fillColor: Colors.grey[800],
+              hintText: "Search for your task...",
+              hintStyle: TextStyle(color: Colors.white60),
+              prefixIcon: Icon(Icons.search, color: Colors.white60),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            style: TextStyle(color: Colors.white),
+          ),
+          SizedBox(height: 10),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _tasks.length,
+              itemBuilder: (context, index) {
+                var task = _tasks[index];
+                return Card(
+                  color: Colors.grey[900],
+                  margin: EdgeInsets.symmetric(vertical: 5),
+                  child: ListTile(
+                    title: Text(
+                      task["text"],
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      "🔥 Priority: ${task["priority"]}",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                    trailing: Chip(
+                      label: Text(
+                        task["category"],
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      backgroundColor: Colors.blueAccent,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

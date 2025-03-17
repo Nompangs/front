@@ -3,8 +3,13 @@ import 'package:flutter/material.dart';
 class TaskCategoryScreen extends StatefulWidget {
   final String taskText;
   final int priority;
+  final Function(String, int, String) onCategorySelected;
 
-  TaskCategoryScreen({required this.taskText, required this.priority});
+  TaskCategoryScreen({
+    required this.taskText,
+    required this.priority,
+    required this.onCategorySelected,
+  });
 
   @override
   _TaskCategoryScreenState createState() => _TaskCategoryScreenState();
@@ -77,10 +82,11 @@ class _TaskCategoryScreenState extends State<TaskCategoryScreen> {
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
-                  print(
-                    "✅ Task Saved with Priority ${widget.priority} & Category $_selectedCategory",
+                  widget.onCategorySelected(
+                    widget.taskText,
+                    widget.priority,
+                    _selectedCategory,
                   );
-                  Navigator.popUntil(context, (route) => route.isFirst);
                 },
                 child: Text("Save", style: TextStyle(color: Colors.white)),
               ),

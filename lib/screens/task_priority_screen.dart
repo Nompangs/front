@@ -3,8 +3,12 @@ import 'task_category_screen.dart';
 
 class TaskPriorityScreen extends StatefulWidget {
   final String taskText;
+  final Function(String, int) onPrioritySelected;
 
-  TaskPriorityScreen({required this.taskText});
+  TaskPriorityScreen({
+    required this.taskText,
+    required this.onPrioritySelected,
+  });
 
   @override
   _TaskPriorityScreenState createState() => _TaskPriorityScreenState();
@@ -78,16 +82,9 @@ class _TaskPriorityScreenState extends State<TaskPriorityScreen> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      // 선택 후 "Choose Category" 화면으로 이동
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) => TaskCategoryScreen(
-                                taskText: widget.taskText,
-                                priority: _selectedPriority,
-                              ),
-                        ),
+                      widget.onPrioritySelected(
+                        widget.taskText,
+                        _selectedPriority,
                       );
                     },
                     style: ElevatedButton.styleFrom(
