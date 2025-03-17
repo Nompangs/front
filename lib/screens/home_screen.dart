@@ -3,11 +3,12 @@ import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
 import 'task_priority_screen.dart';
 import 'task_category_screen.dart';
+import 'task_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  final List<Map<String, dynamic>> tasks;
+  final List<Map<String, dynamic>>? tasks;
 
-  HomeScreen({this.tasks = const []});
+  HomeScreen({this.tasks});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -19,7 +20,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _tasks = List.from(widget.tasks); // 기존 Task 리스트 유지
+    if (widget.tasks != null) {
+      _tasks = List.from(widget.tasks!);
+    }
   }
 
   void _addTask(String taskText) {
@@ -85,7 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 16),
         ],
       ),
-      body: _tasks.isEmpty ? _buildEmptyScreen() : _buildTaskListScreen(),
+      body:
+          _tasks.isEmpty
+              ? _buildEmptyScreen()
+              : TaskListScreen(tasks: _tasks), // 📌 코드 스플리팅 적용
       bottomNavigationBar: BottomNavBar(),
       floatingActionButton: MicButton(onSpeechResult: _addTask),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
@@ -111,60 +117,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             'Speak and add tasks!',
             style: TextStyle(color: Colors.white60, fontSize: 16),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskListScreen() {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Column(
-        children: [
-          TextField(
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.grey[800],
-              hintText: "Search for your task...",
-              hintStyle: TextStyle(color: Colors.white60),
-              prefixIcon: Icon(Icons.search, color: Colors.white60),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
-            style: TextStyle(color: Colors.white),
-          ),
-          SizedBox(height: 10),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _tasks.length,
-              itemBuilder: (context, index) {
-                var task = _tasks[index];
-                return Card(
-                  color: Colors.grey[900],
-                  margin: EdgeInsets.symmetric(vertical: 5),
-                  child: ListTile(
-                    title: Text(
-                      task["text"],
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    subtitle: Text(
-                      "🔥 Priority: ${task["priority"]}",
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                    trailing: Chip(
-                      label: Text(
-                        task["category"],
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: Colors.blueAccent,
-                    ),
-                  ),
-                );
-              },
-            ),
           ),
         ],
       ),
