@@ -25,9 +25,7 @@ class SpeechService {
 
       _speech.listen(
         onResult: (result) {
-          print(
-            "인식된 단어: ${result.recognizedWords} (최종: ${result.finalResult})",
-          );
+          print("인식된 단어: ${result.recognizedWords}");
           onResult?.call(result.recognizedWords, result.finalResult);
         },
       );
