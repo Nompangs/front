@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -20,7 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _initializeSTT();
   }
 
-  // ✅ STT 초기화 (오류 방지)
+  // STT 초기화
   void _initializeSTT() async {
     _speech = stt.SpeechToText();
     bool available = await _speech.initialize(
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ✅ 마이크 버튼 클릭 시 음성 인식 시작
+  // 마이크 버튼 클릭 시 음성 인식 시작
   void _toggleListening() async {
     if (!_isListening) {
       try {
@@ -57,16 +58,17 @@ class _HomeScreenState extends State<HomeScreen> {
         if (available) {
           setState(() {
             _isListening = true;
+            _text = "Listening..."; // STT 시작 시 메시지 표시
           });
 
           _speech.listen(
             onResult: (result) {
               setState(() {
-                _text = result.recognizedWords;
+                _text = result.recognizedWords; // 실시간 업데이트
               });
 
               if (result.finalResult) {
-                _speech.stop(); // 🎯 마이크 종료 후 API 호출
+                _speech.stop();
                 _sendToGPT(_text);
               }
             },
@@ -91,17 +93,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // GPT API 호출
   Future<void> _sendToGPT(String inputText) async {
-    final String apiKey =
-        dotenv.env['OPENAI_API_KEY'] ?? ''; // .env에서 API 키 불러오기
+    setState(() {
+      _text = "Processing your request..."; // 로딩 메시지 표시
+    });
+
+    final String apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
     final String apiUrl = "https://api.openai.com/v1/chat/completions";
 
     if (apiKey.isEmpty) {
       setState(() {
-        _text = "Error: API Key is missing. Please check your .env file.";
+        _text = "Error: API Key is missing.";
       });
-      print(
-        "🚨 Error: API Key is missing. Make sure it's set in the .env file.",
-      );
       return;
     }
 
@@ -124,7 +126,6 @@ class _HomeScreenState extends State<HomeScreen> {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         String gptResponse = responseData['choices'][0]['message']['content'];
-
         setState(() {
           _text = gptResponse;
         });
@@ -159,11 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
               style: TextStyle(color: Colors.white, fontSize: 18),
             ),
             actions: [
-              CircleAvatar(
-                backgroundImage: AssetImage(
-                  'assets/profile.png',
-                ), // 🔹 경로 변경 완료
-              ),
+              CircleAvatar(backgroundImage: AssetImage('assets/profile.png')),
               SizedBox(width: 16),
             ],
           ),
