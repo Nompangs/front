@@ -11,6 +11,33 @@ class TaskListScreen extends StatefulWidget {
 }
 
 class _TaskListScreenState extends State<TaskListScreen> {
+  final List<Map<String, dynamic>> _categories = [
+    {"name": "Grocery", "color": Colors.green, "icon": Icons.shopping_cart},
+    {"name": "Work", "color": Colors.orange, "icon": Icons.work},
+    {"name": "Sport", "color": Colors.lightBlue, "icon": Icons.fitness_center},
+    {"name": "University", "color": Colors.blue, "icon": Icons.school},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _sortTasksByPriority();
+  }
+
+  void _sortTasksByPriority() {
+    setState(() {
+      widget.tasks.sort((a, b) => a["priority"].compareTo(b["priority"]));
+    });
+  }
+
+  Color _getCategoryColor(String categoryName) {
+    final category = _categories.firstWhere(
+      (c) => c["name"] == categoryName,
+      orElse: () => {"color": Colors.grey}, // 기본값 설정
+    );
+    return category["color"] as Color;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,7 +87,7 @@ class _TaskListScreenState extends State<TaskListScreen> {
         ),
         trailing: Chip(
           label: Text(task["category"], style: TextStyle(color: Colors.white)),
-          backgroundColor: Colors.blueAccent,
+          backgroundColor: _getCategoryColor(task["category"]),
         ),
         onTap: () {
           Navigator.push(
@@ -76,11 +103,13 @@ class _TaskListScreenState extends State<TaskListScreen> {
                         widget.tasks[index]["text"] = updatedText;
                         widget.tasks[index]["priority"] = updatedPriority;
                         widget.tasks[index]["category"] = updatedCategory;
+                        _sortTasksByPriority(); // 변경 후 정렬 유지
                       });
                     },
                     onDelete: () {
                       setState(() {
                         widget.tasks.removeAt(index);
+                        _sortTasksByPriority(); // 삭제 후 정렬 유지
                       });
                     },
                   ),
