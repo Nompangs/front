@@ -1,30 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   @override
-  _LoginScreenState createState() => _LoginScreenState();
+  _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String? _errorMessage;
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       String email = _emailController.text.trim();
       String password = _passwordController.text.trim();
 
-      if (prefs.containsKey(email) && prefs.getString(email) == password) {
-        Navigator.pushReplacementNamed(context, '/home');
-      } else {
+      // 이미 등록된 이메일인지 확인
+      if (prefs.containsKey(email)) {
         setState(() {
-          _errorMessage = "Invalid email or password";
+          _errorMessage = "This email is already registered.";
         });
+        return;
       }
+
+      // 사용자 정보 저장
+      await prefs.setString(email, password);
+
+      // 회원가입 완료 후 로그인 화면으로 이동
+      Navigator.pop(context);
     }
   }
 
@@ -35,6 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
+        title: Text("Register"),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -49,12 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               SizedBox(height: 20),
               Text(
-                'Login',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                ),
+                "Create an Account",
+                style: TextStyle(color: Colors.white, fontSize: 24),
               ),
               SizedBox(height: 40),
               TextFormField(
@@ -68,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your email';
+                    return 'Please enter your email.';
                   }
                   return null;
                 },
@@ -85,7 +88,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your password';
+                    return 'Please enter your password.';
                   }
                   return null;
                 },
@@ -101,35 +104,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     backgroundColor: Colors.purpleAccent,
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: _login,
-                  child: Text('Login', style: TextStyle(fontSize: 16)),
+                  onPressed: _register,
+                  child: Text("Register", style: TextStyle(fontSize: 16)),
                 ),
               ),
-              Spacer(),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/register');
-                  },
-                  child: Text.rich(
-                    TextSpan(
-                      text: "Don’t have an account? ",
-                      style: TextStyle(color: Colors.white54),
-                      children: [
-                        TextSpan(
-                          text: "Register",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            decoration: TextDecoration.underline,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
             ],
           ),
         ),
