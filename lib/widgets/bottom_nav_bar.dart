@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../screens/profile_screen.dart'; // Import ProfileScreen
 
 class BottomNavBar extends StatelessWidget {
   @override
@@ -10,29 +11,42 @@ class BottomNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavItem(Icons.home, 'Index', true),
-          // _buildNavItem(Icons.calendar_today, 'Calendar', false),
+          _buildNavItem(context, Icons.home, 'Index', true),
           SizedBox(width: 50),
-          // _buildNavItem(Icons.timer, 'Focus', false),
-          _buildNavItem(Icons.person, 'Profile', false),
+          _buildNavItem(context, Icons.person, 'Profile', false),
         ],
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: isActive ? Colors.white : Colors.white60),
-        Text(
-          label,
-          style: TextStyle(
-            color: isActive ? Colors.white : Colors.white60,
-            fontSize: 12,
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    bool isActive,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'Profile') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ProfileScreen()),
+          );
+        }
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: isActive ? Colors.white : Colors.white60),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.white : Colors.white60,
+              fontSize: 12,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
