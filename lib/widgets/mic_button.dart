@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/speech_service.dart';
-import '../services/gpt_service.dart';
+import '../services/gemini_service.dart';
 
 class MicButton extends StatefulWidget {
   final Function(String) onSpeechResult;
+  final Function(Map<String, dynamic>) onEventDetected; // 일정 감지 시 콜백 추가
 
-  MicButton({required this.onSpeechResult});
+  MicButton({required this.onSpeechResult, required this.onEventDetected});
 
   @override
   _MicButtonState createState() => _MicButtonState();
@@ -13,9 +14,9 @@ class MicButton extends StatefulWidget {
 
 class _MicButtonState extends State<MicButton> {
   final SpeechService _speechService = SpeechService();
-  final GPTService _gptService = GPTService();
+  final GeminiService _geminiService = GeminiService();
   bool _isListening = false;
-  String _recognizedText = ""; // 음성 인식된 텍스트 저장
+  String _recognizedText = "";
 
   @override
   void initState() {
@@ -26,12 +27,19 @@ class _MicButtonState extends State<MicButton> {
       });
 
       if (finalResult) {
-        print("음성 입력 완료: $_recognizedText"); // 로그 출력
-        widget.onSpeechResult("GPT 처리 중..."); // GPT 처리 중 표시
-        String gptResponse = await _gptService.sendToGPT(
-          _recognizedText,
-        ); // GPT 호출
-        widget.onSpeechResult(gptResponse); // GPT 응답을 화면에 표시
+        print("음성 입력 완료: $_recognizedText");
+        widget.onSpeechResult("일정 분석 중...");
+
+        final result = await _geminiService.analyzeUserInput(_recognizedText);
+
+        if (result["is_event"] == false) {
+          widget.onSpeechResult("❌ This is not an event. Please try again.");
+        } else {
+          widget.onEventDetected(
+            result["event"],
+          ); // Trigger callback when an event is detected
+          widget.onSpeechResult("✅ Event detected! \n${result["event"]}");
+        }
       }
     };
 
@@ -51,11 +59,11 @@ class _MicButtonState extends State<MicButton> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 60, // 버튼 크기
+      width: 60,
       height: 60,
       decoration: BoxDecoration(
         color: _isListening ? Colors.redAccent : Colors.purpleAccent,
-        shape: BoxShape.circle, // 원형 모양 적용
+        shape: BoxShape.circle,
       ),
       child: IconButton(
         icon: Icon(Icons.mic, color: Colors.white, size: 28),

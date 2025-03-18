@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:saydo/widgets/task_modal.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
 import 'task_priority_screen.dart';
@@ -26,17 +27,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _addTask(String taskText) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => TaskPriorityScreen(
-              taskText: taskText,
-              onPrioritySelected: (taskText, priority) {
-                _moveToCategoryScreen(taskText, priority);
-              },
-            ),
-      ),
+    print("🎤 Speech Recognized (Task): $taskText"); // Debug log
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return TaskModal(
+          taskText: taskText,
+          onTaskUpdated: (updatedTask) {},
+          onTaskSaved: () {
+            // Navigate to TaskPriorityScreen after TaskModal is closed
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (context) => TaskPriorityScreen(
+                      taskText: taskText,
+                      onPrioritySelected: (taskText, priority) {
+                        _moveToCategoryScreen(taskText, priority);
+                      },
+                    ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -71,6 +88,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  void _handleEventDetection(Map<String, dynamic> event) {
+    print("📅 Event Detected: ${event["title"]}, Start: ${event["start"]}");
+    // Future: Integrate with Google Calendar API here
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,9 +113,12 @@ class _HomeScreenState extends State<HomeScreen> {
       body:
           _tasks.isEmpty
               ? _buildEmptyScreen()
-              : TaskListScreen(tasks: _tasks), // 코드 스플리팅 적용
+              : TaskListScreen(tasks: _tasks), // Code splitting applied
       bottomNavigationBar: BottomNavBar(),
-      floatingActionButton: MicButton(onSpeechResult: _addTask),
+      floatingActionButton: MicButton(
+        onSpeechResult: _addTask, // Handles task-related input
+        onEventDetected: _handleEventDetection, // Handles event detection
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
