@@ -35,12 +35,6 @@ class LoginScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/home');
               },
             ),
-            SizedBox(height: 20),
-            _buildSocialButton(
-              icon: Image.asset('assets/apple_icon.png', width: 24),
-              text: 'Login with Apple',
-              onPressed: () {},
-            ),
             Spacer(),
             Center(
               child: TextButton(
