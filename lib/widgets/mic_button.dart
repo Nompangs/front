@@ -50,10 +50,17 @@ class _MicButtonState extends State<MicButton> {
 
   @override
   Widget build(BuildContext context) {
-    return FloatingActionButton(
-      backgroundColor: _isListening ? Colors.redAccent : Colors.purpleAccent,
-      child: Icon(Icons.mic, color: Colors.white, size: 28),
-      onPressed: _toggleListening,
+    return Container(
+      width: 60, // 버튼 크기
+      height: 60,
+      decoration: BoxDecoration(
+        color: _isListening ? Colors.redAccent : Colors.purpleAccent,
+        shape: BoxShape.circle, // 원형 모양 적용
+      ),
+      child: IconButton(
+        icon: Icon(Icons.mic, color: Colors.white, size: 28),
+        onPressed: _toggleListening,
+      ),
     );
   }
 }

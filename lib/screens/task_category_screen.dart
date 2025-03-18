@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../utils/colors.dart';
 
 class TaskCategoryScreen extends StatefulWidget {
   final String taskText;
@@ -34,12 +35,12 @@ class _TaskCategoryScreenState extends State<TaskCategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black54,
+      backgroundColor: AppColors.background,
       body: Center(
         child: Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[900],
+            color: AppColors.cardBackground,
             borderRadius: BorderRadius.circular(16),
           ),
           width: MediaQuery.of(context).size.width * 0.9,
@@ -56,14 +57,24 @@ class _TaskCategoryScreenState extends State<TaskCategoryScreen> {
                 runSpacing: 10,
                 children:
                     _categories.map((category) {
-                      return GestureDetector(
+                      return InkWell(
                         onTap: () => _selectCategory(category["name"]),
+                        borderRadius: BorderRadius.circular(8), // 테두리 둥글게
+                        splashColor: Colors.white38, // 클릭 시 물결 효과 색상
+                        highlightColor: Colors.white24, // 클릭 시 강조 효과
                         child: Container(
                           width: 80,
                           padding: EdgeInsets.all(10),
                           decoration: BoxDecoration(
                             color: category["color"],
                             borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color:
+                                  _selectedCategory == category["name"]
+                                      ? Colors.white
+                                      : Colors.transparent, // 선택된 경우 테두리 표시
+                              width: 2,
+                            ),
                           ),
                           child: Column(
                             children: [
@@ -79,6 +90,7 @@ class _TaskCategoryScreenState extends State<TaskCategoryScreen> {
                       );
                     }).toList(),
               ),
+
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
@@ -88,6 +100,11 @@ class _TaskCategoryScreenState extends State<TaskCategoryScreen> {
                     _selectedCategory,
                   );
                 },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.saveButton,
+                  shadowColor: Colors.white54,
+                  elevation: 5,
+                ),
                 child: Text("Save", style: TextStyle(color: Colors.white)),
               ),
             ],

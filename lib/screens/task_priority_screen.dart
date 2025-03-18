@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'task_category_screen.dart';
+import '../utils/colors.dart';
 
 class TaskPriorityScreen extends StatefulWidget {
   final String taskText;
@@ -88,7 +89,9 @@ class _TaskPriorityScreenState extends State<TaskPriorityScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purpleAccent,
+                      backgroundColor: AppColors.saveButton,
+                      shadowColor: Colors.white54,
+                      elevation: 5,
                     ),
                     child: Text("Save", style: TextStyle(color: Colors.white)),
                   ),

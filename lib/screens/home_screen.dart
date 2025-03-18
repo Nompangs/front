@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body:
           _tasks.isEmpty
               ? _buildEmptyScreen()
-              : TaskListScreen(tasks: _tasks), // 📌 코드 스플리팅 적용
+              : TaskListScreen(tasks: _tasks), // 코드 스플리팅 적용
       bottomNavigationBar: BottomNavBar(),
       floatingActionButton: MicButton(onSpeechResult: _addTask),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
