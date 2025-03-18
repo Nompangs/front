@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/speech_service.dart';
 import '../services/gemini_service.dart';
+import 'dart:convert';
 
 class MicButton extends StatefulWidget {
   final Function(String) onSpeechResult;
@@ -27,18 +28,18 @@ class _MicButtonState extends State<MicButton> {
       });
 
       if (finalResult) {
-        print("음성 입력 완료: $_recognizedText");
-        widget.onSpeechResult("일정 분석 중...");
+        print("🎤 Speech input completed: $_recognizedText");
 
         final result = await _geminiService.analyzeUserInput(_recognizedText);
 
         if (result["is_event"] == false) {
-          widget.onSpeechResult("❌ This is not an event. Please try again.");
+          _showPopup("❌ This is not an event", "Please try again.");
         } else {
-          widget.onEventDetected(
-            result["event"],
-          ); // Trigger callback when an event is detected
-          widget.onSpeechResult("✅ Event detected! \n${result["event"]}");
+          Map<String, dynamic> event = result["event"];
+          widget.onEventDetected(event); // 일정 감지 시 콜백 실행
+
+          String formattedEvent = _formatEvent(event);
+          widget.onSpeechResult(formattedEvent); // 이벤트가 감지된 경우만 전달
         }
       }
     };
@@ -69,6 +70,63 @@ class _MicButtonState extends State<MicButton> {
         icon: Icon(Icons.mic, color: Colors.white, size: 28),
         onPressed: _toggleListening,
       ),
+    );
+  }
+
+  // Converts event JSON to "Date - Time - Task" format
+  String _formatEvent(Map<String, dynamic> event) {
+    try {
+      final String title = event["title"] ?? "Untitled Task";
+      final DateTime startTime = DateTime.parse(event["start"]);
+      final String formattedDate = _formatDate(startTime);
+      final String formattedTime = _formatTime(startTime);
+
+      return "$formattedDate - $formattedTime - $title";
+    } catch (e) {
+      print("❌ Error formatting event: $e");
+      return "⚠️ Unable to process event";
+    }
+  }
+
+  // Formats date (Today, Tomorrow, or YYYY-MM-DD)
+  String _formatDate(DateTime dateTime) {
+    final now = DateTime.now();
+    if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day) {
+      return "Today";
+    } else if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day + 1) {
+      return "Tomorrow";
+    } else {
+      return "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}";
+    }
+  }
+
+  // Formats time (HH:MM)
+  String _formatTime(DateTime dateTime) {
+    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+  }
+
+  // Show a popup message when input is not an event
+  void _showPopup(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

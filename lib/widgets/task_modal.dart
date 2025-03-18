@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 
 class TaskModal extends StatefulWidget {
   final String taskText;
@@ -21,7 +22,55 @@ class _TaskModalState extends State<TaskModal> {
   @override
   void initState() {
     super.initState();
-    _selectedTask = widget.taskText; // 초기 Task 설정
+    _selectedTask = _formatEventText(widget.taskText); // JSON 데이터를 변환하여 저장
+  }
+
+  // event JSON -> readable format
+  String _formatEventText(String eventJson) {
+    try {
+      // Markdown 코드 블록 제거 (```json ... ```)
+      eventJson =
+          eventJson.replaceAll("```json", "").replaceAll("```", "").trim();
+
+      // 일정이 아닌 경우 예외 처리
+      if (!eventJson.startsWith("{")) {
+        print("⚠️ Not a valid event JSON: $eventJson");
+        return eventJson; // 그대로 출력
+      }
+
+      // JSON 파싱 (예외 발생 가능)
+      final Map<String, dynamic> event = jsonDecode(eventJson);
+      final String title = event["title"] ?? "Untitled Task";
+      final DateTime startTime = DateTime.parse(event["start"]);
+      final String formattedDate = _formatDate(startTime);
+      final String formattedTime = _formatTime(startTime);
+
+      return "$formattedDate - $formattedTime - $title";
+    } catch (e) {
+      print("❌ Error formatting event: $e");
+      return "⚠️ Unable to process event"; // 오류 발생 시 안전한 메시지 반환
+    }
+  }
+
+  // 보기 쉽게 오늘, 내일로 변경
+  String _formatDate(DateTime dateTime) {
+    final now = DateTime.now();
+    if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day) {
+      return "Today";
+    } else if (dateTime.year == now.year &&
+        dateTime.month == now.month &&
+        dateTime.day == now.day + 1) {
+      return "Tomorrow";
+    } else {
+      return "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}";
+    }
+  }
+
+  // format time
+  String _formatTime(DateTime dateTime) {
+    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
   }
 
   void _updateTask(String newTask) {
@@ -64,8 +113,12 @@ class _TaskModalState extends State<TaskModal> {
               border: Border.all(color: Colors.white),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(_selectedTask, style: TextStyle(color: Colors.white)),
+            child: Text(
+              _selectedTask, // 변환된 "날짜 - 시간 - 할 일" 형식으로 표시
+              style: TextStyle(color: Colors.white),
+            ),
           ),
+
           SizedBox(height: 10),
           Text(
             "AI Summary: This task is related to your schedule and has high priority.",
@@ -83,7 +136,6 @@ class _TaskModalState extends State<TaskModal> {
           ),
           SizedBox(height: 20),
 
-          // ✅ "AI Suggested Task" 섹션 복구 ✅
           Text(
             "AI Suggested Task",
             style: TextStyle(
@@ -106,7 +158,7 @@ class _TaskModalState extends State<TaskModal> {
     );
   }
 
-  // ✅ 클릭 시 Task 변경 기능 추가 ✅
+  // 클릭 시 Task 변경 기능 추가
   Widget _buildTaskItem(String task) {
     return GestureDetector(
       onTap: () {
