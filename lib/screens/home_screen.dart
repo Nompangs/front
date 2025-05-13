@@ -5,6 +5,7 @@ import '../widgets/mic_button.dart';
 import 'task_priority_screen.dart';
 import 'task_category_screen.dart';
 import 'task_list_screen.dart';
+import '../services/gemini_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? tasks;
@@ -17,6 +18,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _tasks = [];
+  late GeminiService _geminiService;
+  String _geminiResponse = "";
 
   @override
   void initState() {
@@ -24,73 +27,38 @@ class _HomeScreenState extends State<HomeScreen> {
     if (widget.tasks != null) {
       _tasks = List.from(widget.tasks!);
     }
+    _geminiService = GeminiService();
   }
 
-  void _addTask(String taskText) {
-    print("🎤 Speech Recognized (Task): $taskText"); // Debug log
+  void _handleSpeechInput(String inputText) async {
+    final response = await _geminiService.analyzeUserInput(inputText);
+    if (response != null && response["response"] != null) {
+      setState(() {
+        _geminiResponse = response["response"];
+      });
+    } else {
+      print("⚠️ Error: Gemini response is null.");
+    }
+  }
 
-    showModalBottomSheet(
+  void _showResponseDialog(String response) {
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return TaskModal(
-          taskText: taskText,
-          onTaskUpdated: (updatedTask) {},
-          onTaskSaved: () {
-            // Navigate to TaskPriorityScreen after TaskModal is closed
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (context) => TaskPriorityScreen(
-                      taskText: taskText,
-                      onPrioritySelected: (taskText, priority) {
-                        _moveToCategoryScreen(taskText, priority);
-                      },
-                    ),
-              ),
-            );
-          },
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Gemini Response"),
+          content: Text(response),
+          actions: <Widget>[
+            TextButton(
+              child: Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
         );
       },
     );
-  }
-
-  void _moveToCategoryScreen(String taskText, int priority) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => TaskCategoryScreen(
-              taskText: taskText,
-              priority: priority,
-              onCategorySelected: (taskText, priority, category) {
-                _saveTask(taskText, priority, category);
-              },
-            ),
-      ),
-    );
-  }
-
-  void _saveTask(String taskText, int priority, String category) {
-    setState(() {
-      _tasks.add({
-        "text": taskText,
-        "priority": priority,
-        "category": category,
-      });
-    });
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => HomeScreen(tasks: _tasks)),
-      (route) => false,
-    );
-  }
-
-  void _handleEventDetection(Map<String, dynamic> event) {
-    print("📅 Event Detected: ${event["title"]}, Start: ${event["start"]}");
-    // Future: Integrate with Google Calendar API here
   }
 
   @override
@@ -110,14 +78,11 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 16),
         ],
       ),
-      body:
-          _tasks.isEmpty
-              ? _buildEmptyScreen()
-              : TaskListScreen(tasks: _tasks), // Code splitting applied
+      body: _geminiResponse.isEmpty ? _buildEmptyScreen() : _buildResponseScreen(),
       bottomNavigationBar: BottomNavBar(),
       floatingActionButton: MicButton(
-        onSpeechResult: _addTask, // Handles task-related input
-        onEventDetected: _handleEventDetection, // Handles event detection
+        onSpeechResult: _handleSpeechInput, // Handles STT input
+        onEventDetected: (event) {}, // Provide an empty callback
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -140,10 +105,68 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(height: 10),
           Text(
-            'Speak and add tasks!',
+            'Speak and interact with your AI friend!',
             style: TextStyle(color: Colors.white60, fontSize: 16),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildResponseScreen() {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.all(20),
+        margin: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.grey[900],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset('assets/cat_icon.png', width: 100, height: 100, 
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(Icons.pets, size: 80, color: Colors.purpleAccent);
+              }
+            ),
+            SizedBox(height: 20),
+            Text(
+              _geminiResponse,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purpleAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              onPressed: () {
+                setState(() {
+                  _geminiResponse = "";
+                });
+              },
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                child: Text('Clear', style: TextStyle(fontSize: 16)),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

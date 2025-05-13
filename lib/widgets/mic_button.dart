@@ -29,17 +29,9 @@ class _MicButtonState extends State<MicButton> {
 
       if (finalResult) {
         print("🎤 Speech input completed: $_recognizedText");
-
-        final result = await _geminiService.analyzeUserInput(_recognizedText);
-
-        if (result["is_event"] == false) {
-          _showPopup("❌ This is not an event", "Please try again.");
-        } else {
-          Map<String, dynamic> event = result["event"];
-          widget.onEventDetected(event); // 일정 감지 시 콜백 실행
-
-          String formattedEvent = _formatEvent(event);
-          widget.onSpeechResult(formattedEvent); // 이벤트가 감지된 경우만 전달
+        // Call the callback to pass the recognized text to the parent
+        if (_recognizedText.isNotEmpty) {
+          widget.onSpeechResult(_recognizedText);
         }
       }
     };
@@ -73,60 +65,4 @@ class _MicButtonState extends State<MicButton> {
     );
   }
 
-  // Converts event JSON to "Date - Time - Task" format
-  String _formatEvent(Map<String, dynamic> event) {
-    try {
-      final String title = event["title"] ?? "Untitled Task";
-      final DateTime startTime = DateTime.parse(event["start"]);
-      final String formattedDate = _formatDate(startTime);
-      final String formattedTime = _formatTime(startTime);
-
-      return "$formattedDate - $formattedTime - $title";
-    } catch (e) {
-      print("❌ Error formatting event: $e");
-      return "⚠️ Unable to process event";
-    }
-  }
-
-  // Formats date (Today, Tomorrow, or YYYY-MM-DD)
-  String _formatDate(DateTime dateTime) {
-    final now = DateTime.now();
-    if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day) {
-      return "Today";
-    } else if (dateTime.year == now.year &&
-        dateTime.month == now.month &&
-        dateTime.day == now.day + 1) {
-      return "Tomorrow";
-    } else {
-      return "${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}";
-    }
-  }
-
-  // Formats time (HH:MM)
-  String _formatTime(DateTime dateTime) {
-    return "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-  }
-
-  // Show a popup message when input is not an event
-  void _showPopup(String title, String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text("OK"),
-            ),
-          ],
-        );
-      },
-    );
-  }
 }

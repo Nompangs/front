@@ -24,7 +24,7 @@ class SaydoApp extends StatelessWidget {
     return MaterialApp(
       title: 'Saydo',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/',
+      initialRoute: '/home',
       routes: {
         '/': (context) => IntroScreen(),
         '/login': (context) => LoginScreen(),
