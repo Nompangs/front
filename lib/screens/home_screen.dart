@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:saydo/widgets/task_modal.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
@@ -6,6 +7,13 @@ import 'task_priority_screen.dart';
 import 'task_category_screen.dart';
 import 'task_list_screen.dart';
 import '../services/gemini_service.dart';
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+
+  ChatMessage({required this.text, required this.isUser});
+}
 
 class HomeScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? tasks;
@@ -19,7 +27,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _tasks = [];
   late GeminiService _geminiService;
-  String _geminiResponse = "";
+  List<ChatMessage> _chatMessages = [];
+  late FlutterTts flutterTts;
 
   @override
   void initState() {
@@ -28,15 +37,43 @@ class _HomeScreenState extends State<HomeScreen> {
       _tasks = List.from(widget.tasks!);
     }
     _geminiService = GeminiService();
+    flutterTts = FlutterTts();
+    _initTts();
+  }
+
+  _initTts() async {
+    await flutterTts.setLanguage("ko-KR");
+    await flutterTts.setSpeechRate(0.5);
+    await flutterTts.setVolume(1.0);
+    await flutterTts.setPitch(1.0);
+  }
+
+  @override
+  void dispose() {
+    flutterTts.stop();
+    super.dispose();
   }
 
   void _handleSpeechInput(String inputText) async {
+    setState(() {
+      _chatMessages.add(ChatMessage(text: inputText, isUser: true));
+    });
+
     final response = await _geminiService.analyzeUserInput(inputText);
     if (response != null && response["response"] != null) {
+      final aiResponseText = response["response"];
       setState(() {
-        _geminiResponse = response["response"];
+        _chatMessages.add(ChatMessage(text: aiResponseText, isUser: false));
       });
+      if (aiResponseText.isNotEmpty) {
+        await flutterTts.speak(aiResponseText);
+      }
     } else {
+      const String errorMessage = "⚠️ 오류: 응답을 받을 수 없습니다.";
+      setState(() {
+        _chatMessages.add(ChatMessage(text: errorMessage, isUser: false));
+      });
+      await flutterTts.speak(errorMessage);
       print("⚠️ Error: Gemini response is null.");
     }
   }
@@ -78,11 +115,11 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(width: 16),
         ],
       ),
-      body: _geminiResponse.isEmpty ? _buildEmptyScreen() : _buildResponseScreen(),
+      body: _chatMessages.isEmpty ? _buildEmptyScreen() : _buildChatScreen(),
       bottomNavigationBar: BottomNavBar(),
       floatingActionButton: MicButton(
-        onSpeechResult: _handleSpeechInput, // Handles STT input
-        onEventDetected: (event) {}, // Provide an empty callback
+        onSpeechResult: _handleSpeechInput,
+        onEventDetected: (event) {},
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -113,56 +150,77 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildResponseScreen() {
-    return Center(
-      child: Container(
-        padding: EdgeInsets.all(20),
-        margin: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.purple.withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 2,
+  Widget _buildChatScreen() {
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            reverse: true,
+            padding: EdgeInsets.all(16.0),
+            itemCount: _chatMessages.length,
+            itemBuilder: (context, index) {
+              final message = _chatMessages[_chatMessages.length - 1 - index];
+              return _buildChatMessageBubble(message);
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purpleAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(30),
+              ),
             ),
-          ],
+            onPressed: () {
+              setState(() {
+                _chatMessages.clear();
+              });
+            },
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Text('Clear Chat', style: TextStyle(fontSize: 16)),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildChatMessageBubble(ChatMessage message) {
+    return Align(
+      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: EdgeInsets.symmetric(vertical: 5.0),
+        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
+        decoration: BoxDecoration(
+          color: message.isUser ? Colors.deepPurpleAccent : Colors.grey[800],
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.0),
+            topRight: Radius.circular(20.0),
+            bottomLeft: message.isUser ? Radius.circular(20.0) : Radius.circular(0),
+            bottomRight: message.isUser ? Radius.circular(0) : Radius.circular(20.0),
+          ),
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Image.asset('assets/cat_icon.png', width: 100, height: 100, 
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.pets, size: 80, color: Colors.purpleAccent);
-              }
-            ),
-            SizedBox(height: 20),
             Text(
-              _geminiResponse,
+              message.isUser ? "You" : "AI Friend",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 4),
+            Text(
+              message.text,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 18,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purpleAccent,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              onPressed: () {
-                setState(() {
-                  _geminiResponse = "";
-                });
-              },
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: Text('Clear', style: TextStyle(fontSize: 16)),
+                fontSize: 16,
               ),
             ),
           ],
