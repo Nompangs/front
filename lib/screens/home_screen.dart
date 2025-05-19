@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import 'package:saydo/widgets/task_modal.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
 import '../services/gemini_service.dart';
@@ -108,6 +107,12 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white, fontSize: 18),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.qr_code_scanner, color: Colors.white),
+            onPressed: () {
+              Navigator.pushNamed(context, '/qr-scanner');
+            },
+          ),
           CircleAvatar(backgroundImage: AssetImage('assets/profile.png')),
           SizedBox(width: 16),
         ],
