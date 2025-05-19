@@ -3,9 +3,6 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:saydo/widgets/task_modal.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
-import 'task_priority_screen.dart';
-import 'task_category_screen.dart';
-import 'task_list_screen.dart';
 import '../services/gemini_service.dart';
 
 class ChatMessage {
