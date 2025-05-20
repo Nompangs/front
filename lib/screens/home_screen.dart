@@ -3,6 +3,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/mic_button.dart';
 import '../services/gemini_service.dart';
+import 'character_create_screen.dart';
 
 class ChatMessage {
   final String text;
@@ -107,6 +108,17 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(color: Colors.white, fontSize: 18),
         ),
         actions: [
+          IconButton(
+            icon: Icon(Icons.person_add, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CharacterCreateScreen(),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.qr_code_scanner, color: Colors.white),
             onPressed: () {
