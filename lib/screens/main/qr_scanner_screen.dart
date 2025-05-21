@@ -100,7 +100,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                     final List<Barcode> barcodes = capture.barcodes;
                     for (final barcode in barcodes) {
                       if (barcode.rawValue != null) {
-                        _handleQRCode(barcode.rawValue!);
+                        final cleanCode = barcode.rawValue!.trim();
+                        _handleQRCode(cleanCode);
                         break;
                       }
                     }
