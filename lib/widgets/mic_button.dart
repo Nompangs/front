@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../services/speech_service.dart';
-import '../services/gemini_service.dart';
+import 'package:nompangs/services/speech_service.dart';
+import 'package:nompangs/services/gemini_service.dart';
 import 'dart:convert';
 
 class MicButton extends StatefulWidget {

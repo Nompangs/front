@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'character_complete_screen.dart';
+import 'package:nompangs/screens/character/character_complete_screen.dart';
 
 class CharacterCreateScreen extends StatefulWidget {
   @override

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../screens/profile_screen.dart'; // Import ProfileScreen
+import 'package:nompangs/screens/profile/profile_screen.dart'; // Import ProfileScreen
 
 class BottomNavBar extends StatelessWidget {
   @override

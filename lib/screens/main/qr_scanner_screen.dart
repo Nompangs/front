@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
-import 'chat_screen.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({Key? key}) : super(key: key);

@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
-import 'chat_screen.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 class CharacterCompleteScreen extends StatelessWidget {
   final String characterName;

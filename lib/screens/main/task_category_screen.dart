@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/colors.dart';
+import 'package:nompangs/utils/colors.dart';
 
 class TaskCategoryScreen extends StatefulWidget {
   final String taskText;

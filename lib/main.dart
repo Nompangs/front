@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/intro_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/register_screen.dart';
-import 'screens/qr_scanner_screen.dart';
+import 'package:nompangs/screens/auth/intro_screen.dart';
+import 'package:nompangs/screens/auth/login_screen.dart';
+import 'package:nompangs/screens/main/home_screen.dart';
+import 'package:nompangs/screens/auth/register_screen.dart';
+import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,14 +16,14 @@ void main() async {
   }
 
   await dotenv.load(fileName: ".env"); // 환경 변수 로드
-  runApp(SaydoApp());
+  runApp(NompangsApp());
 }
 
-class SaydoApp extends StatelessWidget {
+class NompangsApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Saydo',
+      title: 'Nompangs',
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/home',
       routes: {

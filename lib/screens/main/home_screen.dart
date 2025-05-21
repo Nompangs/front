@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
-import '../widgets/bottom_nav_bar.dart';
-import '../widgets/mic_button.dart';
-import '../services/gemini_service.dart';
-import 'character_create_screen.dart';
+import 'package:nompangs/widgets/bottom_nav_bar.dart';
+import 'package:nompangs/widgets/mic_button.dart';
+import 'package:nompangs/services/gemini_service.dart';
+import 'package:nompangs/screens/character/character_create_screen.dart';
 
 class ChatMessage {
   final String text;
