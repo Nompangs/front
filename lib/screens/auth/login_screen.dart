@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nompangs/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -10,21 +10,52 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   String? _errorMessage;
+  bool _isLoading = false;
 
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      String email = _emailController.text.trim();
-      String password = _passwordController.text.trim();
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-      if (prefs.containsKey(email) && prefs.getString(email) == password) {
+      try {
+        await _authService.signInWithEmailAndPassword(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
         Navigator.pushReplacementNamed(context, '/home');
-      } else {
+      } catch (e) {
         setState(() {
-          _errorMessage = "Invalid email or password";
+          _errorMessage = e.toString();
+        });
+      } finally {
+        setState(() {
+          _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await _authService.signInWithGoogle();
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -101,8 +132,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     backgroundColor: Colors.purpleAccent,
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: _login,
-                  child: Text('Login', style: TextStyle(fontSize: 16)),
+                  onPressed: _isLoading ? null : _login,
+                  child: _isLoading
+                      ? CircularProgressIndicator(color: Colors.white)
+                      : Text('Login', style: TextStyle(fontSize: 16)),
+                ),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: Text(
+                  'OR',
+                  style: TextStyle(color: Colors.white70),
+                ),
+              ),
+              SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: Image.asset('assets/google_icon.png', height: 24),
+                  label: Text('Sign in with Google'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed: _isLoading ? null : _signInWithGoogle,
                 ),
               ),
               Spacer(),
@@ -113,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   },
                   child: Text.rich(
                     TextSpan(
-                      text: "Don’t have an account? ",
+                      text: "Don't have an account? ",
                       style: TextStyle(color: Colors.white54),
                       children: [
                         TextSpan(

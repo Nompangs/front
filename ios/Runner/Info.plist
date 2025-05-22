@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>NSLocalNetworkUsageDescription</key>
+    <string>Flutter 개발을 위해 로컬 네트워크 접근이 필요합니다.</string>
+    <key>NSBonjourServices</key>
+    <array>
+      <string>_dartobservatory._tcp</string>
+    </array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -25,7 +31,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<true/> 
 	<key>NSCameraUsageDescription</key>
 	<string>QR code recognition requires camera access.</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -59,6 +65,18 @@
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+		</array>
+	</dict>
 	</array>
 </dict>
 </plist>

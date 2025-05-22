@@ -74,3 +74,13 @@ app.*.map.json
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
 **/ios/build/
+
+# Firebase/Google configuration files (contains sensitive keys)
+# These files should be obtained manually (e.g., from Firebase console) or generated (firebase_options.dart).
+# Document the setup process in README.md for collaborators/CI.
+
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+lib/firebase_options.dart
+macos/Runner/GoogleService-Info.plist
+ios/Flutter/env.debug.xcconfig
