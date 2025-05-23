@@ -9,6 +9,8 @@ import 'package:nompangs/screens/main/home_screen.dart';
 import 'package:nompangs/screens/auth/register_screen.dart';
 import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 
 String? pendingRoomId;
 
@@ -65,19 +67,44 @@ class _NompangsAppState extends State<NompangsApp> {
 
   void _handleDeepLink(Uri uri) {
     final roomId = uri.queryParameters['roomId'];
+    final encodedData = uri.queryParameters['data'];
     print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId');
+    
+    if (roomId != null && encodedData != null) {
+      try {
+        // base64 디코딩 및 JSON 파싱
+        final decodedData = utf8.decode(base64Decode(encodedData));
+        final characterData = jsonDecode(decodedData);
+        
+        if (characterData.containsKey('name') && 
+            characterData.containsKey('tags')) {
+          
+          // GlobalKey를 사용하여 Navigator에 접근
+          _navigatorKey.currentState?.pushNamed(
+            '/chat/$roomId',
+            arguments: {
+              'characterName': characterData['name'],
+              'personalityTags': List<String>.from(characterData['tags']),
+              'greeting': characterData['greeting'],
+            },
+          );
+          return;
+        }
+      } catch (e) {
+        print('Error parsing character data: $e');
+      }
+    }
+    
+    // 데이터가 없거나 파싱에 실패한 경우
     if (roomId != null) {
-      pendingRoomId = roomId; // 전역 변수에 저장
-      
-      // GlobalKey를 사용하여 Navigator에 접근
-      _navigatorKey.currentState?.pushNamed('/chat/$roomId');
+      pendingRoomId = roomId;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: _navigatorKey,  // GlobalKey 설정
+      navigatorKey: _navigatorKey,
       title: 'Nompangs',
       theme: ThemeData(primarySwatch: Colors.blue),
       initialRoute: '/home',
@@ -93,11 +120,13 @@ class _NompangsAppState extends State<NompangsApp> {
         if (settings.name?.startsWith('/chat/') ?? false) {
           final roomId = settings.name?.split('/').last;
           if (roomId != null) {
+            final args = settings.arguments as Map<String, dynamic>?;
             return MaterialPageRoute(
               settings: settings,
               builder: (context) => ChatScreen(
-                characterName: '캐릭터 $roomId',
-                personalityTags: ['친절한', '도움이 되는'],
+                characterName: args?['characterName'] ?? '캐릭터 $roomId',
+                personalityTags: args?['personalityTags'] ?? ['친절한', '도움이 되는'],
+                greeting: args?['greeting'],
               ),
             );
           }

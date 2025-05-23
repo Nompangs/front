@@ -34,42 +34,48 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     });
 
     try {
-      // QR 코드 데이터가 JSON 형식인지 확인
-      if (code.startsWith('{') && code.endsWith('}')) {
-        final Map<String, dynamic> characterData = jsonDecode(code);
+      print('Scanned QR code: $code'); // 스캔된 QR 코드 출력
+      
+      // URL 형식인지 확인 (https:// 또는 nompangs://)
+      if (code.startsWith('https://') || code.startsWith('nompangs://')) {
+        final uri = Uri.parse(code);
+        final encodedData = uri.queryParameters['data'];
         
-        if (characterData.containsKey('name') && 
-            characterData.containsKey('tags') && 
-            characterData.containsKey('greeting')) {
+        print('Encoded data from URL: $encodedData'); // URL에서 추출한 데이터 출력
+        
+        if (encodedData != null) {
+          // base64 디코딩 및 JSON 파싱
+          final decodedData = utf8.decode(base64Decode(encodedData));
+          print('Decoded data: $decodedData'); // 디코딩된 데이터 출력
           
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(
-                characterName: characterData['name'],
-                personalityTags: List<String>.from(characterData['tags']),
+          final characterData = jsonDecode(decodedData);
+          print('Parsed character data: $characterData'); // 파싱된 캐릭터 데이터 출력
+          
+          if (characterData.containsKey('name') && 
+              characterData.containsKey('tags')) {
+            
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatScreen(
+                  characterName: characterData['name'],
+                  personalityTags: List<String>.from(characterData['tags']),
+                  greeting: characterData['greeting'],
+                ),
               ),
-            ),
-          );
-        } else {
-          _showError('유효하지 않은 QR 코드입니다.');
-          setState(() {
-            _isProcessing = false;
-          });
+            );
+            return;
+          }
         }
-      } else {
-        // JSON 형식이 아닌 경우, 단순 문자열로 처리
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              characterName: code,
-              personalityTags: ['기본'],
-            ),
-          ),
-        );
       }
+      
+      // URL 형식이 아니거나 데이터가 없는 경우
+      _showError('유효하지 않은 QR 코드입니다.');
+      setState(() {
+        _isProcessing = false;
+      });
     } catch (e) {
+      print('Error parsing QR code: $e'); // 디버깅을 위한 에러 출력
       _showError('QR 코드를 읽을 수 없습니다.');
       setState(() {
         _isProcessing = false;

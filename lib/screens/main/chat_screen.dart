@@ -5,11 +5,13 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 class ChatScreen extends StatefulWidget {
   final String characterName;
   final List<String> personalityTags;
+  final String? greeting;
 
   const ChatScreen({
     Key? key,
     required this.characterName,
     required this.personalityTags,
+    this.greeting,
   }) : super(key: key);
 
   @override
@@ -29,9 +31,9 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _initSpeech();
     _initTts();
-    // 초기 인사 메시지 추가
+    // 초기 인사 메시지 추가 (greeting이 있으면 사용, 없으면 기본 메시지)
     _messages.add(ChatMessage(
-      text: '안녕! ${widget.characterName}이야~ 무엇을 도와줄까?',
+      text: widget.greeting ?? '안녕! ${widget.characterName}이야~ 무엇을 도와줄까?',
       isUser: false,
     ));
   }

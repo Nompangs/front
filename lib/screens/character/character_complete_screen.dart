@@ -20,18 +20,30 @@ class CharacterCompleteScreen extends StatelessWidget {
   }) : super(key: key);
 
   String _generateQRData() {
-    //현재는 임시로 클라이언트에서 생성하도록 구현
     // 랜덤 roomId 생성 (예: 6자리 숫자)
     final roomId = (100000 + DateTime.now().millisecondsSinceEpoch % 900000).toString();
     
-    // 웹 URL 형식으로 반환
-    return 'https://invitepage.netlify.app/?roomId=$roomId';
+    // 캐릭터 정보를 JSON 형식으로 변환
+    final characterData = {
+      'name': characterName,
+      'tags': personalityTags,
+      'greeting': greeting,
+    };
+    
+    // URL에 캐릭터 정보를 base64로 인코딩하여 추가
+    final encodedData = base64Encode(utf8.encode(jsonEncode(characterData)));
+    
+    // nompangs:// 스킴을 사용하여 URL 생성
+    return 'nompangs://invite?roomId=$roomId&data=$encodedData';
   }
 
   Future<void> _downloadAndShareQRCode(BuildContext context) async {
     try {
+      final qrData = _generateQRData();
+      print('Generated QR data: $qrData'); // 디버깅을 위한 데이터 출력
+      
       final qrPainter = QrPainter(
-        data: _generateQRData(),
+        data: qrData,
         version: QrVersions.auto,
         gapless: true,
       );
