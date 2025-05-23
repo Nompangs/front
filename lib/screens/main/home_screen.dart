@@ -1,9 +1,11 @@
+import 'package:nompangs/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:nompangs/widgets/bottom_nav_bar.dart';
 import 'package:nompangs/widgets/mic_button.dart';
 import 'package:nompangs/services/gemini_service.dart';
 import 'package:nompangs/screens/character/character_create_screen.dart';
+import 'dart:async';
 
 class ChatMessage {
   final String text;
@@ -22,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  Timer? _deeplinkWatcher;
   List<Map<String, dynamic>> _tasks = [];
   late GeminiService _geminiService;
   List<ChatMessage> _chatMessages = [];
@@ -36,6 +39,23 @@ class _HomeScreenState extends State<HomeScreen> {
     _geminiService = GeminiService();
     flutterTts = FlutterTts();
     _initTts();
+
+    _deeplinkWatcher = Timer.periodic(Duration(milliseconds: 300), (timer) {
+      if (pendingRoomId != null) {
+        final roomId = pendingRoomId!;
+        pendingRoomId = null;
+        print('🚀 [Timer] 채팅방 이동 시작: $roomId');
+        Navigator.pushNamed(context, '/chat/$roomId');
+        timer.cancel(); // 중복 실행 방지
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _deeplinkWatcher?.cancel(); // ✅ 반드시 해제
+    flutterTts.stop();
+    super.dispose();
   }
 
   _initTts() async {
@@ -43,12 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
     await flutterTts.setSpeechRate(0.5);
     await flutterTts.setVolume(1.0);
     await flutterTts.setPitch(1.0);
-  }
-
-  @override
-  void dispose() {
-    flutterTts.stop();
-    super.dispose();
   }
 
   void _handleSpeechInput(String inputText) async {

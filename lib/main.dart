@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:app_links/app_links.dart';
+import 'dart:async';
 import 'package:nompangs/screens/auth/intro_screen.dart';
 import 'package:nompangs/screens/auth/login_screen.dart';
 import 'package:nompangs/screens/main/home_screen.dart';
 import 'package:nompangs/screens/auth/register_screen.dart';
 import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
+
+String? pendingRoomId;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,6 +34,7 @@ class NompangsApp extends StatefulWidget {
 class _NompangsAppState extends State<NompangsApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSubscription;
+  final _navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
@@ -46,7 +50,7 @@ class _NompangsAppState extends State<NompangsApp> {
 
   Future<void> _initDeepLinks() async {
     // Cold start 처리
-    final initialUri = await _appLinks.getInitialAppLink();
+    final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) {
       _handleDeepLink(initialUri);
     }
@@ -60,21 +64,23 @@ class _NompangsAppState extends State<NompangsApp> {
   }
 
   void _handleDeepLink(Uri uri) {
-    // 위젯이 마운트된 후에 라우팅을 수행
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final roomId = uri.queryParameters['roomId'];
-      if (roomId != null) {
-        Navigator.of(context).pushNamed('/chat/$roomId');
-      }
-    });
+    final roomId = uri.queryParameters['roomId'];
+    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId');
+    if (roomId != null) {
+      pendingRoomId = roomId; // 전역 변수에 저장
+      
+      // GlobalKey를 사용하여 Navigator에 접근
+      _navigatorKey.currentState?.pushNamed('/chat/$roomId');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigatorKey,  // GlobalKey 설정
       title: 'Nompangs',
       theme: ThemeData(primarySwatch: Colors.blue),
-      initialRoute: '/login',
+      initialRoute: '/home',
       routes: {
         '/': (context) => IntroScreen(),
         '/login': (context) => LoginScreen(),
