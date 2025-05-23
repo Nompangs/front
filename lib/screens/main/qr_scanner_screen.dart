@@ -34,26 +34,40 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     });
 
     try {
-      final Map<String, dynamic> characterData = jsonDecode(code);
-      
-      if (characterData.containsKey('name') && 
-          characterData.containsKey('tags') && 
-          characterData.containsKey('greeting')) {
+      // QR 코드 데이터가 JSON 형식인지 확인
+      if (code.startsWith('{') && code.endsWith('}')) {
+        final Map<String, dynamic> characterData = jsonDecode(code);
         
+        if (characterData.containsKey('name') && 
+            characterData.containsKey('tags') && 
+            characterData.containsKey('greeting')) {
+          
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(
+                characterName: characterData['name'],
+                personalityTags: List<String>.from(characterData['tags']),
+              ),
+            ),
+          );
+        } else {
+          _showError('유효하지 않은 QR 코드입니다.');
+          setState(() {
+            _isProcessing = false;
+          });
+        }
+      } else {
+        // JSON 형식이 아닌 경우, 단순 문자열로 처리
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(
-              characterName: characterData['name'],
-              personalityTags: List<String>.from(characterData['tags']),
+              characterName: code,
+              personalityTags: ['기본'],
             ),
           ),
         );
-      } else {
-        _showError('유효하지 않은 QR 코드입니다.');
-        setState(() {
-          _isProcessing = false;
-        });
       }
     } catch (e) {
       _showError('QR 코드를 읽을 수 없습니다.');
