@@ -34,10 +34,9 @@ class CharacterCompleteScreen extends StatelessWidget {
     final jsonString = jsonEncode(characterData);
     final encodedData = base64Url.encode(utf8.encode(jsonString));
     
-    // nompangs:// 스킴을 사용하여 딥링크 URL 생성
-    final deepLinkUrl = 'nompangs://invite?roomId=$roomId&data=$encodedData';
-    
-    return deepLinkUrl;
+    final webPageUrl = 'https://invitepage.netlify.app/?roomId=$roomId&data=$encodedData'; // 여기에 실제 웹페이지 주소를 입력
+    print('Generated QR data for web: $webPageUrl');
+    return webPageUrl;
   }
 
   Future<void> _downloadAndShareQRCode(BuildContext context) async {

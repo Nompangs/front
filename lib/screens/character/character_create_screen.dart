@@ -153,7 +153,7 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
                             builder: (context) => CharacterCompleteScreen(
                               characterName: _nameController.text,
                               personalityTags: _personalityTags,
-                              greeting: '안녕! ${_nameController.text}이야~ 잘 부탁해!',
+                              greeting: '안녕! 나는 ${_nameController.text}이야~ 잘 부탁해!',
                             ),
                           ),
                         );
