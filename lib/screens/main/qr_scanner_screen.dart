@@ -36,17 +36,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     try {
       print('Scanned QR code: $code'); // 스캔된 QR 코드 출력
       
-      // URL 형식인지 확인 (https:// 또는 nompangs://)
-      if (code.startsWith('https://') || code.startsWith('nompangs://')) {
+      // URL 형식인지 확인
+      if (code.startsWith('https://')) {
         final uri = Uri.parse(code);
         final encodedData = uri.queryParameters['data'];
         
         print('Encoded data from URL: $encodedData'); // URL에서 추출한 데이터 출력
         
         if (encodedData != null) {
-          // base64 디코딩 및 JSON 파싱
-          final decodedData = utf8.decode(base64Decode(encodedData));
-          print('Decoded data: $decodedData'); // 디코딩된 데이터 출력
+          // URL-safe base64 디코딩 및 JSON 파싱
+          final decodedData = utf8.decode(base64Url.decode(encodedData));
           
           final characterData = jsonDecode(decodedData);
           print('Parsed character data: $characterData'); // 파싱된 캐릭터 데이터 출력
@@ -67,6 +66,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             return;
           }
         }
+      } else if (code.startsWith('nompangs://')) {
+        // nompangs:// 스킴은 시스템이 처리하도록 함
+        return;
       }
       
       // URL 형식이 아니거나 데이터가 없는 경우

@@ -30,11 +30,12 @@ class CharacterCompleteScreen extends StatelessWidget {
       'greeting': greeting,
     };
     
-    // URL에 캐릭터 정보를 base64로 인코딩하여 추가
-    final encodedData = base64Encode(utf8.encode(jsonEncode(characterData)));
+    // URL에 캐릭터 정보를 URL-safe base64로 인코딩하여 추가
+    final jsonString = jsonEncode(characterData);
+    final encodedData = base64Url.encode(utf8.encode(jsonString));
     
-    // nompangs:// 스킴을 사용하여 URL 생성
-    return 'nompangs://invite?roomId=$roomId&data=$encodedData';
+    // 웹 URL 형식으로 반환
+    return 'https://invitepage.netlify.app/?roomId=$roomId&data=$encodedData';
   }
 
   Future<void> _downloadAndShareQRCode(BuildContext context) async {
