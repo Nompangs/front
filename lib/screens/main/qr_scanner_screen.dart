@@ -34,14 +34,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     });
 
     try {
-      print('Scanned QR code: $code'); // 스캔된 QR 코드 출력
       
       // URL 형식인지 확인
       if (code.startsWith('https://')) {
         final uri = Uri.parse(code);
         final encodedData = uri.queryParameters['data'];
-        
-        print('Encoded data from URL: $encodedData'); // URL에서 추출한 데이터 출력
         
         if (encodedData != null) {
           // URL-safe base64 디코딩 및 JSON 파싱

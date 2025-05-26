@@ -74,7 +74,7 @@ class _NompangsAppState extends State<NompangsApp> {
       if (encodedData != null) {
         try {
           // base64 디코딩 및 JSON 파싱
-          final decodedData = utf8.decode(base64Decode(encodedData));
+          final decodedData = utf8.decode(base64Url.decode(encodedData));
           final characterData = jsonDecode(decodedData);
           
           if (characterData.containsKey('name') && 
@@ -93,11 +93,26 @@ class _NompangsAppState extends State<NompangsApp> {
           }
         } catch (e) {
           print('Error parsing character data: $e');
+          _showError('캐릭터 정보를 읽을 수 없습니다.');
         }
+      } else {
+        // data 파라미터가 없는 경우
+        _showError('캐릭터 정보가 없는 QR 코드입니다.');
       }
-      
-      // 데이터가 없거나 파싱에 실패한 경우
-      pendingRoomId = roomId;
+    }
+  }
+
+  void _showError(String message) {
+    // GlobalKey를 사용하여 현재 컨텍스트에 접근
+    final context = _navigatorKey.currentContext;
+    if (context != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
@@ -121,12 +136,54 @@ class _NompangsAppState extends State<NompangsApp> {
           final roomId = settings.name?.split('/').last;
           if (roomId != null) {
             final args = settings.arguments as Map<String, dynamic>?;
+            
+            if (args == null) {
+              // 캐릭터 정보가 없는 경우 에러 화면으로 이동
+              return MaterialPageRoute(
+                settings: settings,
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: Text('오류'),
+                    backgroundColor: Colors.black,
+                  ),
+                  backgroundColor: Colors.black,
+                  body: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text(
+                          '캐릭터 정보를 찾을 수 없습니다.',
+                          style: TextStyle(fontSize: 18, color: Colors.white),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          '올바른 QR 코드를 스캔해주세요.',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                        SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text('돌아가기'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+            
             return MaterialPageRoute(
               settings: settings,
               builder: (context) => ChatScreen(
-                characterName: args?['characterName'] ?? '캐릭터 $roomId',
-                personalityTags: args?['personalityTags'] ?? ['친절한', '도움이 되는'],
-                greeting: args?['greeting'],
+                characterName: args['characterName'] ?? '캐릭터 $roomId',
+                personalityTags: args['personalityTags'] ?? ['친절한', '도움이 되는'],
+                greeting: args['greeting'],
               ),
             );
           }

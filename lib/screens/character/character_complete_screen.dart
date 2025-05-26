@@ -34,8 +34,10 @@ class CharacterCompleteScreen extends StatelessWidget {
     final jsonString = jsonEncode(characterData);
     final encodedData = base64Url.encode(utf8.encode(jsonString));
     
-    // 웹 URL 형식으로 반환
-    return 'https://invitepage.netlify.app/?roomId=$roomId&data=$encodedData';
+    // nompangs:// 스킴을 사용하여 딥링크 URL 생성
+    final deepLinkUrl = 'nompangs://invite?roomId=$roomId&data=$encodedData';
+    
+    return deepLinkUrl;
   }
 
   Future<void> _downloadAndShareQRCode(BuildContext context) async {
@@ -76,6 +78,13 @@ class CharacterCompleteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('--- CharacterCompleteScreen build method called ---'); // ★ 빌드 메소드 호출 확인 로그
+    print('Character Name: $characterName, Tags: $personalityTags, Greeting: $greeting'); // 전달받은 데이터 확인 로그
+
+    // QR 데이터 생성 시도 및 로그 출력 (build 메소드 내에서 미리 호출하여 확인)
+    final qrDataForCheck = _generateQRData();
+    print('QR Data generated in build method for check: $qrDataForCheck');
+
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -158,6 +167,16 @@ class CharacterCompleteScreen extends StatelessWidget {
                   data: _generateQRData(),
                   version: QrVersions.auto,
                   size: 200.0,
+                  // errorStateBuilder 추가 (QR 생성 오류 시 확인용)
+                  errorStateBuilder: (cxt, err) {
+                    print('Error generating QR Image: $err');
+                    return const Center(
+                      child: Text(
+                        'QR 코드 생성 오류',
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
                 // QR 코드 다운로드 버튼

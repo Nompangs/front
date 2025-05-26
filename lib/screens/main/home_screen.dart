@@ -30,6 +30,10 @@ class _HomeScreenState extends State<HomeScreen> {
   List<ChatMessage> _chatMessages = [];
   late FlutterTts flutterTts;
 
+  // 딥링크 확인을 위한 카운터 및 최대 확인 횟수
+  int _deeplinkCheckCount = 0;
+  final int _maxDeeplinkChecks = 5; // 예: 최대 5번 (1.5초) 정도만 체크
+
   @override
   void initState() {
     super.initState();
@@ -40,13 +44,26 @@ class _HomeScreenState extends State<HomeScreen> {
     flutterTts = FlutterTts();
     _initTts();
 
-    _deeplinkWatcher = Timer.periodic(Duration(milliseconds: 300), (timer) {
+    _deeplinkWatcher = Timer.periodic(Duration(milliseconds: 300), (timer) async {
       if (pendingRoomId != null) {
         final roomId = pendingRoomId!;
-        pendingRoomId = null;
-        print('🚀 [Timer] 채팅방 이동 시작: $roomId');
-        Navigator.pushNamed(context, '/chat/$roomId');
-        timer.cancel(); // 중복 실행 방지
+        try {
+          await Navigator.pushNamed(context, '/chat/$roomId');
+        } catch (e) {
+          print('❌ [Timer] 채팅방 이동 실패: $e');
+        } finally {
+          pendingRoomId = null;
+          timer.cancel();
+        }
+      } else {
+        // pendingRoomId가 null인 경우
+        _deeplinkCheckCount++;
+        print('Timer tick - current pendingRoomId: $pendingRoomId, check count: $_deeplinkCheckCount / $_maxDeeplinkChecks');
+        if (_deeplinkCheckCount >= _maxDeeplinkChecks) {
+          print('🗓️ [Timer] 최대 확인 횟수 도달. pendingRoomId가 없어 타이머를 취소합니다.');
+          timer.cancel();
+          print('🛑 [Timer] 타이머 취소됨 (pendingRoomId 없음)');
+        }
       }
     });
   }
