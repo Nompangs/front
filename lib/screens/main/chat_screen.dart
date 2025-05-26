@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:nompangs/services/gemini_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
   final List<String> personalityTags;
   final String? greeting;
+  final String? initialUserMessage;
 
   const ChatScreen({
     Key? key,
     required this.characterName,
     required this.personalityTags,
     this.greeting,
+    this.initialUserMessage,
   }) : super(key: key);
 
   @override
@@ -24,22 +27,32 @@ class _ChatScreenState extends State<ChatScreen> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
   late FlutterTts _flutterTts;
-  bool _isRecording = false;
+  bool _isRecording = false; // TODO: 녹음 기능 구현 시 사용
+  late GeminiService _geminiService;
+  bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
+    _geminiService = GeminiService();
     _initSpeech();
     _initTts();
-    // 초기 인사 메시지 추가 (greeting이 있으면 사용, 없으면 기본 메시지)
-    _messages.add(ChatMessage(
-      text: widget.greeting ?? '안녕! ${widget.characterName}이야~ 무엇을 도와줄까?',
-      isUser: false,
-    ));
+
+    if (widget.greeting != null && widget.greeting!.isNotEmpty) {
+      _addMessage(widget.greeting!, false, speak: true);
+    }
+
+    if (widget.initialUserMessage != null && widget.initialUserMessage!.isNotEmpty) {
+      _addMessage(widget.initialUserMessage!, true, speak: false);
+      _requestAiResponse(widget.initialUserMessage!);
+    }
   }
 
   void _initSpeech() async {
-    await _speech.initialize();
+    await _speech.initialize(
+      onError: (errorNotification) => print('STT Error: $errorNotification'),
+      onStatus: (status) => print('STT Status: $status'),
+    );
   }
 
   void _initTts() async {
@@ -50,17 +63,58 @@ class _ChatScreenState extends State<ChatScreen> {
     await _flutterTts.setPitch(1.0);
   }
 
+  void _addMessage(String text, bool isUser, {bool speak = false}) {
+    setState(() {
+      _messages.insert(0, ChatMessage(text: text, isUser: isUser));
+    });
+    if (speak && text.isNotEmpty) {
+      _flutterTts.speak(text);
+    }
+  }
+
+  Future<void> _requestAiResponse(String userInput) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+
+    final characterProfile = {
+      'name': widget.characterName,
+      'tags': widget.personalityTags,
+      'greeting': widget.greeting,
+    };
+
+    final response = await _geminiService.analyzeUserInput(userInput, characterProfile: characterProfile);
+    String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; // 기본 오류 메시지
+    if (response != null && response["response"] != null && (response["response"] as String).isNotEmpty) {
+      aiResponseText = response["response"] as String;
+    }
+    _addMessage(aiResponseText, false, speak: true);
+    setState(() => _isProcessing = false);
+  }
+
+  void _handleSubmitted(String text) {
+    if (text.trim().isEmpty) return;
+    final String userMessage = text.trim();
+    _textController.clear();
+    _addMessage(userMessage, true, speak: false);
+    _requestAiResponse(userMessage);
+  }
+
   void _startListening() async {
-    if (!_isListening) {
+    if (!_isListening && !_isProcessing) {
       bool available = await _speech.initialize();
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
           onResult: (result) {
-            setState(() {
-              _textController.text = result.recognizedWords;
-            });
+            _textController.text = result.recognizedWords;
+            if (result.finalResult) {
+              _handleSubmitted(result.recognizedWords);
+              _stopListening();
+            }
           },
+          localeId: "ko_KR",
+          listenFor: Duration(seconds: 10), // 예시: 최대 10초간 듣기
+          pauseFor: Duration(seconds: 3),   // 예시: 3초간 말 없으면 중단 (finalResult 트리거)
         );
       }
     }
@@ -72,19 +126,13 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _isListening = false);
     }
   }
-
-  void _handleSubmitted(String text) {
-    if (text.trim().isEmpty) return;
-
-    _textController.clear();
-    setState(() {
-      _messages.insert(0, ChatMessage(text: text, isUser: true));
-      // TODO: AI 응답 처리
-      _messages.insert(0, ChatMessage(
-        text: '응답 메시지 예시입니다.',
-        isUser: false,
-      ));
-    });
+  
+  @override
+  void dispose() {
+    _textController.dispose();
+    _speech.stop();
+    _flutterTts.stop();
+    super.dispose();
   }
 
   @override
@@ -99,23 +147,28 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               backgroundColor: Colors.blue[700],
               child: Text(
-                widget.characterName[0],
+                widget.characterName.isNotEmpty ? widget.characterName[0] : 'C',
                 style: TextStyle(color: Colors.white),
               ),
             ),
             SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.characterName,
-                  style: TextStyle(color: Colors.white),
-                ),
-                Text(
-                  widget.personalityTags.join(', '),
-                  style: TextStyle(color: Colors.grey, fontSize: 12),
-                ),
-              ],
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.characterName,
+                    style: TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.personalityTags.isNotEmpty)
+                    Text(
+                      widget.personalityTags.join(', '),
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                ],
+              ),
             ),
           ],
         ),
@@ -137,6 +190,11 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
+          if (_isProcessing)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: LinearProgressIndicator(backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent)),
+            ),
           Container(
             decoration: BoxDecoration(
               color: Colors.grey[900],
@@ -146,10 +204,8 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.text_fields, color: Colors.white),
-                  onPressed: () {
-                    // TODO: 텍스트 입력 모드 전환
-                  },
+                  icon: Icon(Icons.text_fields, color: Colors.white), // TODO: 텍스트 입력 모드 전환
+                  onPressed: () {},
                 ),
                 Expanded(
                   child: TextField(
@@ -161,32 +217,19 @@ class _ChatScreenState extends State<ChatScreen> {
                       border: InputBorder.none,
                     ),
                     onSubmitted: _handleSubmitted,
+                    textInputAction: TextInputAction.send,
                   ),
                 ),
                 IconButton(
                   icon: Icon(
-                    _isListening ? Icons.mic : Icons.mic_none,
+                    _isListening ? Icons.mic_off : Icons.mic,
                     color: _isListening ? Colors.red : Colors.white,
                   ),
-                  onPressed: () {
-                    if (_isListening) {
-                      _stopListening();
-                    } else {
-                      _startListening();
-                    }
-                  },
+                  onPressed: _isListening ? _stopListening : _startListening,
                 ),
                 IconButton(
-                  icon: Icon(
-                    _isRecording ? Icons.stop : Icons.fiber_manual_record,
-                    color: _isRecording ? Colors.red : Colors.green,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isRecording = !_isRecording;
-                    });
-                    // TODO: 녹음 기능 구현
-                  },
+                  icon: Icon(Icons.send, color: Colors.white),
+                  onPressed: () => _handleSubmitted(_textController.text),
                 ),
               ],
             ),
@@ -203,7 +246,7 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: EdgeInsets.symmetric(vertical: 5.0),
         padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
         decoration: BoxDecoration(
-          color: message.isUser ? Colors.blue[700] : Colors.grey[800],
+          color: message.isUser ? Colors.deepPurpleAccent : Colors.grey[800],
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20.0),
             topRight: Radius.circular(20.0),
@@ -215,7 +258,7 @@ class _ChatScreenState extends State<ChatScreen> {
           crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
-              message.isUser ? "You" : widget.characterName,
+              message.isUser ? "나" : widget.characterName,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
@@ -242,4 +285,4 @@ class ChatMessage {
   final bool isUser;
 
   ChatMessage({required this.text, required this.isUser});
-} 
+}

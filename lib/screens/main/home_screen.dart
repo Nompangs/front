@@ -1,23 +1,13 @@
 import 'package:nompangs/main.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:nompangs/widgets/bottom_nav_bar.dart';
 import 'package:nompangs/widgets/mic_button.dart';
-import 'package:nompangs/services/gemini_service.dart';
 import 'package:nompangs/screens/character/character_create_screen.dart';
 import 'dart:async';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({required this.text, required this.isUser});
-}
 
 class HomeScreen extends StatefulWidget {
-  final List<Map<String, dynamic>>? tasks;
-
-  HomeScreen({this.tasks});
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -25,30 +15,24 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Timer? _deeplinkWatcher;
-  List<Map<String, dynamic>> _tasks = [];
-  late GeminiService _geminiService;
-  List<ChatMessage> _chatMessages = [];
-  late FlutterTts flutterTts;
-
-  // 딥링크 확인을 위한 카운터 및 최대 확인 횟수
   int _deeplinkCheckCount = 0;
-  final int _maxDeeplinkChecks = 5; // 예: 최대 5번 (1.5초) 정도만 체크
+  final int _maxDeeplinkChecks = 5;
 
   @override
   void initState() {
     super.initState();
-    if (widget.tasks != null) {
-      _tasks = List.from(widget.tasks!);
-    }
-    _geminiService = GeminiService();
-    flutterTts = FlutterTts();
-    _initTts();
 
     _deeplinkWatcher = Timer.periodic(Duration(milliseconds: 300), (timer) async {
       if (pendingRoomId != null) {
         final roomId = pendingRoomId!;
         try {
-          await Navigator.pushNamed(context, '/chat/$roomId');
+          // 딥링크로 ChatScreen 이동 시, 캐릭터 정보가 필요합니다.
+          // 현재 pendingRoomId만으로는 캐릭터 정보를 알 수 없으므로,
+          // 딥링크 처리 로직에서 캐릭터 정보를 가져오거나,
+          // roomId에 해당하는 캐릭터 정보를 조회하는 로직이 필요합니다.
+          // 임시로 기본 캐릭터로 이동하도록 처리하거나, 에러 처리 필요.
+          print('🚨 [Timer] 딥링크로 ChatScreen 이동 시 캐릭터 정보 누락. roomId: $roomId');
+          // 예시: Navigator.pushNamed(context, '/chat/$roomId', arguments: { 'characterName': '딥링크 친구', ... });
         } catch (e) {
           print('❌ [Timer] 채팅방 이동 실패: $e');
         } finally {
@@ -56,13 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
           timer.cancel();
         }
       } else {
-        // pendingRoomId가 null인 경우
         _deeplinkCheckCount++;
-        print('Timer tick - current pendingRoomId: $pendingRoomId, check count: $_deeplinkCheckCount / $_maxDeeplinkChecks');
         if (_deeplinkCheckCount >= _maxDeeplinkChecks) {
-          print('🗓️ [Timer] 최대 확인 횟수 도달. pendingRoomId가 없어 타이머를 취소합니다.');
           timer.cancel();
-          print('🛑 [Timer] 타이머 취소됨 (pendingRoomId 없음)');
         }
       }
     });
@@ -70,61 +50,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    _deeplinkWatcher?.cancel(); // ✅ 반드시 해제
-    flutterTts.stop();
+    _deeplinkWatcher?.cancel();
     super.dispose();
   }
+  void _startChatWithDefaultAI(String inputText) {
+    if (inputText.trim().isEmpty) return;
 
-  _initTts() async {
-    await flutterTts.setLanguage("ko-KR");
-    await flutterTts.setSpeechRate(0.5);
-    await flutterTts.setVolume(1.0);
-    await flutterTts.setPitch(1.0);
-  }
+    // "기본 AI 친구" 정보 정의 (예: 야옹이)
+    // 이 정보는 GeminiService의 기본 프롬프트와 일치하거나,
+    // 사용자가 선택한 기본 캐릭터 등으로 동적으로 설정될 수 있습니다.
+    final defaultCharacter = {
+      'name': '야옹이',
+      'tags': ['감성적인', '귀여운', '엉뚱한'],
+      'greeting': '안녕이다옹! 무슨 일 있었냐옹?',
+    };
 
-  void _handleSpeechInput(String inputText) async {
-    setState(() {
-      _chatMessages.add(ChatMessage(text: inputText, isUser: true));
-    });
-
-    final response = await _geminiService.analyzeUserInput(inputText);
-    if (response != null && response["response"] != null) {
-      final aiResponseText = response["response"];
-      setState(() {
-        _chatMessages.add(ChatMessage(text: aiResponseText, isUser: false));
-      });
-      if (aiResponseText.isNotEmpty) {
-        await flutterTts.speak(aiResponseText);
-      }
-    } else {
-      const String errorMessage = "⚠️ 오류: 응답을 받을 수 없습니다.";
-      setState(() {
-        _chatMessages.add(ChatMessage(text: errorMessage, isUser: false));
-      });
-      await flutterTts.speak(errorMessage);
-      print("⚠️ Error: Gemini response is null.");
-    }
-  }
-
-  void _showResponseDialog(String response) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("Gemini Response"),
-          content: Text(response),
-          actions: <Widget>[
-            TextButton(
-              child: Text("OK"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          characterName: defaultCharacter['name'] as String,
+          personalityTags: defaultCharacter['tags'] as List<String>,
+          greeting: defaultCharacter['greeting'] as String,
+          initialUserMessage: inputText,
+        ),
+      ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -156,15 +109,17 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushNamed(context, '/qr-scanner');
             },
           ),
-          CircleAvatar(backgroundImage: AssetImage('assets/profile.png')),
-          SizedBox(width: 16),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(backgroundImage: AssetImage('assets/profile.png')),
+          )
         ],
       ),
-      body: _chatMessages.isEmpty ? _buildEmptyScreen() : _buildChatScreen(),
+      body: _buildEmptyScreen(), // 채팅 UI 제거, 빈 화면 또는 다른 UI 표시
       bottomNavigationBar: BottomNavBar(),
       floatingActionButton: MicButton(
-        onSpeechResult: _handleSpeechInput,
-        onEventDetected: (event) {},
+        onSpeechResult: _startChatWithDefaultAI, // STT 결과를 ChatScreen으로 전달
+        onEventDetected: (event) {}, // 일정 감지 기능은 현재 사용되지 않음
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
@@ -178,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Image.asset('assets/task_image.png', width: 250),
           SizedBox(height: 20),
           Text(
-            'What do you want to do today?',
+            '무엇을 도와드릴까요?',
             style: TextStyle(
               color: Colors.white,
               fontSize: 20,
@@ -187,89 +142,11 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           SizedBox(height: 10),
           Text(
-            'Speak and interact with your AI friend!',
+            '마이크 버튼을 눌러 AI 친구와 대화해보세요!',
             style: TextStyle(color: Colors.white60, fontSize: 16),
+            textAlign: TextAlign.center,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildChatScreen() {
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.builder(
-            reverse: true,
-            padding: EdgeInsets.all(16.0),
-            itemCount: _chatMessages.length,
-            itemBuilder: (context, index) {
-              final message = _chatMessages[_chatMessages.length - 1 - index];
-              return _buildChatMessageBubble(message);
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purpleAccent,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            onPressed: () {
-              setState(() {
-                _chatMessages.clear();
-              });
-            },
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text('Clear Chat', style: TextStyle(fontSize: 16)),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildChatMessageBubble(ChatMessage message) {
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 5.0),
-        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
-        decoration: BoxDecoration(
-          color: message.isUser ? Colors.deepPurpleAccent : Colors.grey[800],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20.0),
-            topRight: Radius.circular(20.0),
-            bottomLeft: message.isUser ? Radius.circular(20.0) : Radius.circular(0),
-            bottomRight: message.isUser ? Radius.circular(0) : Radius.circular(20.0),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.isUser ? "You" : "AI Friend",
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 4),
-            Text(
-              message.text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
