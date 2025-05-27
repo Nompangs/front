@@ -4,9 +4,9 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   app_links
+  audioplayers_windows
   firebase_auth
   firebase_core
-  flutter_tts
   share_plus
   url_launcher_windows
 )

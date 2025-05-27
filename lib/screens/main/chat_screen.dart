@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
+import 'package:nompangs/services/zyphra_tts_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
@@ -26,7 +26,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  late FlutterTts _flutterTts;
+  late ZyphraTtsService _zyphraTtsService;
   bool _isRecording = false; // TODO: 녹음 기능 구현 시 사용
   late GeminiService _geminiService;
   bool _isProcessing = false;
@@ -34,9 +34,9 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    _zyphraTtsService = ZyphraTtsService();
     _geminiService = GeminiService();
     _initSpeech();
-    _initTts();
 
     if (widget.greeting != null && widget.greeting!.isNotEmpty) {
       _addMessage(widget.greeting!, false, speak: true);
@@ -55,20 +55,12 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  void _initTts() async {
-    _flutterTts = FlutterTts();
-    await _flutterTts.setLanguage("ko-KR");
-    await _flutterTts.setSpeechRate(0.5);
-    await _flutterTts.setVolume(1.0);
-    await _flutterTts.setPitch(1.0);
-  }
-
   void _addMessage(String text, bool isUser, {bool speak = false}) {
     setState(() {
       _messages.insert(0, ChatMessage(text: text, isUser: isUser));
     });
     if (speak && text.isNotEmpty) {
-      _flutterTts.speak(text);
+      _zyphraTtsService.speak(text);
     }
   }
 
@@ -131,7 +123,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _textController.dispose();
     _speech.stop();
-    _flutterTts.stop();
+    _zyphraTtsService.dispose();
     super.dispose();
   }
 
