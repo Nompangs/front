@@ -5,6 +5,7 @@ import 'package:nompangs/widgets/mic_button.dart';
 import 'package:nompangs/screens/character/character_create_screen.dart';
 import 'dart:async';
 import 'package:nompangs/screens/main/chat_screen.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 class HomeScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _requestMicrophonePermission();
 
     _deeplinkWatcher = Timer.periodic(Duration(milliseconds: 300), (timer) async {
       if (pendingRoomId != null) {
@@ -53,6 +55,43 @@ class _HomeScreenState extends State<HomeScreen> {
     _deeplinkWatcher?.cancel();
     super.dispose();
   }
+
+  Future<void> _requestMicrophonePermission() async { 
+    final status = await Permission.microphone.status; 
+    if (status.isDenied || status.isRestricted || status.isPermanentlyDenied) { 
+      // 권한이 없거나 영구적으로 거부된 경우 요청 
+      final result = await Permission.microphone.request(); 
+      if (result.isGranted) { 
+        print("마이크 권한이 허용되었습니다."); 
+      } else if (result.isDenied) { 
+        print("마이크 권한이 거부되었습니다."); 
+        _showPermissionDeniedSnackBar("마이크 권한이 거부되어 음성 인식을 사용할 수 없습니다."); 
+      } else if (result.isPermanentlyDenied) { 
+        print("마이크 권한이 영구적으로 거부되었습니다. 설정에서 변경해주세요."); 
+        _showPermissionDeniedSnackBar("마이크 권한이 영구적으로 거부되었습니다. 앱 설정에서 권한을 허용해주세요."); 
+        openAppSettings(); // 앱 설정 열기 
+      } 
+    } else if (status.isGranted) { 
+      print("마이크 권한이 이미 허용되었습니다."); 
+    } 
+  } 
+
+  void _showPermissionDeniedSnackBar(String message) { 
+    ScaffoldMessenger.of(context).showSnackBar( 
+      SnackBar( 
+        content: Text(message), 
+        backgroundColor: Colors.red, 
+        duration: Duration(seconds: 5), 
+        action: SnackBarAction( 
+          label: '설정 열기', 
+          onPressed: () { 
+            openAppSettings(); 
+          }, 
+        ), 
+      ), 
+    ); 
+  } 
+
   void _startChatWithDefaultAI(String inputText) {
     if (inputText.trim().isEmpty) return;
 
