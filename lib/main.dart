@@ -11,6 +11,8 @@ import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:nompangs/services/firebase_manager.dart';
+import 'package:nompangs/helpers/deeplink_helper.dart';
 
 String? pendingRoomId;
 
@@ -24,6 +26,7 @@ void main() async {
   }
 
   await Firebase.initializeApp();
+  await FirebaseManager.initialize();
   
   runApp(NompangsApp());
 }
@@ -65,54 +68,33 @@ class _NompangsAppState extends State<NompangsApp> {
     });
   }
 
-  void _handleDeepLink(Uri uri) {
+  void _handleDeepLink(Uri uri) async {
     final roomId = uri.queryParameters['roomId'];
     final encodedData = uri.queryParameters['data'];
     print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId');
-    
+
     if (roomId != null) {
       if (encodedData != null) {
-        try {
-          // base64 디코딩 및 JSON 파싱
-          final decodedData = utf8.decode(base64Url.decode(encodedData));
-          final characterData = jsonDecode(decodedData);
-          
-          if (characterData.containsKey('name') && 
-              characterData.containsKey('tags')) {
-            
-            // GlobalKey를 사용하여 Navigator에 접근
-            _navigatorKey.currentState?.pushNamed(
-              '/chat/$roomId',
-              arguments: {
-                'characterName': characterData['name'],
-                'personalityTags': List<String>.from(characterData['tags']),
-                'greeting': characterData['greeting'],
-              },
-            );
-            return;
-          }
-        } catch (e) {
-          print('Error parsing character data: $e');
-          _showError('캐릭터 정보를 읽을 수 없습니다.');
+        final chatData = await DeepLinkHelper.processCharacterData(encodedData);
+
+        if (chatData != null) {
+          _navigatorKey.currentState?.pushNamed(
+            '/chat/${chatData['personaId']}',
+            arguments: chatData,
+          );
+        } else {
+          DeepLinkHelper.showError(
+              _navigatorKey.currentContext!,
+              '캐릭터 정보를 읽을 수 없습니다.'
+          );
         }
       } else {
         // data 파라미터가 없는 경우
-        _showError('캐릭터 정보가 없는 QR 코드입니다.');
+        DeepLinkHelper.showError(
+            _navigatorKey.currentContext!,
+            '캐릭터 정보가 없는 QR 코드입니다.'
+        );
       }
-    }
-  }
-
-  void _showError(String message) {
-    // GlobalKey를 사용하여 현재 컨텍스트에 접근
-    final context = _navigatorKey.currentContext;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 

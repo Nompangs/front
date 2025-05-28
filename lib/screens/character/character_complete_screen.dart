@@ -6,6 +6,8 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
+import 'package:nompangs/services/character_manager.dart';
+import 'package:nompangs/utils/persona_utils.dart';
 
 class CharacterCompleteScreen extends StatelessWidget {
   final String characterName;
@@ -41,6 +43,8 @@ class CharacterCompleteScreen extends StatelessWidget {
 
   Future<void> _downloadAndShareQRCode(BuildContext context) async {
     try {
+      await _saveCharacterToFirebase(); // firebase에 저장
+
       final qrData = _generateQRData();
       print('Generated QR data: $qrData'); // 디버깅을 위한 데이터 출력
       
@@ -72,6 +76,21 @@ class CharacterCompleteScreen extends StatelessWidget {
           const SnackBar(content: Text('QR 코드 저장 중 오류가 발생했습니다.')),
         );
       }
+    }
+  }
+
+  Future<void> _saveCharacterToFirebase() async {
+    try {
+      final characterData = {
+        'name': characterName,
+        'tags': personalityTags,
+        'greeting': greeting,
+      };
+
+      final personaId = await CharacterManager.instance.handleCharacterFromQR(characterData);
+      print('✅ 캐릭터가 Firebase에 저장됨: $personaId');
+    } catch (e) {
+      print('❌ Firebase 저장 실패: $e');
     }
   }
 
