@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
 import 'package:nompangs/services/zyphra_tts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
@@ -49,10 +50,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _initSpeech() async {
-    await _speech.initialize(
-      onError: (errorNotification) => print('STT Error: $errorNotification'),
-      onStatus: (status) => print('STT Status: $status'),
-    );
+    if (await Permission.microphone.request().isGranted) { 
+      bool available = await _speech.initialize( 
+        onError: (errorNotification) => print('STT Error: $errorNotification'), 
+        onStatus: (status) => print('STT Status: $status'), 
+      ); 
+      if (!available) { 
+        print('STT를 사용할 수 없음. 마이크 권한이 거부되었거나 초기화에 실패했습니다.'); 
+      } 
+    } else { 
+      print('마이크 권한이 필요합니다.'); 
+    } 
   }
 
   void _addMessage(String text, bool isUser, {bool speak = false}) {
@@ -93,7 +101,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startListening() async {
     if (!_isListening && !_isProcessing) {
-      bool available = await _speech.initialize();
+      bool available = await _speech.initialize( 
+        onError: (errorNotification) => print('STT Error: $errorNotification'), 
+        onStatus: (status) => print('STT Status: $status'), 
+      ); 
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
