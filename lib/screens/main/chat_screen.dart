@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
-// import 'package:nompangs/services/zyphra_tts_service.dart'; // Zyphra 대신 Supertone 사용
-import 'package:nompangs/services/supertone_service.dart'; // SupertoneService import
+import 'package:nompangs/services/supertone_service.dart'; 
 import 'package:permission_handler/permission_handler.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -28,17 +27,17 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  // late ZyphraTtsService _zyphraTtsService; // Zyphra 대신 Supertone 사용
-  late SupertoneService _supertoneService; // SupertoneService로 변경
-  bool _isRecording = false; // TODO: 녹음 기능 구현 시 사용
+  
+  late SupertoneService _supertoneService; 
+  bool _isRecording = false; 
   late GeminiService _geminiService;
   bool _isProcessing = false;
 
   @override
   void initState() {
     super.initState();
-    // _zyphraTtsService = ZyphraTtsService(); // Zyphra 대신 Supertone 사용
-    _supertoneService = SupertoneService(); // SupertoneService로 초기화
+    
+    _supertoneService = SupertoneService(); 
     _geminiService = GeminiService();
     _initSpeech();
 
@@ -71,8 +70,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: text, isUser: isUser));
     });
     if (speak && text.isNotEmpty) {
-      // _zyphraTtsService.speak(text); // Zyphra 대신 Supertone 사용
-      _supertoneService.speak(text); // SupertoneService의 speak 호출
+      
+      _supertoneService.speak(text); 
     }
   }
 
@@ -87,7 +86,7 @@ class _ChatScreenState extends State<ChatScreen> {
     };
 
     final response = await _geminiService.analyzeUserInput(userInput, characterProfile: characterProfile);
-    String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; // 기본 오류 메시지
+    String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; 
     if (response != null && response["response"] != null && (response["response"] as String).isNotEmpty) {
       aiResponseText = response["response"] as String;
     }
@@ -120,8 +119,8 @@ class _ChatScreenState extends State<ChatScreen> {
             }
           },
           localeId: "ko_KR",
-          listenFor: Duration(seconds: 10), // 예시: 최대 10초간 듣기
-          pauseFor: Duration(seconds: 3),   // 예시: 3초간 말 없으면 중단 (finalResult 트리거)
+          listenFor: Duration(seconds: 10), 
+          pauseFor: Duration(seconds: 3),   
         );
       }
     }
@@ -138,8 +137,6 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _textController.dispose();
     _speech.stop();
-    // _zyphraTtsService.dispose(); // Zyphra 대신 Supertone 사용
-    // _supertoneService.dispose(); // SupertoneService에 dispose 메서드가 있다면 호출
     super.dispose();
   }
 
@@ -212,7 +209,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.text_fields, color: Colors.white), // TODO: 텍스트 입력 모드 전환
+                  icon: Icon(Icons.text_fields, color: Colors.white), 
                   onPressed: () {},
                 ),
                 Expanded(
