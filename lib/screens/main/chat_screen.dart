@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
-import 'package:nompangs/services/zyphra_tts_service.dart';
+// import 'package:nompangs/services/zyphra_tts_service.dart'; // Zyphra 대신 Supertone 사용
+import 'package:nompangs/services/supertone_service.dart'; // SupertoneService import
 import 'package:permission_handler/permission_handler.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -27,7 +28,8 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  late ZyphraTtsService _zyphraTtsService;
+  // late ZyphraTtsService _zyphraTtsService; // Zyphra 대신 Supertone 사용
+  late SupertoneService _supertoneService; // SupertoneService로 변경
   bool _isRecording = false; // TODO: 녹음 기능 구현 시 사용
   late GeminiService _geminiService;
   bool _isProcessing = false;
@@ -35,7 +37,8 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _zyphraTtsService = ZyphraTtsService();
+    // _zyphraTtsService = ZyphraTtsService(); // Zyphra 대신 Supertone 사용
+    _supertoneService = SupertoneService(); // SupertoneService로 초기화
     _geminiService = GeminiService();
     _initSpeech();
 
@@ -50,17 +53,17 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _initSpeech() async {
-    if (await Permission.microphone.request().isGranted) { 
-      bool available = await _speech.initialize( 
-        onError: (errorNotification) => print('STT Error: $errorNotification'), 
-        onStatus: (status) => print('STT Status: $status'), 
-      ); 
-      if (!available) { 
-        print('STT를 사용할 수 없음. 마이크 권한이 거부되었거나 초기화에 실패했습니다.'); 
-      } 
-    } else { 
-      print('마이크 권한이 필요합니다.'); 
-    } 
+    if (await Permission.microphone.request().isGranted) {
+      bool available = await _speech.initialize(
+        onError: (errorNotification) => print('STT Error: $errorNotification'),
+        onStatus: (status) => print('STT Status: $status'),
+      );
+      if (!available) {
+        print('STT를 사용할 수 없음. 마이크 권한이 거부되었거나 초기화에 실패했습니다.');
+      }
+    } else {
+      print('마이크 권한이 필요합니다.');
+    }
   }
 
   void _addMessage(String text, bool isUser, {bool speak = false}) {
@@ -68,7 +71,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: text, isUser: isUser));
     });
     if (speak && text.isNotEmpty) {
-      _zyphraTtsService.speak(text);
+      // _zyphraTtsService.speak(text); // Zyphra 대신 Supertone 사용
+      _supertoneService.speak(text); // SupertoneService의 speak 호출
     }
   }
 
@@ -101,10 +105,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startListening() async {
     if (!_isListening && !_isProcessing) {
-      bool available = await _speech.initialize( 
-        onError: (errorNotification) => print('STT Error: $errorNotification'), 
-        onStatus: (status) => print('STT Status: $status'), 
-      ); 
+      bool available = await _speech.initialize(
+        onError: (errorNotification) => print('STT Error: $errorNotification'),
+        onStatus: (status) => print('STT Status: $status'),
+      );
       if (available) {
         setState(() => _isListening = true);
         _speech.listen(
@@ -129,12 +133,13 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() => _isListening = false);
     }
   }
-  
+
   @override
   void dispose() {
     _textController.dispose();
     _speech.stop();
-    _zyphraTtsService.dispose();
+    // _zyphraTtsService.dispose(); // Zyphra 대신 Supertone 사용
+    // _supertoneService.dispose(); // SupertoneService에 dispose 메서드가 있다면 호출
     super.dispose();
   }
 
