@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
-import 'package:nompangs/services/supertone_service.dart'; 
 import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/services/supertone_service.dart'; 
+// import 'package:nompangs/services/hume_service.dart';
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
@@ -29,6 +30,7 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isListening = false;
   
   late SupertoneService _supertoneService; 
+  // late HumeAiTtsService _humeAiTtsService;
   bool _isRecording = false; 
   late GeminiService _geminiService;
   bool _isProcessing = false;
@@ -38,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     
     _supertoneService = SupertoneService(); 
+    // _humeAiTtsService = HumeAiTtsService();
     _geminiService = GeminiService();
     _initSpeech();
 
@@ -65,15 +68,25 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _addMessage(String text, bool isUser, {bool speak = false}) {
-    setState(() {
-      _messages.insert(0, ChatMessage(text: text, isUser: isUser));
-    });
-    if (speak && text.isNotEmpty) {
-      
-      _supertoneService.speak(text); 
+  void _addMessage(String text, bool isUser, {bool speak = false}) async { // speak가 true일 때 비동기 처리를 위해 async 추가
+  setState(() {
+    _messages.insert(0, ChatMessage(text: text, isUser: isUser)); //
+  });
+  if (speak && text.isNotEmpty) {
+    try {
+      _supertoneService.speak(text); // 기존 것 주석 처리 또는 삭제
+      // await _humeAiTtsService.speak(text); // Hume AI TTS 서비스의 speak 메소드 호출
+    } catch (e) {
+      print("Error playing TTS: $e");
+      // 사용자에게 TTS 재생 실패 알림 (예: SnackBar)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('음성 재생 중 오류가 발생했습니다.')),
+        );
+      }
     }
   }
+}
 
   Future<void> _requestAiResponse(String userInput) async {
     if (_isProcessing) return;
@@ -135,8 +148,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    _textController.dispose();
-    _speech.stop();
+    _textController.dispose(); //
+    _speech.stop(); //
+    // _humeAiTtsService.dispose(); // HumeAiTtsService의 dispose 메소드 호출
     super.dispose();
   }
 
