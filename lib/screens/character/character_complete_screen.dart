@@ -5,7 +5,7 @@ import 'dart:ui' as ui;
 import 'dart:io';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
-import 'package:nompangs/screens/main/chat_screen.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/services/character_manager.dart';
 import 'package:nompangs/utils/persona_utils.dart';
 
@@ -216,9 +216,11 @@ class CharacterCompleteScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChatScreen(
+                        builder: (context) => ChatTextScreen(
                           characterName: characterName,
+                          characterHandle: '@User_${DateTime.now().millisecondsSinceEpoch}',
                           personalityTags: personalityTags,
+                          greeting: greeting,
                         ),
                       ),
                     );
