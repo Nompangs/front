@@ -1,6 +1,7 @@
 // lib/chat_text_screen.dart
 
 import 'package:flutter/material.dart';
+import 'chat_speaker_screen.dart'; // ChatSpeakerScreen으로 라우팅하기 위해 추가
 
 class ChatTextScreen extends StatefulWidget {
   final String characterName;
@@ -24,13 +25,12 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
 
-  /// 메시지 데이터 모델: 텍스트와 isUser 여부를 저장
   List<_Message> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    // 앱 시작 시, 왼쪽 흰색 버블 하나만 초기 메시지로 삽입
+    // 초기 왼쪽 버블 한 개만 추가
     _messages = [
       _Message(
         text: '헤이~ 오늘 강남 어땠어? 사람 많았지? 나였으면 정신 살짝 나갔을지도 ㅋㅋ 🤯',
@@ -46,7 +46,6 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
     super.dispose();
   }
 
-  /// 사용자가 보낸 메시지를 _messages에 추가하고 스크롤을 맨 아래로 이동
   void _sendMessage() {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
@@ -56,7 +55,6 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
       _inputController.clear();
     });
 
-    // 프레임이 그려진 뒤에 스크롤 이동
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -70,29 +68,23 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 사용자가 보낸 메시지가 한 개라도 있는지 체크
     final bool hasUserMessage = _messages.any((msg) => msg.isUser);
 
     return Scaffold(
-      // 전체 화면 배경을 흰색으로 지정 (상단 상태 표시줄 + 내비게이션 바도 흰색)
       backgroundColor: Colors.white,
       body: SafeArea(
-        // bottom: true (기본값)로 두어, 하단 입력창이 내비게이션 바 위에 올라가지 않도록 함
         child: Column(
           children: [
-            // 1) 상단 내비게이션 바 (흰색 배경)
             _TopNavigationBar(
               characterName: widget.characterName,
               characterHandle: widget.characterHandle,
             ),
 
-            // 2) 나머지 영역: F2F2F2 배경
             Expanded(
               child: Container(
                 color: const Color(0xFFF2F2F2),
                 child: Column(
                   children: [
-                    // 2-1) 프로필 카드: 첫 사용자 메시지 전까지만 노출
                     if (!hasUserMessage)
                       _ProfileCard(
                         characterName: widget.characterName,
@@ -100,7 +92,6 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
                         personalityTags: widget.personalityTags,
                       ),
 
-                    // 2-2) 채팅 메시지 영역 (ListView)
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -110,17 +101,9 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
                           itemBuilder: (context, index) {
                             final msg = _messages[index];
                             final bool isFirst = index == 0;
-
-                            // 첫 번째 메시지일 때 여백 조절:
-                            // • 프로필 카드가 보이는 동안(hasUserMessage == false): topPadding = 16
-                            // • 프로필 카드가 사라진 후(hasUserMessage == true): topPadding = 24
-                            final double topPadding;
-                            if (isFirst) {
-                              topPadding = hasUserMessage ? 24 : 16;
-                            } else {
-                              topPadding = 8;
-                            }
-
+                            final double topPadding = isFirst
+                                ? (hasUserMessage ? 24 : 16)
+                                : 8;
                             return Padding(
                               padding: EdgeInsets.only(top: topPadding),
                               child: _ChatBubble(
@@ -133,14 +116,10 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
                       ),
                     ),
 
-                    // 2-3) 하단 입력창
-                    //     SafeArea를 다시 한번 사용하여, 기기 하단 내비게이션바 위로 올라오게 함
-                    SafeArea(
-                      top: false,
-                      child: _ChatInputBar(
-                        controller: _inputController,
-                        onSend: _sendMessage,
-                      ),
+                    // 하단 입력창: 이 위치에서 ChatInputBar 호출
+                    _ChatInputBar(
+                      controller: _inputController,
+                      onSend: _sendMessage,
                     ),
                   ],
                 ),
@@ -153,17 +132,12 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
   }
 }
 
-/// 메시지 데이터 모델
 class _Message {
   final String text;
   final bool isUser;
   _Message({required this.text, required this.isUser});
 }
 
-/// ============================================================
-/// 1) 상단 내비게이션 바 (_TopNavigationBar)
-///    - 배경 흰색(0xFFFFFFFF)
-/// ============================================================
 class _TopNavigationBar extends StatelessWidget {
   final String characterName;
   final String characterHandle;
@@ -177,13 +151,12 @@ class _TopNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56, // 내비게이션 바 높이
-      color: Colors.white, // 흰색 배경
+      height: 56,
+      color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // 뒤로가기 아이콘
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -195,7 +168,6 @@ class _TopNavigationBar extends StatelessWidget {
             onPressed: () => Navigator.of(context).maybePop(),
           ),
 
-          // 프로필 원형 썸네일 (32×32)
           ClipOval(
             child: Image.asset(
               'assets/profile.png',
@@ -206,7 +178,6 @@ class _TopNavigationBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // 캐릭터 이름 / 핸들
           Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -233,7 +204,6 @@ class _TopNavigationBar extends StatelessWidget {
 
           const Spacer(),
 
-          // 음성(스피커) 아이콘
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
@@ -242,23 +212,18 @@ class _TopNavigationBar extends StatelessWidget {
               size: 24,
               color: Color(0xFF333333),
             ),
-            onPressed: () {
-              // 음성 출력 기능 (필요 시 구현)
-            },
+            onPressed: () {},
           ),
 
-          // 더보기(세 점) 아이콘
           IconButton(
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             icon: const Icon(
-              Icons.more_vert,
+              Icons.more_horiz,
               size: 24,
               color: Color(0xFF333333),
             ),
-            onPressed: () {
-              // 메뉴 기능 (필요 시 구현)
-            },
+            onPressed: () {},
           ),
         ],
       ),
@@ -266,9 +231,6 @@ class _TopNavigationBar extends StatelessWidget {
   }
 }
 
-/// ============================================================
-/// 2) 프로필 카드 위젯 (_ProfileCard)
-/// ============================================================
 class _ProfileCard extends StatelessWidget {
   final String characterName;
   final String characterHandle;
@@ -293,7 +255,6 @@ class _ProfileCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 타원형 프로필 이미지(100×100) + 텍스트 블록
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -306,11 +267,11 @@ class _ProfileCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
+
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 캐릭터 이름 (24, Bold)
                     Text(
                       characterName,
                       style: const TextStyle(
@@ -320,7 +281,6 @@ class _ProfileCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    // "By $characterHandle" (16, Regular, 보라색)
                     Text(
                       'By $characterHandle',
                       style: const TextStyle(
@@ -330,7 +290,6 @@ class _ProfileCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    // 해시태그 Row
                     Row(
                       children: [
                         for (int i = 0; i < personalityTags.length; i++) ...[
@@ -362,8 +321,9 @@ class _ProfileCard extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 16),
-          // 하단 Stat 텍스트
+
           const Text.rich(
             TextSpan(
               children: [
@@ -408,10 +368,6 @@ class _ProfileCard extends StatelessWidget {
   }
 }
 
-/// ============================================================
-/// 3) 채팅 버블 컴포넌트 (_ChatBubble)
-///    - isUser true면 오른쪽 보라색, false면 왼쪽 흰색
-/// ============================================================
 class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
@@ -424,11 +380,8 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 사용자가 보낸 메시지는 보라색 배경(#7C3AED), 흰색 텍스트
     const userBgColor = Color(0xFF7C3AED);
     const userTextColor = Colors.white;
-
-    // 기존 메시지는 흰색 배경, 다크 그레이 텍스트
     const otherBgColor = Colors.white;
     const otherTextColor = Color(0xFF222222);
 
@@ -460,11 +413,6 @@ class _ChatBubble extends StatelessWidget {
   }
 }
 
-/// ============================================================
-/// 4) 하단 입력창 컴포넌트 (_ChatInputBar)
-///    - 텍스트 입력 유무에 따라 send / call 아이콘 변경
-///    - send 누르면 onSend 콜백 호출
-/// ============================================================
 class _ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
@@ -503,7 +451,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    // 하단 기기의 네비게이션 바 영역을 고려해 viewPadding.bottom 만큼 추가 여백
+    // 하단 안전 영역 높이
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
     return Padding(
@@ -513,7 +461,6 @@ class _ChatInputBarState extends State<_ChatInputBar> {
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
         child: Row(
           children: [
-            // 이미지/파일 선택 아이콘
             IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
@@ -522,11 +469,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 size: 28,
                 color: Color(0xFF777777),
               ),
-              onPressed: () => null,
+              onPressed: () {},
             ),
             const SizedBox(width: 12),
 
-            // 메시지 입력창
             Expanded(
               child: Container(
                 height: 40,
@@ -545,7 +491,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                       color: Color(0xFFAAAAAA),
                     ),
                     border: InputBorder.none,
-                    isCollapsed: true, // 내부 여백 최소화
+                    isCollapsed: true,
                   ),
                   style: const TextStyle(
                     fontSize: 14,
@@ -557,7 +503,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
             ),
             const SizedBox(width: 12),
 
-            // send 또는 call 아이콘
+            // ⑦ 전화기 버튼: 텍스트 입력 없으면 ChatSpeakerScreen으로 이동
             Container(
               width: 40,
               height: 40,
@@ -577,7 +523,14 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   if (_hasText) {
                     widget.onSend();
                   } else {
-                    // 전화 기능(필요 시 구현)
+                    // ⑦-1) 사용자가 텍스트를 입력하지 않은 상태에서 전화 버튼 누르면
+                    //       ChatSpeakerScreen으로 이동
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChatSpeakerScreen(),
+                      ),
+                    );
                   }
                 },
               ),
