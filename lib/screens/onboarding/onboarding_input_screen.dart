@@ -113,7 +113,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF7E9), // 베이지/크림색 배경
+      backgroundColor: const Color(0xFFFDF7E9), // 아이보리색 배경
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF7E9),
         elevation: 0,
@@ -135,156 +135,132 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
         ],
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 40),
-                    
-                    // 메인 타이틀
-                    const Text(
-                      '궁금해!\n나는 어떤 사람이야?',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                        height: 1.2,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 60),
-                    
-                    // 두 개의 별도 카드
-                    _buildBlueCard(),
-                    
-                    const SizedBox(height: -20), // 약간 겹치도록
-                    
-                    _buildPurpleCard(),
-                    
-                    // 검증 에러 메시지
-                    if (_validationError != null) 
-                      Padding(
-                        padding: const EdgeInsets.only(top: 20),
-                        child: Text(
-                          _validationError!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    
-                    const Spacer(),
-                    
-                    // 다음 버튼
-                    _buildNextButton(),
-                    
-                    const SizedBox(height: 40),
-                  ],
+            // 배경 섹션들
+            _buildBackgroundSections(),
+            
+            // 위에 floating되는 카드들
+            _buildFloatingCards(),
+            
+            // 하단 다음 버튼
+            _buildBottomButton(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackgroundSections() {
+    return Column(
+      children: [
+        // 아이보리색 상단 섹션
+        Container(
+          height: 200,
+          width: double.infinity,
+          color: const Color(0xFFFDF7E9),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 40),
+                const Text(
+                  '궁금해!\n나는 어떤 사람이야?',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                    height: 1.2,
+                  ),
                 ),
+              ],
+            ),
+          ),
+        ),
+        
+        // 파란색 중간 섹션
+        Container(
+          height: 120,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.blue.shade400,
+                Colors.blue.shade600,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        
+        // 보라색 하단 섹션 (여백없이)
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            color: const Color(0xFFE1BEE7),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFloatingCards() {
+    return Column(
+      children: [
+        const SizedBox(height: 180), // 타이틀 아래 위치
+        
+        // 이름 입력 floating 카드
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _buildNameInputCard(),
+        ),
+        
+        const SizedBox(height: 20),
+        
+        // 오류 메시지
+        if (_validationError != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              _validationError!,
+              style: const TextStyle(
+                color: Colors.red,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBlueCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.blue.shade400,
-            Colors.blue.shade600,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 0,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: _buildPersonalityButtonContent(),
-      ),
+        
+        const SizedBox(height: 40),
+        
+        // 입력 폼 floating 카드
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: _buildInputFormCard(),
+        ),
+      ],
     );
   }
 
-  Widget _buildPurpleCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE1BEE7), // 연한 보라색
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(
-          color: Colors.black,
-          width: 2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 0,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          children: [
-            // 첫 번째 드롭다운 - 위치
-            _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
-              setState(() {
-                _selectedLocation = value;
-              });
-            }),
-            
-            const SizedBox(height: 20),
-            
-            // 두 번째 드롭다운 - 기간
-            _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
-              setState(() {
-                _selectedDuration = value;
-              });
-            }),
-            
-            const SizedBox(height: 20),
-            
-            // 세 번째 입력 필드 - 사물 종류
-            _buildTextInputRow(_objectTypeController, '(이)에요.'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPersonalityButtonContent() {
+  Widget _buildNameInputCard() {
     return GestureDetector(
       onTap: () => _showNicknameDialog(),
       child: Container(
-        height: 60,
+        height: 70,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(35),
+          border: Border.all(color: Colors.black, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              spreadRadius: 0,
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Stack(
           children: [
@@ -292,19 +268,23 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text(
+                  Text(
                     '애칭',
                     style: TextStyle(
-                      color: Colors.grey, // 건너뛰기와 동일한 회색
+                      color: Colors.grey.shade600,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(width: 20),
                   Text(
-                    _nicknameController.text.isNotEmpty ? _nicknameController.text : '딥찐 말랑이',
-                    style: const TextStyle(
-                      color: Colors.black,
+                    _nicknameController.text.isNotEmpty 
+                        ? _nicknameController.text 
+                        : '딥찐 말랑이', // 회색 미리보기
+                    style: TextStyle(
+                      color: _nicknameController.text.isNotEmpty 
+                          ? Colors.black 
+                          : Colors.grey.shade500, // 미리보기는 회색
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -313,7 +293,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               ),
             ),
             Positioned(
-              bottom: 5,
+              bottom: 8,
               right: 20,
               child: Text(
                 '지금은 안볼거에요',
@@ -329,21 +309,90 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  Widget _buildDropdownRow(String? selectedValue, List<String> options, String suffix, Function(String?) onChanged) {
+  Widget _buildInputFormCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: Colors.black, width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          children: [
+            // 위치 드롭다운
+            _buildDropdownRow(
+              _selectedLocation, 
+              _locationOptions, 
+              '에서', 
+              '우리집 거실', // 미리보기 텍스트
+              (value) {
+                setState(() {
+                  _selectedLocation = value;
+                });
+              }
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 기간 드롭다운
+            _buildDropdownRow(
+              _selectedDuration, 
+              _durationOptions, 
+              '정도 함께한', 
+              '3개월', // 미리보기 텍스트
+              (value) {
+                setState(() {
+                  _selectedDuration = value;
+                });
+              }
+            ),
+            
+            const SizedBox(height: 20),
+            
+            // 사물 입력
+            _buildTextInputRow(_objectTypeController, '(이)에요.', '이 빨간 머그컵'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownRow(String? selectedValue, List<String> options, String suffix, String preview, Function(String?) onChanged) {
     return Row(
       children: [
         Expanded(
           child: Container(
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.grey.shade300),
             ),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: selectedValue,
                 isExpanded: true,
                 icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                hint: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    preview,
+                    style: TextStyle(
+                      color: Colors.grey.shade500, // 미리보기는 회색
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
                 style: const TextStyle(
                   color: Colors.black,
                   fontSize: 16,
@@ -376,15 +425,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  Widget _buildTextInputRow(TextEditingController controller, String suffix) {
+  Widget _buildTextInputRow(TextEditingController controller, String suffix, String preview) {
     return Row(
       children: [
         Expanded(
           child: Container(
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(25),
+              border: Border.all(color: Colors.grey.shade300),
             ),
             child: TextField(
               controller: controller,
@@ -393,12 +443,12 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                hintText: '예: 이 빨간 머그컵',
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                hintText: preview,
                 hintStyle: TextStyle(
-                  color: Colors.grey,
+                  color: Colors.grey.shade500, // 미리보기는 회색
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
                 ),
@@ -416,6 +466,15 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildBottomButton() {
+    return Positioned(
+      bottom: 40,
+      left: 20,
+      right: 20,
+      child: _buildNextButton(),
     );
   }
 
