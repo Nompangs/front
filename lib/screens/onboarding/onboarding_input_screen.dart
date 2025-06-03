@@ -195,11 +195,24 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           ),
         ),
         
-        // 보라색 하단 섹션 (여백없이)
+        // 보라색 하단 섹션 (테두리와 라운딩 추가)
         Expanded(
           child: Container(
             width: double.infinity,
-            color: const Color(0xFFE1BEE7),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE1BEE7),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+              border: Border.all(
+                color: Colors.black,
+                width: 2,
+              ),
+            ),
+            child: Container(), // 내용은 floating 카드가 담당
           ),
         ),
       ],
@@ -284,7 +297,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     style: TextStyle(
                       color: _nicknameController.text.isNotEmpty 
                           ? Colors.black 
-                          : Colors.grey.shade500, // 미리보기는 회색
+                          : Colors.grey, // 건너뛰기와 동일한 색상
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -296,7 +309,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               bottom: 8,
               right: 20,
               child: Text(
-                '지금은 안볼거에요',
+                '이름을 입력해주세요', // 변경된 텍스트
                 style: TextStyle(
                   color: Colors.red.shade300,
                   fontSize: 12,
@@ -386,15 +399,15 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
                     preview,
-                    style: TextStyle(
-                      color: Colors.grey.shade500, // 미리보기는 회색
+                    style: const TextStyle(
+                      color: Colors.grey, // 건너뛰기와 동일한 색상
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
                 style: const TextStyle(
-                  color: Colors.black,
+                  color: Colors.black, // 선택 후 검은색
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -439,7 +452,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             child: TextField(
               controller: controller,
               style: const TextStyle(
-                color: Colors.black,
+                color: Colors.black, // 입력 후 검은색
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
@@ -447,8 +460,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 hintText: preview,
-                hintStyle: TextStyle(
-                  color: Colors.grey.shade500, // 미리보기는 회색
+                hintStyle: const TextStyle(
+                  color: Colors.grey, // 건너뛰기와 동일한 색상
                   fontSize: 16,
                   fontWeight: FontWeight.w400,
                 ),
