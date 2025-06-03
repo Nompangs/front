@@ -29,7 +29,17 @@ mixin _$OnboardingState {
   String? get errorMessage => throw _privateConstructorUsedError;
   bool get isGenerating => throw _privateConstructorUsedError;
   double get generationProgress => throw _privateConstructorUsedError;
-  String get generationMessage => throw _privateConstructorUsedError;
+  String get generationMessage =>
+      throw _privateConstructorUsedError; // 새로운 필드들 추가 (6단계 플로우에 맞춤)
+  String get purpose => throw _privateConstructorUsedError; // Step 3: 사물의 용도
+  String get humorStyle => throw _privateConstructorUsedError; // Step 3: 유머 스타일
+  int? get introversion =>
+      throw _privateConstructorUsedError; // Step 6: 내외향성 (1-10)
+  int? get warmth => throw _privateConstructorUsedError; // Step 6: 감정표현 (1-10)
+  int? get competence =>
+      throw _privateConstructorUsedError; // Step 6: 유능함 (1-10)
+  String? get qrCodeUrl => throw _privateConstructorUsedError; // 완료: QR 코드 URL
+  FinalPersonality? get finalPersonality => throw _privateConstructorUsedError;
 
   /// Serializes this OnboardingState to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -58,10 +68,18 @@ abstract class $OnboardingStateCopyWith<$Res> {
     bool isGenerating,
     double generationProgress,
     String generationMessage,
+    String purpose,
+    String humorStyle,
+    int? introversion,
+    int? warmth,
+    int? competence,
+    String? qrCodeUrl,
+    FinalPersonality? finalPersonality,
   });
 
   $UserInputCopyWith<$Res>? get userInput;
   $CharacterCopyWith<$Res>? get generatedCharacter;
+  $FinalPersonalityCopyWith<$Res>? get finalPersonality;
 }
 
 /// @nodoc
@@ -88,6 +106,13 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
     Object? isGenerating = null,
     Object? generationProgress = null,
     Object? generationMessage = null,
+    Object? purpose = null,
+    Object? humorStyle = null,
+    Object? introversion = freezed,
+    Object? warmth = freezed,
+    Object? competence = freezed,
+    Object? qrCodeUrl = freezed,
+    Object? finalPersonality = freezed,
   }) {
     return _then(
       _value.copyWith(
@@ -136,6 +161,41 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
                     ? _value.generationMessage
                     : generationMessage // ignore: cast_nullable_to_non_nullable
                         as String,
+            purpose:
+                null == purpose
+                    ? _value.purpose
+                    : purpose // ignore: cast_nullable_to_non_nullable
+                        as String,
+            humorStyle:
+                null == humorStyle
+                    ? _value.humorStyle
+                    : humorStyle // ignore: cast_nullable_to_non_nullable
+                        as String,
+            introversion:
+                freezed == introversion
+                    ? _value.introversion
+                    : introversion // ignore: cast_nullable_to_non_nullable
+                        as int?,
+            warmth:
+                freezed == warmth
+                    ? _value.warmth
+                    : warmth // ignore: cast_nullable_to_non_nullable
+                        as int?,
+            competence:
+                freezed == competence
+                    ? _value.competence
+                    : competence // ignore: cast_nullable_to_non_nullable
+                        as int?,
+            qrCodeUrl:
+                freezed == qrCodeUrl
+                    ? _value.qrCodeUrl
+                    : qrCodeUrl // ignore: cast_nullable_to_non_nullable
+                        as String?,
+            finalPersonality:
+                freezed == finalPersonality
+                    ? _value.finalPersonality
+                    : finalPersonality // ignore: cast_nullable_to_non_nullable
+                        as FinalPersonality?,
           )
           as $Val,
     );
@@ -168,6 +228,20 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
       return _then(_value.copyWith(generatedCharacter: value) as $Val);
     });
   }
+
+  /// Create a copy of OnboardingState
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $FinalPersonalityCopyWith<$Res>? get finalPersonality {
+    if (_value.finalPersonality == null) {
+      return null;
+    }
+
+    return $FinalPersonalityCopyWith<$Res>(_value.finalPersonality!, (value) {
+      return _then(_value.copyWith(finalPersonality: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -189,12 +263,21 @@ abstract class _$$OnboardingStateImplCopyWith<$Res>
     bool isGenerating,
     double generationProgress,
     String generationMessage,
+    String purpose,
+    String humorStyle,
+    int? introversion,
+    int? warmth,
+    int? competence,
+    String? qrCodeUrl,
+    FinalPersonality? finalPersonality,
   });
 
   @override
   $UserInputCopyWith<$Res>? get userInput;
   @override
   $CharacterCopyWith<$Res>? get generatedCharacter;
+  @override
+  $FinalPersonalityCopyWith<$Res>? get finalPersonality;
 }
 
 /// @nodoc
@@ -220,6 +303,13 @@ class __$$OnboardingStateImplCopyWithImpl<$Res>
     Object? isGenerating = null,
     Object? generationProgress = null,
     Object? generationMessage = null,
+    Object? purpose = null,
+    Object? humorStyle = null,
+    Object? introversion = freezed,
+    Object? warmth = freezed,
+    Object? competence = freezed,
+    Object? qrCodeUrl = freezed,
+    Object? finalPersonality = freezed,
   }) {
     return _then(
       _$OnboardingStateImpl(
@@ -268,6 +358,41 @@ class __$$OnboardingStateImplCopyWithImpl<$Res>
                 ? _value.generationMessage
                 : generationMessage // ignore: cast_nullable_to_non_nullable
                     as String,
+        purpose:
+            null == purpose
+                ? _value.purpose
+                : purpose // ignore: cast_nullable_to_non_nullable
+                    as String,
+        humorStyle:
+            null == humorStyle
+                ? _value.humorStyle
+                : humorStyle // ignore: cast_nullable_to_non_nullable
+                    as String,
+        introversion:
+            freezed == introversion
+                ? _value.introversion
+                : introversion // ignore: cast_nullable_to_non_nullable
+                    as int?,
+        warmth:
+            freezed == warmth
+                ? _value.warmth
+                : warmth // ignore: cast_nullable_to_non_nullable
+                    as int?,
+        competence:
+            freezed == competence
+                ? _value.competence
+                : competence // ignore: cast_nullable_to_non_nullable
+                    as int?,
+        qrCodeUrl:
+            freezed == qrCodeUrl
+                ? _value.qrCodeUrl
+                : qrCodeUrl // ignore: cast_nullable_to_non_nullable
+                    as String?,
+        finalPersonality:
+            freezed == finalPersonality
+                ? _value.finalPersonality
+                : finalPersonality // ignore: cast_nullable_to_non_nullable
+                    as FinalPersonality?,
       ),
     );
   }
@@ -286,6 +411,13 @@ class _$OnboardingStateImpl implements _OnboardingState {
     this.isGenerating = false,
     this.generationProgress = 0.0,
     this.generationMessage = "",
+    this.purpose = "",
+    this.humorStyle = "",
+    this.introversion = null,
+    this.warmth = null,
+    this.competence = null,
+    this.qrCodeUrl = null,
+    this.finalPersonality = null,
   });
 
   factory _$OnboardingStateImpl.fromJson(Map<String, dynamic> json) =>
@@ -318,10 +450,38 @@ class _$OnboardingStateImpl implements _OnboardingState {
   @override
   @JsonKey()
   final String generationMessage;
+  // 새로운 필드들 추가 (6단계 플로우에 맞춤)
+  @override
+  @JsonKey()
+  final String purpose;
+  // Step 3: 사물의 용도
+  @override
+  @JsonKey()
+  final String humorStyle;
+  // Step 3: 유머 스타일
+  @override
+  @JsonKey()
+  final int? introversion;
+  // Step 6: 내외향성 (1-10)
+  @override
+  @JsonKey()
+  final int? warmth;
+  // Step 6: 감정표현 (1-10)
+  @override
+  @JsonKey()
+  final int? competence;
+  // Step 6: 유능함 (1-10)
+  @override
+  @JsonKey()
+  final String? qrCodeUrl;
+  // 완료: QR 코드 URL
+  @override
+  @JsonKey()
+  final FinalPersonality? finalPersonality;
 
   @override
   String toString() {
-    return 'OnboardingState(currentStep: $currentStep, userInput: $userInput, photoPath: $photoPath, generatedCharacter: $generatedCharacter, isLoading: $isLoading, errorMessage: $errorMessage, isGenerating: $isGenerating, generationProgress: $generationProgress, generationMessage: $generationMessage)';
+    return 'OnboardingState(currentStep: $currentStep, userInput: $userInput, photoPath: $photoPath, generatedCharacter: $generatedCharacter, isLoading: $isLoading, errorMessage: $errorMessage, isGenerating: $isGenerating, generationProgress: $generationProgress, generationMessage: $generationMessage, purpose: $purpose, humorStyle: $humorStyle, introversion: $introversion, warmth: $warmth, competence: $competence, qrCodeUrl: $qrCodeUrl, finalPersonality: $finalPersonality)';
   }
 
   @override
@@ -346,7 +506,19 @@ class _$OnboardingStateImpl implements _OnboardingState {
             (identical(other.generationProgress, generationProgress) ||
                 other.generationProgress == generationProgress) &&
             (identical(other.generationMessage, generationMessage) ||
-                other.generationMessage == generationMessage));
+                other.generationMessage == generationMessage) &&
+            (identical(other.purpose, purpose) || other.purpose == purpose) &&
+            (identical(other.humorStyle, humorStyle) ||
+                other.humorStyle == humorStyle) &&
+            (identical(other.introversion, introversion) ||
+                other.introversion == introversion) &&
+            (identical(other.warmth, warmth) || other.warmth == warmth) &&
+            (identical(other.competence, competence) ||
+                other.competence == competence) &&
+            (identical(other.qrCodeUrl, qrCodeUrl) ||
+                other.qrCodeUrl == qrCodeUrl) &&
+            (identical(other.finalPersonality, finalPersonality) ||
+                other.finalPersonality == finalPersonality));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -362,6 +534,13 @@ class _$OnboardingStateImpl implements _OnboardingState {
     isGenerating,
     generationProgress,
     generationMessage,
+    purpose,
+    humorStyle,
+    introversion,
+    warmth,
+    competence,
+    qrCodeUrl,
+    finalPersonality,
   );
 
   /// Create a copy of OnboardingState
@@ -392,6 +571,13 @@ abstract class _OnboardingState implements OnboardingState {
     final bool isGenerating,
     final double generationProgress,
     final String generationMessage,
+    final String purpose,
+    final String humorStyle,
+    final int? introversion,
+    final int? warmth,
+    final int? competence,
+    final String? qrCodeUrl,
+    final FinalPersonality? finalPersonality,
   }) = _$OnboardingStateImpl;
 
   factory _OnboardingState.fromJson(Map<String, dynamic> json) =
@@ -414,7 +600,21 @@ abstract class _OnboardingState implements OnboardingState {
   @override
   double get generationProgress;
   @override
-  String get generationMessage;
+  String get generationMessage; // 새로운 필드들 추가 (6단계 플로우에 맞춤)
+  @override
+  String get purpose; // Step 3: 사물의 용도
+  @override
+  String get humorStyle; // Step 3: 유머 스타일
+  @override
+  int? get introversion; // Step 6: 내외향성 (1-10)
+  @override
+  int? get warmth; // Step 6: 감정표현 (1-10)
+  @override
+  int? get competence; // Step 6: 유능함 (1-10)
+  @override
+  String? get qrCodeUrl; // 완료: QR 코드 URL
+  @override
+  FinalPersonality? get finalPersonality;
 
   /// Create a copy of OnboardingState
   /// with the given fields replaced by the non-null parameter values.
@@ -1272,5 +1472,238 @@ abstract class _Personality implements Personality {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$PersonalityImplCopyWith<_$PersonalityImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+FinalPersonality _$FinalPersonalityFromJson(Map<String, dynamic> json) {
+  return _FinalPersonality.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FinalPersonality {
+  int get introversion =>
+      throw _privateConstructorUsedError; // 1(수줍음) ~ 10(활발함)
+  int get warmth => throw _privateConstructorUsedError; // 1(차가움) ~ 10(따뜻함)
+  int get competence => throw _privateConstructorUsedError; // 1(서툼) ~ 10(능숙함)
+  bool get userAdjusted => throw _privateConstructorUsedError;
+
+  /// Serializes this FinalPersonality to a JSON map.
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+
+  /// Create a copy of FinalPersonality
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  $FinalPersonalityCopyWith<FinalPersonality> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FinalPersonalityCopyWith<$Res> {
+  factory $FinalPersonalityCopyWith(
+    FinalPersonality value,
+    $Res Function(FinalPersonality) then,
+  ) = _$FinalPersonalityCopyWithImpl<$Res, FinalPersonality>;
+  @useResult
+  $Res call({int introversion, int warmth, int competence, bool userAdjusted});
+}
+
+/// @nodoc
+class _$FinalPersonalityCopyWithImpl<$Res, $Val extends FinalPersonality>
+    implements $FinalPersonalityCopyWith<$Res> {
+  _$FinalPersonalityCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  /// Create a copy of FinalPersonality
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? introversion = null,
+    Object? warmth = null,
+    Object? competence = null,
+    Object? userAdjusted = null,
+  }) {
+    return _then(
+      _value.copyWith(
+            introversion:
+                null == introversion
+                    ? _value.introversion
+                    : introversion // ignore: cast_nullable_to_non_nullable
+                        as int,
+            warmth:
+                null == warmth
+                    ? _value.warmth
+                    : warmth // ignore: cast_nullable_to_non_nullable
+                        as int,
+            competence:
+                null == competence
+                    ? _value.competence
+                    : competence // ignore: cast_nullable_to_non_nullable
+                        as int,
+            userAdjusted:
+                null == userAdjusted
+                    ? _value.userAdjusted
+                    : userAdjusted // ignore: cast_nullable_to_non_nullable
+                        as bool,
+          )
+          as $Val,
+    );
+  }
+}
+
+/// @nodoc
+abstract class _$$FinalPersonalityImplCopyWith<$Res>
+    implements $FinalPersonalityCopyWith<$Res> {
+  factory _$$FinalPersonalityImplCopyWith(
+    _$FinalPersonalityImpl value,
+    $Res Function(_$FinalPersonalityImpl) then,
+  ) = __$$FinalPersonalityImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({int introversion, int warmth, int competence, bool userAdjusted});
+}
+
+/// @nodoc
+class __$$FinalPersonalityImplCopyWithImpl<$Res>
+    extends _$FinalPersonalityCopyWithImpl<$Res, _$FinalPersonalityImpl>
+    implements _$$FinalPersonalityImplCopyWith<$Res> {
+  __$$FinalPersonalityImplCopyWithImpl(
+    _$FinalPersonalityImpl _value,
+    $Res Function(_$FinalPersonalityImpl) _then,
+  ) : super(_value, _then);
+
+  /// Create a copy of FinalPersonality
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? introversion = null,
+    Object? warmth = null,
+    Object? competence = null,
+    Object? userAdjusted = null,
+  }) {
+    return _then(
+      _$FinalPersonalityImpl(
+        introversion:
+            null == introversion
+                ? _value.introversion
+                : introversion // ignore: cast_nullable_to_non_nullable
+                    as int,
+        warmth:
+            null == warmth
+                ? _value.warmth
+                : warmth // ignore: cast_nullable_to_non_nullable
+                    as int,
+        competence:
+            null == competence
+                ? _value.competence
+                : competence // ignore: cast_nullable_to_non_nullable
+                    as int,
+        userAdjusted:
+            null == userAdjusted
+                ? _value.userAdjusted
+                : userAdjusted // ignore: cast_nullable_to_non_nullable
+                    as bool,
+      ),
+    );
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FinalPersonalityImpl implements _FinalPersonality {
+  const _$FinalPersonalityImpl({
+    required this.introversion,
+    required this.warmth,
+    required this.competence,
+    this.userAdjusted = false,
+  });
+
+  factory _$FinalPersonalityImpl.fromJson(Map<String, dynamic> json) =>
+      _$$FinalPersonalityImplFromJson(json);
+
+  @override
+  final int introversion;
+  // 1(수줍음) ~ 10(활발함)
+  @override
+  final int warmth;
+  // 1(차가움) ~ 10(따뜻함)
+  @override
+  final int competence;
+  // 1(서툼) ~ 10(능숙함)
+  @override
+  @JsonKey()
+  final bool userAdjusted;
+
+  @override
+  String toString() {
+    return 'FinalPersonality(introversion: $introversion, warmth: $warmth, competence: $competence, userAdjusted: $userAdjusted)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FinalPersonalityImpl &&
+            (identical(other.introversion, introversion) ||
+                other.introversion == introversion) &&
+            (identical(other.warmth, warmth) || other.warmth == warmth) &&
+            (identical(other.competence, competence) ||
+                other.competence == competence) &&
+            (identical(other.userAdjusted, userAdjusted) ||
+                other.userAdjusted == userAdjusted));
+  }
+
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, introversion, warmth, competence, userAdjusted);
+
+  /// Create a copy of FinalPersonality
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FinalPersonalityImplCopyWith<_$FinalPersonalityImpl> get copyWith =>
+      __$$FinalPersonalityImplCopyWithImpl<_$FinalPersonalityImpl>(
+        this,
+        _$identity,
+      );
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FinalPersonalityImplToJson(this);
+  }
+}
+
+abstract class _FinalPersonality implements FinalPersonality {
+  const factory _FinalPersonality({
+    required final int introversion,
+    required final int warmth,
+    required final int competence,
+    final bool userAdjusted,
+  }) = _$FinalPersonalityImpl;
+
+  factory _FinalPersonality.fromJson(Map<String, dynamic> json) =
+      _$FinalPersonalityImpl.fromJson;
+
+  @override
+  int get introversion; // 1(수줍음) ~ 10(활발함)
+  @override
+  int get warmth; // 1(차가움) ~ 10(따뜻함)
+  @override
+  int get competence; // 1(서툼) ~ 10(능숙함)
+  @override
+  bool get userAdjusted;
+
+  /// Create a copy of FinalPersonality
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  _$$FinalPersonalityImplCopyWith<_$FinalPersonalityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

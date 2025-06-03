@@ -26,6 +26,18 @@ _$OnboardingStateImpl _$$OnboardingStateImplFromJson(
   isGenerating: json['isGenerating'] as bool? ?? false,
   generationProgress: (json['generationProgress'] as num?)?.toDouble() ?? 0.0,
   generationMessage: json['generationMessage'] as String? ?? "",
+  purpose: json['purpose'] as String? ?? "",
+  humorStyle: json['humorStyle'] as String? ?? "",
+  introversion: (json['introversion'] as num?)?.toInt() ?? null,
+  warmth: (json['warmth'] as num?)?.toInt() ?? null,
+  competence: (json['competence'] as num?)?.toInt() ?? null,
+  qrCodeUrl: json['qrCodeUrl'] as String? ?? null,
+  finalPersonality:
+      json['finalPersonality'] == null
+          ? null
+          : FinalPersonality.fromJson(
+            json['finalPersonality'] as Map<String, dynamic>,
+          ),
 );
 
 Map<String, dynamic> _$$OnboardingStateImplToJson(
@@ -40,6 +52,13 @@ Map<String, dynamic> _$$OnboardingStateImplToJson(
   'isGenerating': instance.isGenerating,
   'generationProgress': instance.generationProgress,
   'generationMessage': instance.generationMessage,
+  'purpose': instance.purpose,
+  'humorStyle': instance.humorStyle,
+  'introversion': instance.introversion,
+  'warmth': instance.warmth,
+  'competence': instance.competence,
+  'qrCodeUrl': instance.qrCodeUrl,
+  'finalPersonality': instance.finalPersonality,
 };
 
 _$UserInputImpl _$$UserInputImplFromJson(Map<String, dynamic> json) =>
@@ -105,3 +124,21 @@ Map<String, dynamic> _$$PersonalityImplToJson(_$PersonalityImpl instance) =>
       'competence': instance.competence,
       'extroversion': instance.extroversion,
     };
+
+_$FinalPersonalityImpl _$$FinalPersonalityImplFromJson(
+  Map<String, dynamic> json,
+) => _$FinalPersonalityImpl(
+  introversion: (json['introversion'] as num).toInt(),
+  warmth: (json['warmth'] as num).toInt(),
+  competence: (json['competence'] as num).toInt(),
+  userAdjusted: json['userAdjusted'] as bool? ?? false,
+);
+
+Map<String, dynamic> _$$FinalPersonalityImplToJson(
+  _$FinalPersonalityImpl instance,
+) => <String, dynamic>{
+  'introversion': instance.introversion,
+  'warmth': instance.warmth,
+  'competence': instance.competence,
+  'userAdjusted': instance.userAdjusted,
+};

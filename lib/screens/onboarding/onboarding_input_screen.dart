@@ -99,8 +99,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       final provider = Provider.of<OnboardingProvider>(context, listen: false);
       provider.setUserInput(userInput);
 
-      // 다음 화면으로 이동
-      Navigator.pushNamed(context, '/onboarding/generation');
+      // Step 3: 용도 입력 화면으로 이동 (Figma 6단계 플로우)
+      Navigator.pushNamed(context, '/onboarding/purpose');
     }
   }
 

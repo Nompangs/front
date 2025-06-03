@@ -36,6 +36,10 @@
 	<string>QR code recognition requires camera access.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need access to your microphone to record voice input.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>QR 코드 이미지를 사진 라이브러리에 저장하기 위해 접근 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>QR 코드 이미지를 저장하기 위해 사진 라이브러리 접근 권한이 필요합니다.</string>
 	<key>NSPrivacyAccessedAPICategories</key>
 	<array>
 		<string>speech-recognition</string>

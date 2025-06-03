@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:cross_file/cross_file.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/widgets/common/primary_button.dart';
@@ -9,7 +10,11 @@ import 'package:nompangs/theme/app_theme.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:io';
 import 'package:flutter/rendering.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:gal/gal.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({Key? key}) : super(key: key);
@@ -115,7 +120,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            '놈팽쓰가 완성되었어요!',
+                            '${character.name}이 깨어났어요!',
                             style: Theme.of(context).textTheme.headlineLarge,
                             textAlign: TextAlign.center,
                           ),
@@ -394,46 +399,42 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           const SizedBox(height: 24),
           
           // QR 액션 버튼들
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          Column(
             children: [
-              ElevatedButton.icon(
-                onPressed: () => _saveQRCode(),
-                icon: const Icon(Icons.download, size: 20),
-                label: const Text('저장'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accent,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _saveQRCode(),
+                      icon: const Icon(Icons.download, size: 18),
+                      label: const Text('저장', style: TextStyle(fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.accent,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              
-              ElevatedButton.icon(
-                onPressed: () => _shareQRCode(character),
-                icon: const Icon(Icons.share, size: 20),
-                label: const Text('공유'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.info,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _shareQRCode(character),
+                      icon: const Icon(Icons.share, size: 18),
+                      label: const Text('공유', style: TextStyle(fontSize: 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.info,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              
-              ElevatedButton.icon(
-                onPressed: () => _printQRCode(),
-                icon: const Icon(Icons.print, size: 20),
-                label: const Text('인쇄'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.warning,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
@@ -629,29 +630,112 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
   Future<void> _saveQRCode() async {
     try {
-      // QR 코드 이미지 저장 (향후 구현)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('QR 코드가 갤러리에 저장되었습니다!'),
-          backgroundColor: AppTheme.success,
-        ),
-      );
+      // 권한 확인 및 요청
+      if (Platform.isAndroid) {
+        final status = await Permission.storage.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('저장소 권한이 필요합니다.'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+          return;
+        }
+      } else if (Platform.isIOS) {
+        final status = await Permission.photosAddOnly.request();
+        if (!status.isGranted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('사진 접근 권한이 필요합니다.'),
+              backgroundColor: AppTheme.error,
+            ),
+          );
+          return;
+        }
+      }
+
+      // QR 코드 위젯을 이미지로 캡처
+      final RenderRepaintBoundary boundary = 
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // 임시 파일 생성
+      final Directory tempDir = await getTemporaryDirectory();
+      final String fileName = 'nompangs_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final File file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pngBytes);
+
+      // 갤러리에 저장
+      await Gal.putImage(file.path);
+
+      // 임시 파일 삭제
+      await file.delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ QR 코드가 갤러리에 저장되었습니다!'),
+            backgroundColor: AppTheme.success,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('저장 실패: $e'),
-          backgroundColor: AppTheme.error,
-        ),
-      );
+      print('QR 저장 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('저장 실패: ${e.toString()}'),
+            backgroundColor: AppTheme.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
   Future<void> _shareQRCode(Character character) async {
-    final qrData = _generateQRData(character);
-    await Share.share(
-      '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
-      subject: '놈팽쓰 친구 공유',
-    );
+    try {
+      // QR 코드 위젯을 이미지로 캡처
+      final RenderRepaintBoundary boundary = 
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // 임시 파일 생성
+      final Directory tempDir = await getTemporaryDirectory();
+      final String fileName = 'nompangs_qr_${DateTime.now().millisecondsSinceEpoch}.png';
+      final File file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pngBytes);
+
+      // 이미지와 함께 공유
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: '${character.name}와 함께하세요! 놈팽쓰 QR 코드입니다 🎉\n\nQR을 스캔하면 ${character.name}과 대화할 수 있어요!',
+        subject: '놈팽쓰 친구 공유 - ${character.name}',
+      );
+
+      // 잠시 후 임시 파일 삭제
+      Future.delayed(const Duration(seconds: 5), () {
+        if (file.existsSync()) {
+          file.delete();
+        }
+      });
+    } catch (e) {
+      print('QR 공유 오류: $e');
+      // 실패 시 기본 텍스트 공유
+      final qrData = _generateQRData(character);
+      await Share.share(
+        '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
+        subject: '놈팽쓰 친구 공유',
+      );
+    }
   }
 
   void _printQRCode() {

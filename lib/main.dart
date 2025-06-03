@@ -13,6 +13,7 @@ import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_input_screen.dart';
+import 'package:nompangs/screens/onboarding/onboarding_purpose_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_photo_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_generation_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_personality_screen.dart';
@@ -176,10 +177,11 @@ class _NompangsAppState extends State<NompangsApp> {
         '/qr-scanner': (context) => const QRScannerScreen(),
         '/onboarding/intro': (context) => const OnboardingIntroScreen(),
         '/onboarding/input': (context) => const OnboardingInputScreen(),
-          '/onboarding/photo': (context) => const OnboardingPhotoScreen(),
-          '/onboarding/generation': (context) => const OnboardingGenerationScreen(),
-          '/onboarding/personality': (context) => const OnboardingPersonalityScreen(),
-          '/onboarding/completion': (context) => const OnboardingCompletionScreen(),
+        '/onboarding/purpose': (context) => const OnboardingPurposeScreen(),
+        '/onboarding/photo': (context) => const OnboardingPhotoScreen(),
+        '/onboarding/generation': (context) => const OnboardingGenerationScreen(),
+        '/onboarding/personality': (context) => const OnboardingPersonalityScreen(),
+        '/onboarding/completion': (context) => const OnboardingCompletionScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name?.startsWith('/chat/') ?? false) {

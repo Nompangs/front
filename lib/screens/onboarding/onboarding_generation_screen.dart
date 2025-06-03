@@ -18,9 +18,9 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   late Animation<double> _pulseAnimation;
 
   final List<GenerationStep> steps = [
-    GenerationStep(0.4, '사물의 특징을 파악하고 있어요', '사진 속 사물의 특성을 분석하고 있어요'),
-    GenerationStep(0.8, '당신만의 놈팽쓰 성격을 만들어요', '입력하신 정보를 바탕으로 고유한 성격을 생성해요'),
-    GenerationStep(1.0, '놈팽쓰가 깨어났어요!', '당신만의 특별한 놈팽쓰가 탄생했어요'),
+    GenerationStep(0.3, '캐릭터 깨우는 중...', '사물의 기본 특성을 분석하고 있어요'),
+    GenerationStep(0.7, '개성을 찾고 있어요', '입력하신 정보를 바탕으로 고유한 성격을 만들어요'),
+    GenerationStep(1.0, '마음을 열고 있어요', '당신만의 특별한 캐릭터가 탄생하고 있어요'),
   ];
 
   @override
