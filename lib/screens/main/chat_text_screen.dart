@@ -1,7 +1,9 @@
 // lib/chat_text_screen.dart
 
 import 'package:flutter/material.dart';
-import 'chat_speaker_screen.dart'; // ChatSpeakerScreen으로 라우팅하기 위해 추가
+import 'chat_speaker_screen.dart';
+import 'chat_setting.dart';
+
 
 class ChatTextScreen extends StatefulWidget {
   final String characterName;
@@ -223,7 +225,13 @@ class _TopNavigationBar extends StatelessWidget {
               size: 24,
               color: Color(0xFF333333),
             ),
-            onPressed: () {},
+            onPressed: () {
+              // ① 점 세 개 버튼을 누르면 ChatSettingScreen으로 이동
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ChatSettingScreen()),
+              );
+            },
           ),
         ],
       ),

@@ -4,15 +4,9 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'chat_setting.dart';
 
-/// =============================================================
-/// ChatSpeakerScreen
-///
-/// • speech_to_text 패키지를 사용해 STT(음성 인식)를 수행하고,
-///   onSoundLevelChange 콜백으로 전달되는 “sound level”을 기반으로
-///   Equalizer 애니메이션의 진폭을 조절합니다.
-/// • 화면 구성: 상단 닫기/메뉴 바 + 중앙 Equalizer 애니메이션 + 안내 텍스트 + 잠금 버튼
-/// =============================================================
+
 class ChatSpeakerScreen extends StatefulWidget {
   const ChatSpeakerScreen({Key? key}) : super(key: key);
 
@@ -174,7 +168,10 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                         size: 24,
                       ),
                       onPressed: () {
-                        // 메뉴 동작 (선택)
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ChatSettingScreen()),
+                        );
                       },
                     ),
                   ],
