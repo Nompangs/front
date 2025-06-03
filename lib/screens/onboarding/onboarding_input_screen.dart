@@ -158,13 +158,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     
                     const SizedBox(height: 60),
                     
-                    // 딥찐 말랑이 버튼
-                    _buildPersonalityButton(),
-                    
-                    const SizedBox(height: 40),
-                    
-                    // 질문 카드 섹션
-                    _buildQuestionCard(),
+                    // 통합된 카드 (파란색 + 보라색 섹션)
+                    _buildIntegratedCard(),
                     
                     // 검증 에러 메시지
                     if (_validationError != null) 
@@ -196,22 +191,88 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  Widget _buildPersonalityButton() {
+  Widget _buildIntegratedCard() {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: Column(
+        children: [
+          // 파란색 섹션 (상단)
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.shade400,
+                  Colors.blue.shade600,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(30),
+                topRight: Radius.circular(30),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: _buildPersonalityButtonContent(),
+            ),
+          ),
+          
+          // 보라색 섹션 (하단)
+          Container(
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              color: Color(0xFFE1BEE7), // 연한 보라색
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(30),
+              child: Column(
+                children: [
+                  // 첫 번째 드롭다운 - 위치
+                  _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
+                    setState(() {
+                      _selectedLocation = value;
+                    });
+                  }),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // 두 번째 드롭다운 - 기간
+                  _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
+                    setState(() {
+                      _selectedDuration = value;
+                    });
+                  }),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // 세 번째 입력 필드 - 사물 종류
+                  _buildTextInputRow(_objectTypeController, '(이)에요.'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalityButtonContent() {
     return GestureDetector(
       onTap: () => _showNicknameDialog(),
       child: Container(
-        width: double.infinity,
-        height: 80,
+        height: 60,
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.blue.shade400,
-              Colors.blue.shade600,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(40),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
         ),
         child: Stack(
           children: [
@@ -222,7 +283,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   const Text(
                     '애칭',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.grey,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -231,7 +292,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   Text(
                     _nicknameController.text.isNotEmpty ? _nicknameController.text : '딥찐 말랑이',
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -240,53 +301,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               ),
             ),
             Positioned(
-              bottom: 8,
+              bottom: 5,
               right: 20,
               child: Text(
                 '지금은 안볼거에요',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.red.shade300,
                   fontSize: 12,
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuestionCard() {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: const Color(0xFFE1BEE7), // 연한 보라색
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          children: [
-            // 첫 번째 드롭다운 - 위치
-            _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
-              setState(() {
-                _selectedLocation = value;
-              });
-            }),
-            
-            const SizedBox(height: 20),
-            
-            // 두 번째 드롭다운 - 기간
-            _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
-              setState(() {
-                _selectedDuration = value;
-              });
-            }),
-            
-            const SizedBox(height: 20),
-            
-            // 세 번째 입력 필드 - 사물 종류
-            _buildTextInputRow(_objectTypeController, '(이)에요.'),
           ],
         ),
       ),
