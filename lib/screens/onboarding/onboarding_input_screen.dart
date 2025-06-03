@@ -113,9 +113,9 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFFDF7E9), // 베이지/크림색 배경
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: const Color(0xFFFDF7E9),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -158,7 +158,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     
                     const SizedBox(height: 60),
                     
-                    // 통합된 카드 (파란색 + 보라색 섹션)
+                    // 통합된 카드 (테두리와 그림자 포함)
                     _buildIntegratedCard(),
                     
                     // 검증 에러 메시지
@@ -196,71 +196,78 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
-      ),
-      child: Column(
-        children: [
-          // 파란색 섹션 (상단)
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.blue.shade400,
-                  Colors.blue.shade600,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: _buildPersonalityButtonContent(),
-            ),
-          ),
-          
-          // 보라색 섹션 (하단)
-          Container(
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE1BEE7), // 연한 보라색
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(30),
-              child: Column(
-                children: [
-                  // 첫 번째 드롭다운 - 위치
-                  _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
-                    setState(() {
-                      _selectedLocation = value;
-                    });
-                  }),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // 두 번째 드롭다운 - 기간
-                  _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
-                    setState(() {
-                      _selectedDuration = value;
-                    });
-                  }),
-                  
-                  const SizedBox(height: 20),
-                  
-                  // 세 번째 입력 필드 - 사물 종류
-                  _buildTextInputRow(_objectTypeController, '(이)에요.'),
-                ],
-              ),
-            ),
+        border: Border.all(
+          color: Colors.black,
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 0,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28), // 테두리 두께만큼 조정
+        child: Column(
+          children: [
+            // 파란색 섹션 (상단)
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.blue.shade400,
+                    Colors.blue.shade600,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: _buildPersonalityButtonContent(),
+              ),
+            ),
+            
+            // 보라색 섹션 (하단)
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFFE1BEE7), // 연한 보라색
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(30),
+                child: Column(
+                  children: [
+                    // 첫 번째 드롭다운 - 위치
+                    _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
+                      setState(() {
+                        _selectedLocation = value;
+                      });
+                    }),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // 두 번째 드롭다운 - 기간
+                    _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
+                      setState(() {
+                        _selectedDuration = value;
+                      });
+                    }),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // 세 번째 입력 필드 - 사물 종류
+                    _buildTextInputRow(_objectTypeController, '(이)에요.'),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
