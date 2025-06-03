@@ -15,6 +15,15 @@ class OnboardingState with _$OnboardingState {
     @Default(false) bool isGenerating,
     @Default(0.0) double generationProgress,
     @Default("") String generationMessage,
+    
+    // 새로운 필드들 추가 (6단계 플로우에 맞춤)
+    @Default("") String purpose,        // Step 3: 사물의 용도
+    @Default("") String humorStyle,     // Step 3: 유머 스타일
+    @Default(null) int? introversion,   // Step 6: 내외향성 (1-10)
+    @Default(null) int? warmth,         // Step 6: 감정표현 (1-10)
+    @Default(null) int? competence,     // Step 6: 유능함 (1-10)
+    @Default(null) String? qrCodeUrl,   // 완료: QR 코드 URL
+    @Default(null) FinalPersonality? finalPersonality, // 최종 성격
   }) = _OnboardingState;
 
   factory OnboardingState.fromJson(Map<String, dynamic> json) =>
@@ -65,13 +74,28 @@ class Personality with _$Personality {
       _$PersonalityFromJson(json);
 }
 
+// 새로운 최종 성격 모델 (1-10 슬라이더용)
+@freezed
+class FinalPersonality with _$FinalPersonality {
+  const factory FinalPersonality({
+    required int introversion,  // 1(수줍음) ~ 10(활발함)
+    required int warmth,        // 1(차가움) ~ 10(따뜻함)
+    required int competence,    // 1(서툼) ~ 10(능숙함)
+    @Default(false) bool userAdjusted, // 사용자가 수정했는지
+  }) = _FinalPersonality;
+
+  factory FinalPersonality.fromJson(Map<String, dynamic> json) =>
+      _$FinalPersonalityFromJson(json);
+}
+
 enum OnboardingStep {
-  intro,      // 서비스 소개
-  input,      // 정보 입력
-  photo,      // 사진 촬영
-  generation, // AI 생성
-  personality,// 성격 조정
-  completion, // 완성 & QR
+  intro,      // Step 1: 서비스 소개
+  input,      // Step 2: 기본 정보 입력
+  purpose,    // Step 3: 용도 + 유머스타일 입력 (새로 추가)
+  photo,      // Step 4: 사진 촬영
+  generation, // Step 5: AI 생성 (3단계 로딩)
+  personality,// Step 6: 성격 조정 (3가지 슬라이더)
+  completion, // 완료: QR 코드 + 완성
 }
 
 enum PersonalityType {

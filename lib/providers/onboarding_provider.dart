@@ -17,6 +17,46 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
   
+  /// 용도 업데이트 (Step 3)
+  void updatePurpose(String purpose) {
+    _state = _state.copyWith(purpose: purpose);
+    notifyListeners();
+  }
+  
+  /// 유머스타일 업데이트 (Step 3)
+  void updateHumorStyle(String style) {
+    _state = _state.copyWith(humorStyle: style);
+    notifyListeners();
+  }
+  
+  /// 사진 경로 업데이트 (Step 4)
+  void updatePhotoPath(String? path) {
+    _state = _state.copyWith(photoPath: path);
+    notifyListeners();
+  }
+  
+  /// 성격 슬라이더 업데이트 (Step 6)
+  void updatePersonalitySlider(String type, int value) {
+    switch (type) {
+      case 'introversion':
+        _state = _state.copyWith(introversion: value);
+        break;
+      case 'warmth':
+        _state = _state.copyWith(warmth: value);
+        break;
+      case 'competence':
+        _state = _state.copyWith(competence: value);
+        break;
+    }
+    notifyListeners();
+  }
+  
+  /// QR 코드 URL 업데이트 (완료 단계)
+  void updateQRCodeUrl(String url) {
+    _state = _state.copyWith(qrCodeUrl: url);
+    notifyListeners();
+  }
+  
   void setPhotoPath(String path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
@@ -46,19 +86,18 @@ class OnboardingProvider extends ChangeNotifier {
     _state = _state.copyWith(
       isGenerating: true, 
       generationProgress: 0.0,
-      generationMessage: "사물의 특징을 파악하고 있어요"
+      generationMessage: "캐릭터 깨우는 중..."
     );
     notifyListeners();
     
     try {
-      // 단계별 시뮬레이션
-      await _simulateProgress(0.4, "사물의 특징을 파악하고 있어요");
-      await _simulateProgress(0.8, "당신만의 놈팽쓰 성격을 만들어요");
+      // 3단계 시뮬레이션 (Figma 정확)
+      await _simulateProgress(0.3, "캐릭터 깨우는 중...");
+      await _simulateProgress(0.7, "개성을 찾고 있어요");
+      await _simulateProgress(1.0, "마음을 열고 있어요");
       
       // 실제 AI 호출 (향후 구현)
       final character = await _generateMockCharacter();
-      
-      await _simulateProgress(1.0, "놈팽쓰가 깨어났어요!");
       
       _state = _state.copyWith(
         generatedCharacter: character,
@@ -91,11 +130,11 @@ class OnboardingProvider extends ChangeNotifier {
     final userInput = _state.userInput!;
     final random = Random();
     
-    // 임시 성격 생성 로직
+    // 사용자가 입력한 용도와 유머스타일을 반영한 성격 생성
     final personality = Personality(
-      warmth: 50 + random.nextInt(40),
-      competence: 30 + random.nextInt(50), 
-      extroversion: 40 + random.nextInt(40),
+      warmth: _state.warmth ?? (50 + random.nextInt(40)),
+      competence: _state.competence ?? (30 + random.nextInt(50)), 
+      extroversion: _state.introversion ?? (40 + random.nextInt(40)),
     );
     
     final traits = _generateTraits(personality);
@@ -137,14 +176,21 @@ class OnboardingProvider extends ChangeNotifier {
   }
   
   String _generateGreeting(String nickname, Personality personality) {
-    if (personality.warmth > 70 && personality.extroversion > 70) {
-      return "$nickname! 안녕! 나 정말 만나고 싶었어! 우리 친해지자!";
-    } else if (personality.warmth > 70 && personality.extroversion < 30) {
-      return "안녕... $nickname. 조용히 곁에 있어줄게. 언제든 말 걸어줘.";
-    } else if (personality.warmth < 30 && personality.competence > 70) {
-      return "네, $nickname님. 필요한 것이 있으면 효율적으로 도와드리겠습니다.";
+    // 유머스타일에 따른 인사말 생성
+    final humorStyle = _state.humorStyle ?? '';
+    
+    if (humorStyle == '따뜻한') {
+      return "$nickname아~ 안녕! 따뜻하게 함께하자 💕";
+    } else if (humorStyle == '날카로운 관찰자적') {
+      return "흠... $nickname. 너에 대해 관찰해보겠어. 흥미롭군.";
+    } else if (humorStyle == '위트있는') {
+      return "$nickname! 나와 함께라면 재미있을 거야. 위트 한 스푼 넣어서! 😂";
+    } else if (humorStyle == '자기비하적') {
+      return "어... $nickname? 나 같은 거랑 친해져도 괜찮을까? 😅";
+    } else if (humorStyle == '장난꾸러기') {
+      return "앗! $nickname 발견! 나랑 장난치자~ 헤헤 😝";
     } else {
-      return "음... $nickname아. 서서히 친해져보자. 서두르지 말고.";
+      return "안녕 $nickname! 잘 부탁해 😊";
     }
   }
   
