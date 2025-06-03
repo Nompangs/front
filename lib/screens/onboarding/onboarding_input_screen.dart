@@ -154,9 +154,9 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   Widget _buildBackgroundSections() {
     return Column(
       children: [
-        // 아이보리색 상단 섹션
+        // 아이보리색 상단 섹션 (배경만)
         Container(
-          height: 200,
+          height: 180,
           width: double.infinity,
           color: const Color(0xFFFDF7E9),
           child: Padding(
@@ -179,41 +179,83 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           ),
         ),
         
-        // 파란색 중간 섹션
+        // 여백 (아이보리 배경 연장)
         Container(
-          height: 120,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.blue.shade400,
-                Colors.blue.shade600,
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
+          height: 40,
+          color: const Color(0xFFFDF7E9),
         ),
         
-        // 보라색 하단 섹션 (테두리와 라운딩 추가)
-        Expanded(
+        // 파란색 카드 섹션
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Container(
+            height: 120,
             width: double.infinity,
             decoration: BoxDecoration(
-              color: const Color(0xFFE1BEE7),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(30),
-                topRight: Radius.circular(30),
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
+              gradient: LinearGradient(
+                colors: [
+                  Colors.blue.shade400,
+                  Colors.blue.shade600,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(30),
               border: Border.all(
                 color: Colors.black,
                 width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  spreadRadius: 0,
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Container(), // 내용은 floating 카드가 담당
           ),
+        ),
+        
+        // 여백 (아이보리 배경)
+        Container(
+          height: 40,
+          color: const Color(0xFFFDF7E9),
+        ),
+        
+        // 보라색 카드 섹션
+        Expanded(
+          child: Container(
+            color: const Color(0xFFFDF7E9), // 아이보리 배경 유지
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE1BEE7),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      spreadRadius: 0,
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        
+        // 하단 여백 (아이보리 배경)
+        Container(
+          height: 120,
+          color: const Color(0xFFFDF7E9),
         ),
       ],
     );
@@ -222,11 +264,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   Widget _buildFloatingCards() {
     return Column(
       children: [
-        const SizedBox(height: 180), // 타이틀 아래 위치
+        const SizedBox(height: 260), // 파란색 카드 위치에 맞춤
         
-        // 이름 입력 floating 카드
+        // 이름 입력 floating 카드 (파란색 카드 위에)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 40),
           child: _buildNameInputCard(),
         ),
         
@@ -246,11 +288,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             ),
           ),
         
-        const SizedBox(height: 40),
+        const SizedBox(height: 60),
         
-        // 입력 폼 floating 카드
+        // 입력 폼 floating 카드 (보라색 카드 위에)
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: 40),
           child: _buildInputFormCard(),
         ),
       ],
