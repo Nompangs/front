@@ -4,8 +4,7 @@ import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
 
 /// 온보딩 사물 정보 입력 화면
-/// Figma 노드: 14:3218, 14:3303, 14:3361 - 온보딩 - 사물 정보 입력
-/// 사용자가 애착 사물에 대한 정보를 입력하는 화면
+/// 캡처된 이미지 디자인을 참조하여 새롭게 구현
 class OnboardingInputScreen extends StatefulWidget {
   const OnboardingInputScreen({Key? key}) : super(key: key);
 
@@ -21,7 +20,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   String? _selectedDuration;
   String? _validationError;
 
-  // 위치 옵션 (Figma 기준)
+  // 위치 옵션 (캡처 이미지 기준)
   final List<String> _locationOptions = [
     '내 방',
     '우리집 안방',
@@ -39,6 +38,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     '2년',
     '3년 이상',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 기본값 설정 (캡처 이미지 기준)
+    _nicknameController.text = '딥찐 말랑이';
+    _selectedLocation = '우리집 거실';
+    _selectedDuration = '3개월';
+    _objectTypeController.text = '이 빨간 머그컵';
+  }
 
   @override
   void dispose() {
@@ -87,7 +96,6 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   /// 다음 단계로 이동
   void _proceedToNext() {
     if (_validateInputs()) {
-      // 입력된 데이터를 UserInput 모델로 생성
       final userInput = UserInput(
         nickname: _nicknameController.text.trim(),
         location: _selectedLocation!,
@@ -95,11 +103,9 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
         objectType: _objectTypeController.text.trim(),
       );
 
-      // Provider에 사용자 입력 저장
       final provider = Provider.of<OnboardingProvider>(context, listen: false);
       provider.setUserInput(userInput);
 
-      // Step 3: 용도 입력 화면으로 이동 (Figma 6단계 플로우)
       Navigator.pushNamed(context, '/onboarding/purpose');
     }
   }
@@ -107,41 +113,79 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF7E9), // Figma 배경색
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F5F5),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.pop(context),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+            child: const Text(
+              '건너뛰기',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // 앱바 영역
-            _buildAppBar(context),
-            
-            // 메인 콘텐츠 영역
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const SizedBox(height: 40),
                     
                     // 메인 타이틀
-                    _buildMainTitle(),
+                    const Text(
+                      '궁금해!\n나는 어떤 사람이야?',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        height: 1.2,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 60),
+                    
+                    // 딥찐 말랑이 버튼
+                    _buildPersonalityButton(),
                     
                     const SizedBox(height: 40),
                     
-                    // 입력 섹션
-                    _buildInputSection(),
-                    
-                    const SizedBox(height: 20),
+                    // 질문 카드 섹션
+                    _buildQuestionCard(),
                     
                     // 검증 에러 메시지
-                    if (_validationError != null) _buildValidationError(),
+                    if (_validationError != null) 
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text(
+                          _validationError!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    
+                    const Spacer(),
+                    
+                    // 다음 버튼
+                    _buildNextButton(),
                     
                     const SizedBox(height: 40),
-                    
-                    // 하단 버튼
-                    _buildFooterButton(),
-                    
-                    const SizedBox(height: 34), // HomeIndicator 공간
                   ],
                 ),
               ),
@@ -152,326 +196,256 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  /// 앱바 위젯
-  Widget _buildAppBar(BuildContext context) {
-    return Container(
-      height: 60,
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Row(
-        children: [
-          // 뒤로가기 버튼
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(
-              Icons.arrow_back_ios,
-              color: Color(0xFF333333),
-              size: 24,
-            ),
+  Widget _buildPersonalityButton() {
+    return GestureDetector(
+      onTap: () => _showNicknameDialog(),
+      child: Container(
+        width: double.infinity,
+        height: 80,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              Colors.blue.shade400,
+              Colors.blue.shade600,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          
-          // 타이틀
-          const Expanded(
-            child: Text(
-              '성격 조제 연금술!',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 20,
-                color: Color(0xFF333333),
+          borderRadius: BorderRadius.circular(40),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '애칭',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Text(
+                    _nicknameController.text.isNotEmpty ? _nicknameController.text : '딥찐 말랑이',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          
-          // 건너뛰기 버튼
-          TextButton(
-            onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-            child: const Text(
-              '건너뛰기',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-                color: Color(0xFFBCBCBC),
+            Positioned(
+              bottom: 8,
+              right: 20,
+              child: Text(
+                '지금은 안볼거에요',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 12,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  /// 메인 타이틀 위젯
-  Widget _buildMainTitle() {
-    return const Text(
-      '말해줘!\n나는 어떤 사물이야?',
-      style: TextStyle(
-        fontWeight: FontWeight.w700,
-        fontSize: 26,
-        height: 1.5,
-        color: Color(0xFF333333),
-      ),
-    );
-  }
-
-  /// 입력 섹션 위젯
-  Widget _buildInputSection() {
+  Widget _buildQuestionCard() {
     return Container(
-      padding: const EdgeInsets.all(20),
+      width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF57B3E6).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
+        color: const Color(0xFFE1BEE7), // 연한 보라색
+        borderRadius: BorderRadius.circular(30),
       ),
-      child: Column(
-        children: [
-          // 애칭 입력
-          _buildNicknameInput(),
-          
-          const SizedBox(height: 16),
-          
-          // 위치 선택
-          _buildLocationSelector(),
-          
-          const SizedBox(height: 16),
-          
-          // 기간 선택
-          _buildDurationSelector(),
-          
-          const SizedBox(height: 16),
-          
-          // 사물 종류 입력
-          _buildObjectTypeInput(),
-        ],
-      ),
-    );
-  }
-
-  /// 애칭 입력 위젯
-  Widget _buildNicknameInput() {
-    return Row(
-      children: [
-        const Text(
-          '애칭',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: Color(0xFF333333),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Container(
-            height: 55,
-            child: TextField(
-              controller: _nicknameController,
-              decoration: InputDecoration(
-                hintText: '털찐 말랑이',
-                hintStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14,
-                  color: Color(0xFFB0B0B0),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(40),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xFF333333),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 위치 선택 위젯
-  Widget _buildLocationSelector() {
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedLocation,
-            hint: const Text(
-              '우리집 거실',
-              style: TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xFFB0B0B0),
-              ),
-            ),
-            items: _locationOptions.map((location) {
-              return DropdownMenuItem(
-                value: location,
-                child: Text(location),
-              );
-            }).toList(),
-            onChanged: (value) {
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          children: [
+            // 첫 번째 드롭다운 - 위치
+            _buildDropdownRow(_selectedLocation, _locationOptions, '에서', (value) {
               setState(() {
                 _selectedLocation = value;
               });
-            },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(40),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          '에서',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: Color(0xFF333333),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 기간 선택 위젯
-  Widget _buildDurationSelector() {
-    return Row(
-      children: [
-        Expanded(
-          child: DropdownButtonFormField<String>(
-            value: _selectedDuration,
-            hint: const Text(
-              '3개월',
-              style: TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xFFB0B0B0),
-              ),
-            ),
-            items: _durationOptions.map((duration) {
-              return DropdownMenuItem(
-                value: duration,
-                child: Text(duration),
-              );
-            }).toList(),
-            onChanged: (value) {
+            }),
+            
+            const SizedBox(height: 20),
+            
+            // 두 번째 드롭다운 - 기간
+            _buildDropdownRow(_selectedDuration, _durationOptions, '정도 함께한', (value) {
               setState(() {
                 _selectedDuration = value;
               });
-            },
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(40),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          '정도 함께한',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: Color(0xFF333333),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 사물 종류 입력 위젯
-  Widget _buildObjectTypeInput() {
-    return Row(
-      children: [
-        Expanded(
-          child: Container(
-            height: 55,
-            child: TextField(
-              controller: _objectTypeController,
-              decoration: InputDecoration(
-                hintText: '이 빠진 머그컵',
-                hintStyle: const TextStyle(
-                  fontWeight: FontWeight.w400,
-                  fontSize: 14,
-                  color: Color(0xFFB0B0B0),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(40),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              ),
-              style: const TextStyle(
-                fontWeight: FontWeight.w400,
-                fontSize: 14,
-                color: Color(0xFF333333),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        const Text(
-          '(이)에요.',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: Color(0xFF333333),
-          ),
-        ),
-      ],
-    );
-  }
-
-  /// 검증 에러 메시지 위젯
-  Widget _buildValidationError() {
-    return Padding(
-      padding: const EdgeInsets.only(left: 20),
-      child: Text(
-        _validationError!,
-        style: const TextStyle(
-          fontWeight: FontWeight.w700,
-          fontSize: 10,
-          color: Color(0xFFFF5252),
+            }),
+            
+            const SizedBox(height: 20),
+            
+            // 세 번째 입력 필드 - 사물 종류
+            _buildTextInputRow(_objectTypeController, '(이)에요.'),
+          ],
         ),
       ),
     );
   }
 
-  /// 하단 버튼 위젯
-  Widget _buildFooterButton() {
-    return SizedBox(
-      width: 343,
-      height: 56,
+  Widget _buildDropdownRow(String? selectedValue, List<String> options, String suffix, Function(String?) onChanged) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: selectedValue,
+                isExpanded: true,
+                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                style: const TextStyle(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                items: options.map((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Text(value),
+                    ),
+                  );
+                }).toList(),
+                onChanged: onChanged,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          suffix,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextInputRow(TextEditingController controller, String suffix) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(25),
+            ),
+            child: TextField(
+              controller: controller,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                hintText: '예: 이 빨간 머그컵',
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          suffix,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNextButton() {
+    return Container(
+      width: double.infinity,
+      height: 60,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.2),
+            spreadRadius: 2,
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: ElevatedButton(
         onPressed: _proceedToNext,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF6750A4),
-          foregroundColor: Colors.white,
+          backgroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(100),
+            borderRadius: BorderRadius.circular(30),
           ),
         ),
         child: const Text(
           '다음',
           style: TextStyle(
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-            color: Colors.white,
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
           ),
         ),
+      ),
+    );
+  }
+
+  void _showNicknameDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('애칭 설정'),
+        content: TextField(
+          controller: _nicknameController,
+          decoration: const InputDecoration(
+            hintText: '애칭을 입력해주세요',
+            border: OutlineInputBorder(),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {}); // 버튼 텍스트 업데이트
+              Navigator.pop(context);
+            },
+            child: const Text('확인'),
+          ),
+        ],
       ),
     );
   }
