@@ -97,7 +97,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       listenFor: const Duration(seconds: 300),
       // 사용자가 말을 멈춘 뒤 2초가 지나면 자동 중단
       //pauseFor: const Duration(seconds: 5),
-      partialResults: false,
+      partialResults: true,
       localeId: 'ko_KR',
       onSoundLevelChange: (level) {
         // sound level(0.0~1.0)이 변경될 때마다 업데이트
@@ -127,7 +127,10 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   void _onSpeechStatus(String status) {
     if (status == 'notListening' && mounted) {
       setState(() => _isListening = false);
-      _cancelLockTimer();
+      // 사용자가 수동으로 중단한 경우에만 타이머 초기화
+      if (_manualStop) {
+        _cancelLockTimer();
+      }
       if (!_manualStop) {
         _startListening();
       }
@@ -138,6 +141,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     final recognized = result.recognizedWords;
     if (recognized.isNotEmpty) {
       debugPrint('\u{1F3A4} 인식된 음성: ' + recognized);
+      if (!result.finalResult) {
+        _startLockTimer();
+      }
     }
     if (result.finalResult && recognized.isNotEmpty) {
       _sendToGemini(recognized);
@@ -153,10 +159,10 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _lastSoundLevel = amplified;
     });
 
-    const threshold = 0.2;
-    if (amplified > threshold) {
+    // 일정 수준 이상의 사운드가 지속되면 잠금 타이머 시작
+    if (amplified > 0.3) {
       _startLockTimer();
-    } else {
+    } else if (amplified < 0.1) {
       _cancelLockTimer();
     }
   }
@@ -180,7 +186,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 
   void _startLockTimer() {
-    if (_lockTimer != null) return;
+    // 타이머가 이미 실행 중이라면 재시작하여
+    // 마지막 발화 시점부터 5초를 측정한다.
+    _lockTimer?.cancel();
     _lockTimer = Timer(const Duration(seconds: 5), () {
       if (mounted) {
         setState(() => _showLockButton = true);
