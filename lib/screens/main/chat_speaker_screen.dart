@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:speech_to_text/speech_recognition_result.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +22,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   bool _manualStop = false;
   late GeminiService _geminiService;
   bool _isProcessing = false;
+
+  bool _showLockButton = false;
+  Timer? _lockTimer;
 
   /// 마지막으로 전달받은 sound level (0.0 ~ 1.0)
   double _lastSoundLevel = 0.0;
@@ -45,6 +49,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _manualStop = true;
       _speech.stop();
     }
+    _lockTimer?.cancel();
     // Equalizer AnimationController 해제
     for (var controller in _controllers) {
       controller.dispose();
@@ -73,6 +78,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     if (!_speechInitialized || _isListening) return;
 
     _manualStop = false;
+    _cancelLockTimer();
 
     bool available = await _speech.initialize(
         onStatus: _onSpeechStatus,
@@ -115,11 +121,13 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
+    _cancelLockTimer();
   }
 
   void _onSpeechStatus(String status) {
     if (status == 'notListening' && mounted) {
       setState(() => _isListening = false);
+      _cancelLockTimer();
       if (!_manualStop) {
         _startListening();
       }
@@ -133,6 +141,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     }
     if (result.finalResult && recognized.isNotEmpty) {
       _sendToGemini(recognized);
+      _cancelLockTimer();
     }
   }
 
@@ -143,6 +152,13 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
+
+    const threshold = 0.2;
+    if (amplified > threshold) {
+      _startLockTimer();
+    } else {
+      _cancelLockTimer();
+    }
   }
 
   Future<void> _sendToGemini(String text) async {
@@ -160,6 +176,25 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       if (mounted) {
         setState(() => _isProcessing = false);
       }
+    }
+  }
+
+  void _startLockTimer() {
+    if (_lockTimer != null) return;
+    _lockTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showLockButton = true);
+      }
+    });
+  }
+
+  void _cancelLockTimer() {
+    if (_lockTimer != null) {
+      _lockTimer!.cancel();
+      _lockTimer = null;
+    }
+    if (_showLockButton) {
+      setState(() => _showLockButton = false);
     }
   }
 
@@ -246,28 +281,30 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
 
                     const SizedBox(height: 48),
 
-                    // ③ 잠금 버튼 (빨간 원 + 자물쇠 아이콘)
-                    GestureDetector(
-                      onTap: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE64545),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // ③ 잠금 버튼 (5초간 발화 지속 시 표시)
+                    _showLockButton
+                        ? GestureDetector(
+                            onTap: () {
+                              if (_isListening) _stopListening();
+                              Navigator.of(context).maybePop();
+                            },
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE64545),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.lock,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox(height: 72),
                   ],
                 ),
               ),
