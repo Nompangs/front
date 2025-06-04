@@ -1,9 +1,10 @@
 // lib/chat_speaker_screen.dart
 
 import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/services/gemini_service.dart';
 import 'chat_setting.dart';
 
 
@@ -19,6 +20,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   late stt.SpeechToText _speech;
   bool _speechInitialized = false;
   bool _isListening = false;
+  bool _manualStop = false;
+  late GeminiService _geminiService;
+  bool _isProcessing = false;
 
   /// 마지막으로 전달받은 sound level (0.0 ~ 1.0)
   double _lastSoundLevel = 0.0;
@@ -30,7 +34,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   @override
   void initState() {
     super.initState();
-
+    _geminiService = GeminiService();
     _initSpeech();
     _initEqualizerControllers();
   }
@@ -39,6 +43,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   void dispose() {
     // STT 중지
     if (_isListening) {
+      _manualStop = true;
       _speech.stop();
     }
     // Equalizer AnimationController 해제
@@ -51,35 +56,42 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   /// speech_to_text 초기화
   Future<void> _initSpeech() async {
     _speech = stt.SpeechToText();
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        // 상태 변화 로그 (선택)
-      },
-      onError: (errorNotification) {
-        debugPrint('STT initialize error: $errorNotification');
-      },
-    );
 
-    if (available) {
-      setState(() {
-        _speechInitialized = true;
-      });
-      _startListening();
-    } else {
-      debugPrint('STT not available');
+    if (!await Permission.microphone.request().isGranted) {
+      debugPrint('마이크 권한이 거부되었습니다.');
+      return;
     }
+
+    setState(() {
+      _speechInitialized = true;
+    });
+
+    await _startListening();
   }
 
   /// STT 듣기 시작
-  void _startListening() {
-    if (!_speechInitialized) return;
+  Future<void> _startListening() async {
+    if (!_speechInitialized || _isListening) return;
+
+    _manualStop = false;
+
+    bool available = await _speech.initialize(
+      onStatus: _onSpeechStatus,
+      onError: (errorNotification) {
+        debugPrint('STT initialize error: ' + errorNotification.toString());
+      },
+    );
+
+    if (!available) {
+      debugPrint('STT not available');
+      return;
+    }
 
     _speech.listen(
-      onResult: (result) {
-        // 인식된 텍스트 결과는 여기서 처리 가능 (필요 시 사용)
-      },
+      onResult: _onSpeechResult,
       listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 5),
+      // 사용자가 말을 멈춘 뒤 2초가 지나면 자동 중단
+      pauseFor: const Duration(seconds: 2),
       partialResults: true,
       localeId: 'ko_KR',
       onSoundLevelChange: (level) {
@@ -98,11 +110,31 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   /// STT 듣기 중단
   void _stopListening() {
     if (!_isListening) return;
+    _manualStop = true;
     _speech.stop();
     setState(() {
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
+  }
+
+  void _onSpeechStatus(String status) {
+    if (status == 'notListening' && mounted) {
+      setState(() => _isListening = false);
+      if (!_manualStop) {
+        _startListening();
+      }
+    }
+  }
+
+  void _onSpeechResult(stt.SpeechRecognitionResult result) {
+    final recognized = result.recognizedWords;
+    if (recognized.isNotEmpty) {
+      debugPrint('\u{1F3A4} 인식된 음성: ' + recognized);
+    }
+    if (result.finalResult && recognized.isNotEmpty) {
+      _sendToGemini(recognized);
+    }
   }
 
   /// sound level → Equalizer 애니메이션에 전달
@@ -112,6 +144,24 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
+  }
+
+  Future<void> _sendToGemini(String text) async {
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      final response = await _geminiService.analyzeUserInput(text);
+      final reply = response['response'] ?? '';
+      if (reply.isNotEmpty) {
+        debugPrint('\u{1F48E} Gemini 응답: ' + reply);
+      }
+    } catch (e) {
+      debugPrint('Gemini 통신 오류: ' + e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
   }
 
   /// Equalizer AnimationController + Tween 초기화
