@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_recognition_result.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/gemini_service.dart';
+import 'package:nompangs/services/supertone_service.dart';
 import 'chat_setting.dart';
 
 
@@ -16,10 +17,10 @@ class ChatSpeakerScreen extends StatefulWidget {
 
 class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     with TickerProviderStateMixin {
-  late stt.SpeechToText _speech;
-  bool _speechInitialized = false;
+  final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  bool _manualStop = false;
+
+  late SupertoneService _supertoneService;
   late GeminiService _geminiService;
   bool _isProcessing = false;
 
@@ -36,7 +37,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   @override
   void initState() {
     super.initState();
-
+    _supertoneService = SupertoneService();
     _geminiService = GeminiService();
     _initSpeech();
     _initEqualizerControllers();
@@ -46,7 +47,6 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   void dispose() {
     // STT 중지
     if (_isListening) {
-      _manualStop = true;
       _speech.stop();
     }
     _lockTimer?.cancel();
@@ -59,32 +59,24 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
 
   /// speech_to_text 초기화
   Future<void> _initSpeech() async {
-    _speech = stt.SpeechToText();
-
     if (!await Permission.microphone.request().isGranted) {
       debugPrint('마이크 권한이 거부되었습니다.');
       return;
     }
-
-    setState(() {
-      _speechInitialized = true;
-    });
 
     await _startListening();
   }
 
   /// STT 듣기 시작
   Future<void> _startListening() async {
-    if (!_speechInitialized || _isListening) return;
+    if (_isListening) return;
 
-    _manualStop = false;
     _cancelLockTimer();
 
     bool available = await _speech.initialize(
-        onStatus: _onSpeechStatus,
-        onError: (errorNotification) {
-          debugPrint('STT initialize error: ' + errorNotification.toString());
-        },
+      onError: (errorNotification) {
+        debugPrint('STT initialize error: ' + errorNotification.toString());
+      },
     );
 
     if (!available) {
@@ -94,17 +86,14 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
 
     _speech.listen(
       onResult: _onSpeechResult,
-      listenFor: const Duration(seconds: 300),
-      // 사용자가 말을 멈춘 뒤 2초가 지나면 자동 중단
-      //pauseFor: const Duration(seconds: 5),
+      listenFor: const Duration(seconds: 10),
+      pauseFor: const Duration(seconds: 3),
       partialResults: true,
       localeId: 'ko_KR',
       onSoundLevelChange: (level) {
-        // sound level(0.0~1.0)이 변경될 때마다 업데이트
         _processSoundLevel(level);
       },
       cancelOnError: true,
-      listenMode: stt.ListenMode.dictation,
     );
 
     setState(() {
@@ -115,26 +104,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   /// STT 듣기 중단
   void _stopListening() {
     if (!_isListening) return;
-    _manualStop = true;
     _speech.stop();
     setState(() {
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
     _cancelLockTimer();
-  }
-
-  void _onSpeechStatus(String status) {
-    if (status == 'notListening' && mounted) {
-      setState(() => _isListening = false);
-      // 사용자가 수동으로 중단한 경우에만 타이머 초기화
-      if (_manualStop) {
-        _cancelLockTimer();
-      }
-      if (!_manualStop) {
-        _startListening();
-      }
-    }
   }
 
   void _onSpeechResult(stt.SpeechRecognitionResult result) {
@@ -175,6 +150,16 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       final reply = response['response'] ?? '';
       if (reply.isNotEmpty) {
         debugPrint('\u{1F48E} Gemini 응답: ' + reply);
+        try {
+          await _supertoneService.speak(reply);
+        } catch (e) {
+          debugPrint('TTS 오류: ' + e.toString());
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('음성 재생 중 오류가 발생했습니다.')),
+            );
+          }
+        }
       }
     } catch (e) {
       debugPrint('Gemini 통신 오류: ' + e.toString());
