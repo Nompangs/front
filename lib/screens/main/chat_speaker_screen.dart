@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:speech_to_text/speech_recognition_result.dart' as stt;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
@@ -21,6 +22,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   bool _manualStop = false;
   late GeminiService _geminiService;
   bool _isProcessing = false;
+
+  bool _showLockButton = false;
+  Timer? _lockTimer;
 
   /// 마지막으로 전달받은 sound level (0.0 ~ 1.0)
   double _lastSoundLevel = 0.0;
@@ -45,6 +49,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _manualStop = true;
       _speech.stop();
     }
+    _lockTimer?.cancel();
     // Equalizer AnimationController 해제
     for (var controller in _controllers) {
       controller.dispose();
@@ -73,6 +78,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     if (!_speechInitialized || _isListening) return;
 
     _manualStop = false;
+    _cancelLockTimer();
 
     bool available = await _speech.initialize(
         onStatus: _onSpeechStatus,
@@ -91,7 +97,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       listenFor: const Duration(seconds: 300),
       // 사용자가 말을 멈춘 뒤 2초가 지나면 자동 중단
       //pauseFor: const Duration(seconds: 5),
-      partialResults: false,
+      partialResults: true,
       localeId: 'ko_KR',
       onSoundLevelChange: (level) {
         // sound level(0.0~1.0)이 변경될 때마다 업데이트
@@ -115,11 +121,16 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
+    _cancelLockTimer();
   }
 
   void _onSpeechStatus(String status) {
     if (status == 'notListening' && mounted) {
       setState(() => _isListening = false);
+      // 사용자가 수동으로 중단한 경우에만 타이머 초기화
+      if (_manualStop) {
+        _cancelLockTimer();
+      }
       if (!_manualStop) {
         _startListening();
       }
@@ -130,9 +141,13 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     final recognized = result.recognizedWords;
     if (recognized.isNotEmpty) {
       debugPrint('\u{1F3A4} 인식된 음성: ' + recognized);
+      if (!result.finalResult) {
+        _startLockTimer();
+      }
     }
     if (result.finalResult && recognized.isNotEmpty) {
       _sendToGemini(recognized);
+      _cancelLockTimer();
     }
   }
 
@@ -143,6 +158,13 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
+
+    // 일정 수준 이상의 사운드가 지속되면 잠금 타이머 시작
+    if (amplified > 0.3) {
+      _startLockTimer();
+    } else if (amplified < 0.1) {
+      _cancelLockTimer();
+    }
   }
 
   Future<void> _sendToGemini(String text) async {
@@ -160,6 +182,27 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       if (mounted) {
         setState(() => _isProcessing = false);
       }
+    }
+  }
+
+  void _startLockTimer() {
+    // 타이머가 이미 실행 중이라면 재시작하여
+    // 마지막 발화 시점부터 5초를 측정한다.
+    _lockTimer?.cancel();
+    _lockTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showLockButton = true);
+      }
+    });
+  }
+
+  void _cancelLockTimer() {
+    if (_lockTimer != null) {
+      _lockTimer!.cancel();
+      _lockTimer = null;
+    }
+    if (_showLockButton) {
+      setState(() => _showLockButton = false);
     }
   }
 
@@ -246,28 +289,30 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
 
                     const SizedBox(height: 48),
 
-                    // ③ 잠금 버튼 (빨간 원 + 자물쇠 아이콘)
-                    GestureDetector(
-                      onTap: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE64545),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    ),
+                    // ③ 잠금 버튼 (5초간 발화 지속 시 표시)
+                    _showLockButton
+                        ? GestureDetector(
+                            onTap: () {
+                              if (_isListening) _stopListening();
+                              Navigator.of(context).maybePop();
+                            },
+                            child: Container(
+                              width: 72,
+                              height: 72,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE64545),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.lock,
+                                  color: Colors.white,
+                                  size: 32,
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox(height: 72),
                   ],
                 ),
               ),
