@@ -153,7 +153,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     if (result.finalResult && recognized.isNotEmpty) {
       // 최종 결과 확정 시 Gemini로 전송
       _sendToGemini(recognized);
-      _cancelLockTimer();
+      // 타이머는 Gemini 처리 단계에서 취소된다
     }
   }
 
@@ -181,6 +181,8 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     });
     if (_isListening) {
       _stopListening();
+    } else {
+      _cancelLockTimer();
     }
 
     try {
