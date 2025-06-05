@@ -1,50 +1,53 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:nompangs/services/character_manager.dart';
-import 'package:nompangs/utils/persona_utils.dart';
 
 class DeepLinkHelper {
-  // 딥링크 캐릭터 데이터 처리
   static Future<Map<String, dynamic>?> processCharacterData(String encodedData) async {
+    final String platform = defaultTargetPlatform.name;
     try {
       final decodedData = utf8.decode(base64Url.decode(encodedData));
-      final characterData = jsonDecode(decodedData);
-
+      final characterData = jsonDecode(decodedData) as Map<String, dynamic>;
+      
       if (!_isValidCharacterData(characterData)) {
+        print('[DeepLinkHelper][$platform] processCharacterData: 유효하지 않은 캐릭터 데이터 형식.'); 
         return null;
       }
-
-      // Firebase에 저장
+      
       final personaId = await CharacterManager.instance.handleCharacterFromQR(characterData);
+      print('[DeepLinkHelper][$platform] Firebase에 캐릭터 저장 완료. personaId: $personaId'); 
 
-      // 채팅 화면용 데이터 반환
       return {
-        'characterName': characterData['name'],
-        'personalityTags': List<String>.from(characterData['tags']),
-        'greeting': characterData['greeting'],
+        'characterName': characterData['name'] as String,
+        'personalityTags': List<String>.from(characterData['tags'] as List),
+        'greeting': characterData['greeting'] as String?,
         'personaId': personaId,
       };
-    } catch (e) {
-      print('딥링크 처리 오류: $e');
+    } catch (e, s) {
+      print('[DeepLinkHelper][$platform] processCharacterData: 딥링크 데이터 처리 중 오류: $e'); 
+      print('[DeepLinkHelper][$platform] Stacktrace: $s'); 
       return null;
     }
   }
 
-  // 캐릭터 데이터 유효성 검증
   static bool _isValidCharacterData(Map<String, dynamic> data) {
-    return data.containsKey('name') &&
+    final isValid = data.containsKey('name') &&
         data.containsKey('tags') &&
         data['name'] is String &&
         data['tags'] is List;
+    
+    return isValid;
   }
 
-  // 에러 메시지 표시
   static void showError(BuildContext context, String message) {
+    if (!context.mounted) return;
+    print('[DeepLinkHelper][${defaultTargetPlatform.name}] showError: 오류 메시지: $message'); 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
-        duration: Duration(seconds: 2),
+        duration: const Duration(seconds: 3),
       ),
     );
   }
