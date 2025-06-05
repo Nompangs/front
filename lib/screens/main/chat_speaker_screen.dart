@@ -1,11 +1,12 @@
-// lib/chat_speaker_screen.dart
-
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_error.dart' as stt;
+import 'package:speech_to_text/speech_recognition_result.dart' as stt;
+import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/services/gemini_service.dart';
+import 'package:nompangs/services/supertone_service.dart';
 import 'chat_setting.dart';
-
 
 class ChatSpeakerScreen extends StatefulWidget {
   const ChatSpeakerScreen({Key? key}) : super(key: key);
@@ -16,78 +17,80 @@ class ChatSpeakerScreen extends StatefulWidget {
 
 class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     with TickerProviderStateMixin {
-  late stt.SpeechToText _speech;
-  bool _speechInitialized = false;
+  final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
 
-  /// 마지막으로 전달받은 sound level (0.0 ~ 1.0)
-  double _lastSoundLevel = 0.0;
+  late SupertoneService _supertoneService;
+  late GeminiService _geminiService;
+  bool _isProcessing = false; // Gemini 요청 또는 TTS 재생 중인 상태
 
-  /// Equalizer Bars 컨트롤러 리스트
+  bool _showLockButton = false;
+  Timer? _lockTimer;
+
+  double _lastSoundLevel = 0.0;
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-
+    _supertoneService = SupertoneService();
+    _geminiService = GeminiService();
     _initSpeech();
     _initEqualizerControllers();
   }
 
   @override
   void dispose() {
-    // STT 중지
     if (_isListening) {
       _speech.stop();
     }
-    // Equalizer AnimationController 해제
+    _lockTimer?.cancel();
     for (var controller in _controllers) {
       controller.dispose();
     }
     super.dispose();
   }
 
-  /// speech_to_text 초기화
+  /// STT 초기화 (퍼미션 + initialize)
   Future<void> _initSpeech() async {
-    _speech = stt.SpeechToText();
+    if (!await Permission.microphone.request().isGranted) {
+      debugPrint('마이크 권한이 거부되었습니다.');
+      return;
+    }
+
     bool available = await _speech.initialize(
-      onStatus: (status) {
-        // 상태 변화 로그 (선택)
-      },
-      onError: (errorNotification) {
-        debugPrint('STT initialize error: $errorNotification');
-      },
+      onStatus: _onSpeechStatus,
+      onError: _onSpeechError,
     );
 
-    if (available) {
-      setState(() {
-        _speechInitialized = true;
-      });
-      _startListening();
-    } else {
+    if (!available) {
       debugPrint('STT not available');
+      return;
     }
+
+    // 초기화 성공 후 바로 STT 시작
+    await _startListening();
   }
 
   /// STT 듣기 시작
-  void _startListening() {
-    if (!_speechInitialized) return;
+  Future<void> _startListening() async {
+    // 이미 듣고 있거나 Gemini/TTS 처리 중이면 호출 무시
+    if (_isListening || _isProcessing) return;
+    _cancelLockTimer();
 
     _speech.listen(
-      onResult: (result) {
-        // 인식된 텍스트 결과는 여기서 처리 가능 (필요 시 사용)
-      },
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 5),
+      onResult: _onSpeechResult,
+      // listenFor와 pauseFor를 넉넉히 늘려서 곧바로 타임아웃나지 않도록
+      listenFor: const Duration(seconds: 30), // 최대 30초 동안 듣기 유지
+      pauseFor: const Duration(seconds: 5),   // 5초 침묵 시 “끝”으로 간주
       partialResults: true,
       localeId: 'ko_KR',
       onSoundLevelChange: (level) {
-        // sound level(0.0~1.0)이 변경될 때마다 업데이트
         _processSoundLevel(level);
       },
       cancelOnError: true,
-      listenMode: stt.ListenMode.confirmation,
+      // onStatus는 initialize 단계에서만 설정했으므로 여기서는 생략
     );
 
     setState(() {
@@ -103,18 +106,136 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
+    _cancelLockTimer();
   }
 
-  /// sound level → Equalizer 애니메이션에 전달
+  /// STT 상태 변화 콜백 (initialize 단계에서만 설정)
+  void _onSpeechStatus(String status) {
+    debugPrint('STT 상태: $status');
+
+    // “notListening” 상태이면서, 지금 Gemini/TTS 처리가 진행 중이지 않은 상태라면 재시작
+    if (status == 'notListening' && mounted && !_isProcessing) {
+      setState(() => _isListening = false);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isListening && !_isProcessing) {
+          _startListening();
+        }
+      });
+    }
+  }
+
+  /// STT 오류 콜백 (initialize 단계에서만 설정)
+  void _onSpeechError(stt.SpeechRecognitionError error) {
+    debugPrint('STT 오류: ' + error.toString());
+
+    // 타임아웃(error_speech_timeout) 혹은 말소리 감지 실패(error_no_match) 시,
+    // Gemini/TTS가 진행 중이지 않으면 재시작
+    if ((error.errorMsg == 'error_speech_timeout' ||
+        error.errorMsg == 'error_no_match') &&
+        mounted &&
+        !_isProcessing) {
+      setState(() => _isListening = false);
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !_isListening && !_isProcessing) {
+          _startListening();
+        }
+      });
+    }
+  }
+
+  /// 음성 인식 결과 콜백
+  void _onSpeechResult(stt.SpeechRecognitionResult result) {
+    final recognized = result.recognizedWords;
+    if (recognized.isNotEmpty) {
+      debugPrint('🎤 인식된 음성: ' + recognized);
+      if (!result.finalResult) {
+        _startLockTimer();
+      }
+    }
+    if (result.finalResult && recognized.isNotEmpty) {
+      // 최종 결과 확정 시 Gemini로 전송
+      _sendToGemini(recognized);
+      _cancelLockTimer();
+    }
+  }
+
+  /// 음성 레벨 변화 → Equalizer 애니메이션
   void _processSoundLevel(double level) {
-    // level: 0.0 ~ 1.0 (실제 STT에서 넘어오는 값은 보통 작으므로 증폭)
     final amplified = (level * 3).clamp(0.0, 1.0);
     setState(() {
       _lastSoundLevel = amplified;
     });
+    if (amplified > 0.3) {
+      _startLockTimer();
+    } else if (amplified < 0.1) {
+      _cancelLockTimer();
+    }
   }
 
-  /// Equalizer AnimationController + Tween 초기화
+  /// Gemini 요청과 TTS 재생
+  Future<void> _sendToGemini(String text) async {
+    if (_isProcessing) return;
+
+    // (1) Gemini/TTS 처리 중임을 나타내는 플래그를 켜고,
+    //     STT가 듣고 있으면 중단한다.
+    setState(() {
+      _isProcessing = true;
+    });
+    if (_isListening) {
+      _stopListening();
+    }
+
+    try {
+      final response = await _geminiService.analyzeUserInput(text);
+      final reply = response['response'] ?? '';
+      if (reply.isNotEmpty) {
+        debugPrint('💎 Gemini 응답: ' + reply);
+        // (2) TTS 재생: 이 Future가 꺼질 때까지 STT를 절대 재시작하지 않는다.
+        await _supertoneService.speak(reply);
+      }
+    } catch (e) {
+      debugPrint('Gemini 통신 오류: ' + e.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gemini 혹은 TTS 처리 중 오류가 발생했습니다.')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        // (3) TTS 재생이 모두 끝난 뒤에만 플래그 해제
+        setState(() {
+          _isProcessing = false;
+        });
+        // (4) 딜레이를 충분히 준 뒤(1초) STT를 다시 시작
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted && !_isListening && !_isProcessing) {
+            _startListening();
+          }
+        });
+      }
+    }
+  }
+
+  void _startLockTimer() {
+    _lockTimer?.cancel();
+    _lockTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) {
+        setState(() => _showLockButton = true);
+      }
+    });
+  }
+
+  void _cancelLockTimer() {
+    if (_lockTimer != null) {
+      _lockTimer!.cancel();
+      _lockTimer = null;
+    }
+    if (_showLockButton) {
+      setState(() => _showLockButton = false);
+    }
+  }
+
+  /// Equalizer 바들 초기화
   void _initEqualizerControllers() {
     _controllers = List.generate(24, (index) {
       return AnimationController(
@@ -133,7 +254,6 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
-      // 뒤로가기 시 STT 중단
       onWillPop: () async {
         if (_isListening) _stopListening();
         return true;
@@ -163,15 +283,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                     const Spacer(),
                     IconButton(
                       icon: const Icon(
-                        Icons.more_horiz,
+                        Icons.more_vert,
                         color: Colors.white,
                         size: 24,
                       ),
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ChatSettingScreen()),
-                        );
+                        // 추가 메뉴 동작
                       },
                     ),
                   ],
@@ -183,12 +300,8 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // ① Equalizer Bars 위젯
-                    WhiteEqualizerBars(),
-
+                    WhiteEqualizerBars(soundLevel: _lastSoundLevel),
                     const SizedBox(height: 32),
-
-                    // ② 안내 문구
                     const Text(
                       '귀 기울여 듣고 있어요.',
                       style: TextStyle(
@@ -197,11 +310,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                         fontWeight: FontWeight.w400,
                       ),
                     ),
-
                     const SizedBox(height: 48),
-
-                    // ③ 잠금 버튼 (빨간 원 + 자물쇠 아이콘)
-                    GestureDetector(
+                    _showLockButton
+                        ? GestureDetector(
                       onTap: () {
                         if (_isListening) _stopListening();
                         Navigator.of(context).maybePop();
@@ -221,7 +332,8 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                           ),
                         ),
                       ),
-                    ),
+                    )
+                        : const SizedBox(height: 72),
                   ],
                 ),
               ),
@@ -233,52 +345,40 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 }
 
-/// =============================================================
-/// WhiteEqualizerBars
-///
-/// • 24개의 바를 애니메이션으로 생성하고, 각 바의 높이를
-///   기본 애니메이션 값(animation.value)과 “soundLevel”을 곱해 진폭 조절.
-/// • [soundLevel]: 0.0 ~ 1.0 값(포화 시 amplitude가 최대가 됨)
-/// • [animations]: initState에서 생성된 24개의 Animation<double>
-/// =============================================================
 class WhiteEqualizerBars extends StatefulWidget {
+  final double soundLevel;
+  const WhiteEqualizerBars({Key? key, required this.soundLevel})
+      : super(key: key);
+
   @override
   _WhiteEqualizerBarsState createState() => _WhiteEqualizerBarsState();
 }
 
 class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
     with TickerProviderStateMixin {
-  late List<AnimationController> controllers;
-  late List<Animation<double>> animations;
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-
-    // 24개 바에 대한 애니메이션 컨트롤러 생성
-    controllers = List.generate(24, (index) {
+    _controllers = List.generate(5, (index) {
       return AnimationController(
-        duration: Duration(milliseconds: 800 + (index * 50)), // 각각 다른 속도
+        duration: Duration(milliseconds: 800 + (index * 50)),
         vsync: this,
-      );
+      )..repeat(reverse: true);
     });
-
-    animations = controllers.map((controller) {
+    _animations = _controllers.map((controller) {
       return Tween<double>(begin: 0.3, end: 1.0).animate(
         CurvedAnimation(parent: controller, curve: Curves.easeInOut),
       );
     }).toList();
-
-    // 모든 애니메이션 시작
-    for (var controller in controllers) {
-      controller.repeat(reverse: true);
-    }
   }
 
   @override
   void dispose() {
-    for (var controller in controllers) {
-      controller.dispose();
+    for (var c in _controllers) {
+      c.dispose();
     }
     super.dispose();
   }
@@ -293,16 +393,19 @@ class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: List.generate(5, (index) {
           return AnimatedBuilder(
-            animation: animations[index],
+            animation: _animations[index],
             builder: (context, child) {
               double baseHeight = _getBaseHeight(index);
-              double currentHeight = baseHeight * animations[index].value;
+              double scale = 0.5 + (widget.soundLevel * 0.5);
+              double height = baseHeight * _animations[index].value * scale;
+              height = height.clamp(10.0, baseHeight);
 
               return Container(
                 width: 20,
-                height: currentHeight,
+                height: height,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3 + (animations[index].value * 0.4)),
+                  color: Colors.white
+                      .withOpacity(0.3 + (_animations[index].value * 0.4)),
                   borderRadius: BorderRadius.circular(20),
                 ),
               );
@@ -314,9 +417,8 @@ class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
   }
 
   double _getBaseHeight(int index) {
-    // 중앙이 가장 높고 양쪽으로 갈수록 낮아지는 패턴
-    double center = 3;
+    double center = 2;
     double distance = (index - center).abs();
-    return 150 - (distance * 4); // 높이 조절
+    return 150 - (distance * 4);
   }
 }
