@@ -148,9 +148,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     final recognized = result.recognizedWords;
     if (recognized.isNotEmpty) {
       debugPrint('🎤 인식된 음성: ' + recognized);
-      if (!result.finalResult) {
-        _startLockTimer();
-      }
+      _startLockTimer();
     }
     if (result.finalResult && recognized.isNotEmpty) {
       // 최종 결과 확정 시 Gemini로 전송
@@ -165,7 +163,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
-    if (amplified > 0.3) {
+    if (amplified > 0.1) {
       _startLockTimer();
     } else if (amplified < 0.1) {
       _cancelLockTimer();
