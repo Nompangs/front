@@ -83,10 +83,11 @@ class SupertoneService {
           
           await _audioPlayer.stop();
         }
-        
-        
+
+        await _audioPlayer.setReleaseMode(ReleaseMode.stop);
         await _audioPlayer.play(DeviceFileSource(file.path));
-        print('[SupertoneService][$platform] ✅ 오디오 재생 시작됨 (Text: "$logText").'); 
+        print('[SupertoneService][$platform] ✅ 오디오 재생 시작됨 (Text: "$logText").');
+        await _audioPlayer.onPlayerComplete.first;
       } else {
         print('[SupertoneService][$platform] 🚨 API 오류: ${response.statusCode}, Body: ${response.body} (Text: "$logText")'); 
       }

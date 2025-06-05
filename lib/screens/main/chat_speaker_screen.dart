@@ -207,7 +207,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
           _isProcessing = false;
         });
         // (4) 딜레이를 충분히 준 뒤(1초) STT를 다시 시작
-        Future.delayed(const Duration(milliseconds: 1000), () {
+        Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted && !_isListening && !_isProcessing) {
             _startListening();
           }
