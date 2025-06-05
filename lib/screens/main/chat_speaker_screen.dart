@@ -217,11 +217,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 
   void _startLockTimer() {
-    _lockTimer?.cancel();
-    _lockTimer = Timer(const Duration(seconds: 5), () {
+    if (_lockTimer != null) return; // already counting
+    _lockTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _showLockButton = true);
       }
+      _lockTimer = null;
     });
   }
 
