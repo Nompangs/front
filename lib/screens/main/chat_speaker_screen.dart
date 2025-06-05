@@ -148,9 +148,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     final recognized = result.recognizedWords;
     if (recognized.isNotEmpty) {
       debugPrint('🎤 인식된 음성: ' + recognized);
-      if (!result.finalResult) {
-        _startLockTimer();
-      }
+      _startLockTimer();
     }
     if (result.finalResult && recognized.isNotEmpty) {
       // 최종 결과 확정 시 Gemini로 전송
@@ -165,7 +163,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
-    if (amplified > 0.3) {
+    if (amplified > 0.1) {
       _startLockTimer();
     } else if (amplified < 0.1) {
       _cancelLockTimer();
@@ -217,11 +215,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 
   void _startLockTimer() {
-    _lockTimer?.cancel();
-    _lockTimer = Timer(const Duration(seconds: 5), () {
+    if (_lockTimer != null) return; // already counting
+    _lockTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _showLockButton = true);
       }
+      _lockTimer = null;
     });
   }
 
@@ -261,8 +260,10 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
+              Column(
+                children: [
               // ─── 상단 바 ─────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -311,33 +312,50 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                       ),
                     ),
                     const SizedBox(height: 48),
-                    _showLockButton
-                        ? GestureDetector(
-                      onTap: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE64545),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    )
-                        : const SizedBox(height: 72),
+                    const SizedBox(height: 72),
                   ],
                 ),
               ),
+              ],
+            ),
+              if (_showLockButton) _buildLockButton(context),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockButton(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    double scaleX = size.width / 375.0;
+    double scaleY = size.height / 812.0;
+    double left = 138 * scaleX;
+    double top = 606 * scaleY;
+    double diameter = 94 * scaleX;
+    double iconSize = 42 * scaleX;
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: GestureDetector(
+        onTap: () {
+          if (_isListening) _stopListening();
+          Navigator.of(context).maybePop();
+        },
+        child: Container(
+          width: diameter,
+          height: diameter,
+          decoration: const BoxDecoration(
+            color: Color(0xFFFF3B2F),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Icon(
+              Icons.lock_outline,
+              color: Colors.white,
+              size: iconSize,
+            ),
           ),
         ),
       ),
