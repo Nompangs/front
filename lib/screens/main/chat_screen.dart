@@ -31,9 +31,9 @@ class _ChatScreenState extends State<ChatScreen> {
   
   late SupertoneService _supertoneService; 
   // late HumeAiTtsService _humeAiTtsService;
-  bool _isRecording = false; 
   late GeminiService _geminiService;
   bool _isProcessing = false;
+  int _messageLogCounter = 0; // 로그용 카운터
 
   @override
   void initState() {
@@ -68,43 +68,65 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _addMessage(String text, bool isUser, {bool speak = false}) async { // speak가 true일 때 비동기 처리를 위해 async 추가
-  setState(() {
-    _messages.insert(0, ChatMessage(text: text, isUser: isUser)); //
-  });
-  if (speak && text.isNotEmpty) {
-    try {
-      _supertoneService.speak(text); // 기존 것 주석 처리 또는 삭제
-      // await _humeAiTtsService.speak(text); // Hume AI TTS 서비스의 speak 메소드 호출
-    } catch (e) {
-      print("Error playing TTS: $e");
-      // 사용자에게 TTS 재생 실패 알림 (예: SnackBar)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('음성 재생 중 오류가 발생했습니다.')),
-        );
+
+  void _addMessage(String text, bool isUser, {bool speak = false}) async {
+    final logId = _messageLogCounter++;
+
+    if (!mounted) return;
+
+    setState(() {
+      _messages.insert(0, ChatMessage(text: text, isUser: isUser));
+    });
+
+    if (speak && text.isNotEmpty) {
+      try {
+        await _supertoneService.speak(text);
+      } catch (e) {
+        print("[ChatScreen_addMessage][$logId] TTS 재생 중 오류: $e");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('음성 재생 중 오류가 발생했습니다.')),
+          );
+        }
       }
     }
   }
-}
 
   Future<void> _requestAiResponse(String userInput) async {
-    if (_isProcessing) return;
+    if (_isProcessing) {
+      return;
+    }
+    if (!mounted) return;
+
     setState(() => _isProcessing = true);
 
-    final characterProfile = {
+    final Map<String, dynamic> characterProfile = {
       'name': widget.characterName,
       'tags': widget.personalityTags,
       'greeting': widget.greeting,
     };
 
-    final response = await _geminiService.analyzeUserInput(userInput, characterProfile: characterProfile);
-    String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; 
-    if (response != null && response["response"] != null && (response["response"] as String).isNotEmpty) {
-      aiResponseText = response["response"] as String;
+
+    try {
+      final response = await _geminiService.analyzeUserInput(userInput, characterProfile: characterProfile);
+      String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; 
+      if (response['response'] != null && (response['response'] as String).isNotEmpty) {
+        aiResponseText = response['response'] as String;
+      }
+      
+      if (mounted) {
+        _addMessage(aiResponseText, false, speak: true);
+      }
+    } catch (e) {
+        print('[ChatScreen_requestAiResponse] Gemini API 호출 오류: $e');
+        if (mounted) {
+            _addMessage("AI 응답 생성 중 오류가 발생했어요.", false, speak: true);
+        }
+    } finally {
+        if (mounted) {
+            setState(() => _isProcessing = false);
+        }
     }
-    _addMessage(aiResponseText, false, speak: true);
-    setState(() => _isProcessing = false);
   }
 
   void _handleSubmitted(String text) {
@@ -150,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _textController.dispose(); //
     _speech.stop(); //
-    // _humeAiTtsService.dispose(); // HumeAiTtsService의 dispose 메소드 호출
+    // _humeAiTtsService.dispose();
     super.dispose();
   }
 

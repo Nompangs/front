@@ -14,17 +14,13 @@ class CharacterManager {
     try {
       final user = await FirebaseManager.instance.getCurrentUser();
       if (user == null) throw Exception('사용자 인증 실패');
-
       final personaId = PersonaUtils.generateId(
         characterData['name'],
         List<String>.from(characterData['tags']),
         characterData['greeting'] ?? '',
       );
-
       await _saveQRProfile(personaId, characterData, user.uid);
       await _createUserInteraction(personaId, user.uid);
-
-      print("✅ 캐릭터 처리 완료: $personaId");
       return personaId;
     } catch (e) {
       print("❌ 캐릭터 처리 실패: $e");
