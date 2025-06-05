@@ -77,7 +77,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   Future<void> _startListening() async {
     // 이미 듣고 있거나 Gemini/TTS 처리 중이면 호출 무시
     if (_isListening || _isProcessing) return;
-    _cancelLockTimer();
+    _cancelLockTimer(hideButton: true);
 
     _speech.listen(
       onResult: _onSpeechResult,
@@ -106,7 +106,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
-    _cancelLockTimer();
+    _cancelLockTimer(hideButton: true);
   }
 
   /// STT 상태 변화 콜백 (initialize 단계에서만 설정)
@@ -166,7 +166,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     if (amplified > 0.1) {
       _startLockTimer();
     } else if (amplified < 0.1) {
-      _cancelLockTimer();
+      // 음성 레벨이 낮을 때 타이머는 중단하지만, 이미 잠금 버튼이
+      // 표시된 경우에는 유지한다.
+      _cancelLockTimer(hideButton: !_showLockButton);
     }
   }
 
@@ -182,7 +184,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     if (_isListening) {
       _stopListening();
     } else {
-      _cancelLockTimer();
+      _cancelLockTimer(hideButton: true);
     }
 
     try {
@@ -226,12 +228,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     });
   }
 
-  void _cancelLockTimer() {
+  void _cancelLockTimer({bool hideButton = false}) {
     if (_lockTimer != null) {
       _lockTimer!.cancel();
       _lockTimer = null;
     }
-    if (_showLockButton) {
+    if (hideButton && _showLockButton) {
       setState(() => _showLockButton = false);
     }
   }
