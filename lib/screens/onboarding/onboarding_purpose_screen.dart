@@ -8,7 +8,8 @@ class OnboardingPurposeScreen extends StatefulWidget {
   const OnboardingPurposeScreen({Key? key}) : super(key: key);
 
   @override
-  State<OnboardingPurposeScreen> createState() => _OnboardingPurposeScreenState();
+  State<OnboardingPurposeScreen> createState() =>
+      _OnboardingPurposeScreenState();
 }
 
 class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
@@ -19,10 +20,10 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   // 유머 스타일 옵션
   final List<String> _humorStyles = [
     "따뜻한",
-    "날카로운 관찰자적", 
+    "날카로운 관찰자적",
     "위트있는",
     "자기비하적",
-    "유쾌한"
+    "유쾌한",
   ];
 
   @override
@@ -68,7 +69,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
       final provider = Provider.of<OnboardingProvider>(context, listen: false);
       provider.updatePurpose(_purposeController.text.trim());
       provider.updateHumorStyle(_selectedHumorStyle!);
-      
+
       Navigator.pushNamed(context, '/onboarding/photo');
     }
   }
@@ -77,16 +78,16 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // 화면 크기에 따른 반응형 높이 계산
-    final greenHeight = screenHeight * 0.22; // 0.25 → 0.22 (초록색 섹션 높이 줄임)
+    final greenHeight = screenHeight * 0.297; // 0.33 → 0.297 (90%로 감소)
     final pinkHeight = screenHeight * 0.25; // 0.20 → 0.25 (분홍색 섹션 높이 늘림)
-    
+
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
         final userInput = provider.state.userInput;
         final objectName = userInput?.nickname ?? "털찐 말랑이";
-        
+
         return Scaffold(
           resizeToAvoidBottomInset: true,
           // AppBar
@@ -99,13 +100,11 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
+                onPressed:
+                    () => Navigator.pushReplacementNamed(context, '/home'),
                 child: const Text(
                   '건너뛰기',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
                 ),
               ),
             ],
@@ -117,7 +116,12 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                 Container(
                   width: double.infinity,
                   color: const Color(0xFFFDF7E9),
-                  padding: EdgeInsets.fromLTRB(screenWidth * 0.1, 32, screenWidth * 0.05, 32),
+                  padding: EdgeInsets.fromLTRB(
+                    screenWidth * 0.1,
+                    32,
+                    screenWidth * 0.05,
+                    32,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -125,11 +129,17 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                         children: [
                           // 하얀색 플레이스홀더로 사용자 이름 감싸기
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.transparent, width: 0),
+                              border: Border.all(
+                                color: Colors.transparent,
+                                width: 0,
+                              ),
                             ),
                             child: Text(
                               objectName,
@@ -166,180 +176,205 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                     ],
                   ),
                 ),
-                
+
                 // 초록색 섹션 (말풍선)
                 Stack(
                   children: [
                     Container(
                       width: double.infinity,
-                      height: greenHeight.clamp(180.0, 220.0),
+                      height: greenHeight.clamp(250.0, 300.0),
                       decoration: BoxDecoration(
                         color: const Color(0xFF3FCB80), // #3FCB80 색상
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 1,
-                        ),
+                        border: Border.all(color: Colors.black, width: 1),
                         borderRadius: const BorderRadius.only(
                           bottomLeft: Radius.circular(25),
                           bottomRight: Radius.circular(25),
                         ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 0,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
                     ),
-                    
-                    // 말풍선 floating 카드
+
+                    // 말풍선 floating 카드 - 세로 중앙 배치 개선
                     Positioned(
-                      top: (greenHeight.clamp(180.0, 220.0) - 80) / 2, // 초록색 섹션의 세로 정중앙 (말풍선 높이 80px 고려)
+                      top:
+                          (greenHeight.clamp(250.0, 300.0) - 150) / 2 -
+                          10, // 중앙 배치 (카드 높이 150 고려, clamp 범위도 새 높이에 맞게 조정)
                       left: screenWidth * 0.1,
                       right: screenWidth * 0.1,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(25),
-                          border: Border.all(
-                            color: Colors.black,
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              '용도',
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                      child: Column(
+                        children: [
+                          Container(
+                            height: 150, // 100 → 150으로 변경 (1.5배)
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(
+                                28,
+                              ), // onboarding_input_screen.dart와 동일한 라운딩
+                              border: Border.all(
+                                color: Colors.transparent,
+                                width: 0,
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => _showPurposeDialog(),
-                                child: Text(
-                                  _purposeController.text.isNotEmpty 
-                                      ? _purposeController.text 
-                                      : '구체적인 역할을 입력해주세요',
-                                  style: TextStyle(
-                                    color: _purposeController.text.isNotEmpty 
-                                        ? Colors.black87 
-                                        : Colors.grey.shade600,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.4,
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '용도',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.left,
-                                ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => _showPurposeDialog(),
+                                      child: Text(
+                                        _purposeController.text.isNotEmpty
+                                            ? _purposeController.text
+                                            : '구체적인 역할을 입력해주세요',
+                                        style: TextStyle(
+                                          color:
+                                              _purposeController.text.isNotEmpty
+                                                  ? Colors.black87
+                                                  : Colors.grey.shade600,
+                                          fontSize:
+                                              16, // 14 → 16으로 조정 (더 읽기 쉽게)
+                                          fontWeight: FontWeight.w500,
+                                          height: 1.4,
+                                        ),
+                                        textAlign: TextAlign.left,
+                                        maxLines:
+                                            4, // 2 → 4로 증가 (텍스트가 더 많이 보이도록)
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    
-                    // "삭제시 모든데이터사라짐" 텍스트를 말풍선 아래로 이동
-                    Positioned(
-                      top: (greenHeight.clamp(180.0, 220.0) - 80) / 2 + 100, // 말풍선 아래에 배치 (말풍선 높이 + 여백 고려)
-                      left: screenWidth * 0.1,
-                      right: screenWidth * 0.1,
-                      child: Align(
-                        alignment: Alignment.centerRight, // Center → Right 정렬
-                        child: Text(
-                          '삭제시 모든데이터사라짐',
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w400,
                           ),
-                        ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '200자 내외로 상세히 입력해주세요',
+                              style: TextStyle(
+                                color: Colors.red.shade400,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                
-                // 분홍색 섹션 (유머 스타일)
-                Transform.translate(
-                  offset: const Offset(0, -8),
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: pinkHeight.clamp(160.0, 200.0),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFD8F1),
-                          border: Border.all(
-                            color: Colors.black,
-                            width: 1,
-                          ),
-                          borderRadius: BorderRadius.circular(25),
-                        ),
+
+                // 분홍색 섹션 (유머 스타일) - 겹치지 않게 수정
+                Stack(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: pinkHeight.clamp(160.0, 200.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD8F1),
+                        border: Border.all(color: Colors.black, width: 1),
+                        borderRadius: BorderRadius.circular(25),
                       ),
-                      
-                      // 유머 스타일 드롭다운
-                      Positioned(
-                        top: (pinkHeight.clamp(160.0, 200.0) - 56) / 2,
-                        left: screenWidth * 0.1,
-                        right: screenWidth * 0.1,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => _showHumorStyleDropdown(context),
-                                child: Container(
-                                  height: 56,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(28),
-                                    border: Border.all(color: Colors.transparent, width: 0),
+                    ),
+
+                    // 유머 스타일 드롭다운
+                    Positioned(
+                      top: (pinkHeight.clamp(160.0, 200.0) - 56) / 2,
+                      left: screenWidth * 0.1,
+                      right: screenWidth * 0.1,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => _showHumorStyleDropdown(context),
+                              child: Container(
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(28),
+                                  border: Border.all(
+                                    color: Colors.transparent,
+                                    width: 0,
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Center(
-                                            child: Text(
-                                              _selectedHumorStyle ?? '위트있는',
-                                              style: TextStyle(
-                                                color: _selectedHumorStyle != null 
-                                                    ? Colors.black87 
-                                                    : Colors.grey.shade600,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w600,
-                                              ),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Expanded(
+                                        child: Center(
+                                          child: Text(
+                                            _selectedHumorStyle ?? '위트있는',
+                                            style: TextStyle(
+                                              color:
+                                                  _selectedHumorStyle != null
+                                                      ? Colors.black87
+                                                      : Colors.grey.shade600,
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w600,
                                             ),
                                           ),
                                         ),
-                                        const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
-                                      ],
-                                    ),
+                                      ),
+                                      const Icon(
+                                        Icons.keyboard_arrow_down,
+                                        color: Colors.grey,
+                                        size: 24,
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              '유머 스타일',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.black87,
-                              ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            '유머 스타일',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                
+
                 // 오류 메시지
                 if (_validationError != null)
                   Container(
                     width: double.infinity,
                     color: const Color(0xFFFDF7E9),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     child: Text(
                       _validationError!,
                       style: const TextStyle(
@@ -349,12 +384,17 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                       ),
                     ),
                   ),
-                
+
                 // 하단 아이보리 배경
                 Container(
                   width: double.infinity,
                   color: const Color(0xFFFDF7E9),
-                  padding: EdgeInsets.fromLTRB(screenWidth * 0.06, 24, screenWidth * 0.06, 48),
+                  padding: EdgeInsets.fromLTRB(
+                    screenWidth * 0.06,
+                    24,
+                    screenWidth * 0.06,
+                    48,
+                  ),
                   child: _buildNextButton(),
                 ),
               ],
@@ -399,7 +439,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   void _showHumorStyleDropdown(BuildContext context) {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final position = renderBox.localToGlobal(Offset.zero);
-    
+
     showDialog(
       context: context,
       barrierColor: const Color(0x4D000000),
@@ -414,7 +454,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                 height: double.infinity,
               ),
             ),
-            
+
             Positioned(
               left: 40,
               right: 40,
@@ -430,41 +470,60 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: _humorStyles.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final option = entry.value;
-                      final isSelected = _selectedHumorStyle == option;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedHumorStyle = option;
-                          });
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFDAB7FA) : Colors.white,
-                            borderRadius: BorderRadius.only(
-                              topLeft: index == 0 ? const Radius.circular(10) : Radius.zero,
-                              topRight: index == 0 ? const Radius.circular(10) : Radius.zero,
-                              bottomLeft: index == _humorStyles.length - 1 ? const Radius.circular(10) : Radius.zero,
-                              bottomRight: index == _humorStyles.length - 1 ? const Radius.circular(10) : Radius.zero,
+                    children:
+                        _humorStyles.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final option = entry.value;
+                          final isSelected = _selectedHumorStyle == option;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedHumorStyle = option;
+                              });
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isSelected
+                                        ? const Color(0xFFDAB7FA)
+                                        : Colors.white,
+                                borderRadius: BorderRadius.only(
+                                  topLeft:
+                                      index == 0
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  topRight:
+                                      index == 0
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  bottomLeft:
+                                      index == _humorStyles.length - 1
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  bottomRight:
+                                      index == _humorStyles.length - 1
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                ),
+                              ),
+                              child: Text(
+                                option,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            option,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
                   ),
                 ),
               ),
@@ -481,147 +540,161 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
       context: context,
       barrierColor: const Color(0x4D000000),
       barrierDismissible: true,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(40),
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(25)),
-            border: Border.fromBorderSide(BorderSide(color: Colors.black, width: 1)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '구체적인 역할 설정',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(40),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(Radius.circular(25)),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.black, width: 1),
                 ),
               ),
-              const SizedBox(height: 20),
-              Container(
-                height: 120, // 여러 줄 입력을 위해 높이 증가
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.all(Radius.circular(28)),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: TextField(
-                  controller: _purposeController,
-                  maxLines: 4,
-                  maxLength: 300,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    hintText: '구체적인 역할을 입력해주세요\n예: 운동을 까먹지 않게 채찍질해주는 조교',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    isDense: true,
-                    counterText: '', // 글자 수 카운터 숨김
-                  ),
-                  style: const TextStyle(
-                    color: Colors.black87,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  autofocus: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 3),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            border: Border.all(color: Colors.grey.shade300, width: 1),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(20),
-                              bottomLeft: Radius.circular(20),
-                              topRight: Radius.zero,
-                              bottomRight: Radius.zero,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '취소',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  Text(
+                    '구체적인 역할 설정',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 3),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {});
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDAB7FA).withOpacity(0.7),
-                            border: Border.all(color: const Color(0xFFDAB7FA).withOpacity(0.7), width: 1),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.zero,
-                              bottomLeft: Radius.zero,
-                              topRight: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '확인',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade700,
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 100, // 56 → 100으로 변경 (약 1.8배)
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.all(Radius.circular(28)),
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                    ),
+                    child: TextField(
+                      controller: _purposeController,
+                      maxLines: 4,
+                      maxLength: 300,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '구체적인 역할을 입력해주세요\n예: 운동을 까먹지 않게 채찍질해주는 조교',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        isDense: true,
+                        counterText: '', // 글자 수 카운터 숨김
+                      ),
+                      style: const TextStyle(
+                        color: Colors.black87,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      autofocus: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 3),
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(20),
+                                  bottomLeft: Radius.circular(20),
+                                  topRight: Radius.zero,
+                                  bottomRight: Radius.zero,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 3),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {});
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDAB7FA).withOpacity(0.7),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFDAB7FA,
+                                  ).withOpacity(0.7),
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.zero,
+                                  bottomLeft: Radius.zero,
+                                  topRight: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '확인',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
-} 
+}

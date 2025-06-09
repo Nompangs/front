@@ -2,99 +2,215 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
-import 'package:nompangs/widgets/common/personality_slider.dart';
-import 'package:nompangs/widgets/common/primary_button.dart';
-import 'package:nompangs/theme/app_theme.dart';
 
 class OnboardingPersonalityScreen extends StatefulWidget {
   const OnboardingPersonalityScreen({Key? key}) : super(key: key);
 
   @override
-  State<OnboardingPersonalityScreen> createState() => _OnboardingPersonalityScreenState();
+  State<OnboardingPersonalityScreen> createState() =>
+      _OnboardingPersonalityScreenState();
 }
 
-class _OnboardingPersonalityScreenState extends State<OnboardingPersonalityScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _avatarController;
-  late Animation<double> _avatarAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    
-    _avatarController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat();
-    
-    _avatarAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _avatarController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _avatarController.dispose();
-    super.dispose();
-  }
+class _OnboardingPersonalityScreenState
+    extends State<OnboardingPersonalityScreen> {
+  double introversionValue = 0.5;
+  double emotionalValue = 0.7;
+  double competenceValue = 0.3;
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF7E9),
+      backgroundColor: const Color(0xFFF5F5DC), // 베이지 배경
       appBar: AppBar(
+        backgroundColor: const Color(0xFFF5F5DC),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('성격 조정'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pushNamed(context, '/onboarding/completion'),
-            child: const Text('건너뛰기'),
+            onPressed:
+                () => Navigator.pushNamed(context, '/onboarding/completion'),
+            child: const Text(
+              '건너뛰기',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
           ),
         ],
       ),
       body: Consumer<OnboardingProvider>(
         builder: (context, provider, child) {
-          final character = provider.state.generatedCharacter;
-          
-          if (character == null) {
-            return const Center(
-              child: Text('캐릭터 정보를 불러올 수 없습니다.'),
-            );
-          }
-
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
-                
-                // 상단 타이틀
-                Text(
-                  '${character.name}의 성격을\n미세 조정해보세요',
-                  style: Theme.of(context).textTheme.headlineLarge,
-                  textAlign: TextAlign.center,
+                // 상단 베이지 섹션 (이미지만)
+                Container(
+                  width: double.infinity,
+                  color: const Color(0xFFF5F5DC),
+                  padding: const EdgeInsets.only(top: 0, bottom: 10),
+                  child: Column(
+                    children: [
+                      // 중앙 이미지만
+                      Center(
+                        child: Container(
+                          width: screenWidth * 0.8,
+                          height: screenWidth * 0.8,
+                          child: Image.asset(
+                            'assets/ui_assets/placeHolder_1@2x.png',
+                            width: screenWidth * 0.8,
+                            height: screenWidth * 0.8,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('=== 이미지 로딩 에러 ===');
+                              print('Error: $error');
+                              print('StackTrace: $stackTrace');
+                              print('===================');
+                              return Container(
+                                width: screenWidth * 0.8,
+                                height: screenWidth * 0.8,
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  border: Border.all(
+                                    color: Colors.red,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error,
+                                      size: 40,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '이미지 로드 실패',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            frameBuilder: (
+                              context,
+                              child,
+                              frame,
+                              wasSynchronouslyLoaded,
+                            ) {
+                              if (wasSynchronouslyLoaded) {
+                                print('=== 이미지 로딩 성공 (동기) ===');
+                                return child;
+                              }
+                              if (frame == null) {
+                                print('=== 이미지 로딩 중... ===');
+                                return Container(
+                                  width: screenWidth * 0.8,
+                                  height: screenWidth * 0.8,
+                                  color: Colors.grey.shade200,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              print('=== 이미지 로딩 성공 (비동기) ===');
+                              return child;
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                
-                const SizedBox(height: 40),
-                
-                // 캐릭터 프리뷰 카드
-                _buildCharacterPreviewCard(character),
-                
-                const SizedBox(height: 40),
-                
-                // 성격 슬라이더들
-                _buildPersonalitySliders(character, provider),
-                
-                const SizedBox(height: 40),
-                
-                // 하단 버튼들
-                _buildBottomActions(provider),
-                
-                const SizedBox(height: 40),
+
+                // 성격 섹션들을 연속적으로 배치
+                Column(
+                  children: [
+                    // 내향성 슬라이더 섹션 (노란색)
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFFFFD700),
+                      title: '내향성',
+                      value: introversionValue,
+                      leftLabel: '수줍음',
+                      rightLabel: '활발함',
+                      onChanged:
+                          (value) => setState(() => introversionValue = value),
+                    ),
+
+                    // 감정표현 슬라이더 섹션 (주황색)
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFFFF8C42),
+                      title: '감정표현',
+                      value: emotionalValue,
+                      leftLabel: '차가운',
+                      rightLabel: '따뜻한',
+                      onChanged:
+                          (value) => setState(() => emotionalValue = value),
+                    ),
+
+                    // 유능함 슬라이더 섹션 (초록색)
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFF90EE90),
+                      title: '유능함',
+                      value: competenceValue,
+                      leftLabel: '서툰',
+                      rightLabel: '능숙한',
+                      onChanged:
+                          (value) => setState(() => competenceValue = value),
+                    ),
+                  ],
+                ),
+
+                // 하단 베이지 섹션 (저장 버튼)
+                Container(
+                  width: double.infinity,
+                  color: const Color(0xFFF5F5DC),
+                  padding: EdgeInsets.fromLTRB(
+                    screenWidth * 0.06,
+                    24,
+                    screenWidth * 0.06,
+                    48,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.grey.shade400, width: 1),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/onboarding/completion');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: const Text(
+                        '성격 저장하기',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           );
@@ -103,263 +219,152 @@ class _OnboardingPersonalityScreenState extends State<OnboardingPersonalityScree
     );
   }
 
-  Widget _buildCharacterPreviewCard(Character character) {
+  Widget _buildPersonalitySection({
+    required double screenWidth,
+    required Color color,
+    required String title,
+    required double value,
+    required String leftLabel,
+    required String rightLabel,
+    required Function(double) onChanged,
+  }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
+      height: 110,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            offset: const Offset(0, 4),
-            blurRadius: 12,
-          ),
-        ],
+        color: color,
+        border: Border.all(color: Colors.black, width: 1),
+        borderRadius: BorderRadius.circular(25),
       ),
-      child: Column(
-        children: [
-          // 캐릭터 아바타
-          AnimatedBuilder(
-            animation: _avatarAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, sin(_avatarAnimation.value * 2 * 3.14159) * 5),
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: _getAvatarColor(character.personality),
-                    borderRadius: BorderRadius.circular(40),
-                    border: Border.all(
-                      color: _getAvatarColor(character.personality),
-                      width: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          children: [
+            // 제목 (중앙)
+            Center(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w300,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // 슬라이더
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: Colors.black,
+                  inactiveTrackColor: Colors.white,
+                  thumbColor: Colors.black,
+                  thumbShape: RectangularSliderThumbShape(borderColor: color),
+                  trackHeight: 8,
+                  overlayShape: SliderComponentShape.noOverlay,
+                ),
+                child: Slider(
+                  value: value,
+                  onChanged: onChanged,
+                  min: 0.0,
+                  max: 1.0,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 4),
+
+            // 라벨들 (슬라이더 아래 양 끝)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    leftLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w200,
+                      color: Colors.black87,
                     ),
                   ),
-                  child: Icon(
-                    _getAvatarIcon(character.objectType),
-                    color: Colors.white,
-                    size: 40,
+                  Text(
+                    rightLabel,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w200,
+                      color: Colors.black87,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // 이름
-          Text(
-            character.name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF6750A4),
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // 성격 태그들
-          Wrap(
-            spacing: 8,
-            children: character.traits.map((trait) => Chip(
-              label: Text(
-                '#$trait',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              backgroundColor: AppColors.getPersonalityColor(trait).withOpacity(0.2),
-              side: BorderSide.none,
-            )).toList(),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // 첫 인사말
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFF6750A4).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '"${character.greeting}"',
-              style: const TextStyle(
-                fontSize: 14,
-                fontStyle: FontStyle.italic,
-                color: Color(0xFF6750A4),
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPersonalitySliders(Character character, OnboardingProvider provider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '성격 지표',
-          style: Theme.of(context).textTheme.headlineMedium,
-        ),
-        
-        const SizedBox(height: 8),
-        
-        Text(
-          '슬라이더를 조정해서 성격을 미세 조정할 수 있어요',
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Colors.grey[600],
-          ),
-        ),
-        
-        const SizedBox(height: 24),
-        
-        // 온기 슬라이더
-        PersonalitySlider(
-          label: '온기',
-          color: AppTheme.warmthHigh,
-          value: character.personality.warmth.toDouble(),
-          leftLabel: '차가운',
-          rightLabel: '따뜻한',
-          onChanged: (value) {
-            provider.updatePersonality(PersonalityType.warmth, value);
-          },
-        ),
-        
-        const SizedBox(height: 24),
-        
-        // 유능함 슬라이더
-        PersonalitySlider(
-          label: '유능함',
-          color: AppTheme.competenceHigh,
-          value: character.personality.competence.toDouble(),
-          leftLabel: '순수한',
-          rightLabel: '유능한',
-          onChanged: (value) {
-            provider.updatePersonality(PersonalityType.competence, value);
-          },
-        ),
-        
-        const SizedBox(height: 24),
-        
-        // 외향성 슬라이더
-        PersonalitySlider(
-          label: '외향성',
-          color: AppTheme.extroversionHigh,
-          value: character.personality.extroversion.toDouble(),
-          leftLabel: '내성적',
-          rightLabel: '활발한',
-          onChanged: (value) {
-            provider.updatePersonality(PersonalityType.extroversion, value);
-          },
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomActions(OnboardingProvider provider) {
-    return Column(
-      children: [
-        PrimaryButton(
-          text: '이 성격으로 완성',
-          onPressed: () {
-            Navigator.pushNamed(context, '/onboarding/completion');
-          },
-        ),
-        
-        const SizedBox(height: 16),
-        
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            TextButton.icon(
-              onPressed: () {
-                // 새로운 성격 재생성
-                provider.generateCharacter();
-              },
-              icon: const Icon(Icons.refresh, size: 20),
-              label: const Text(
-                '다시 생성',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            
-            TextButton.icon(
-              onPressed: () {
-                // 음성으로 들어보기 (향후 구현)
-                _playGreeting(provider.state.generatedCharacter!.greeting);
-              },
-              icon: const Icon(Icons.volume_up, size: 20),
-              label: const Text(
-                '음성 듣기',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                ],
               ),
             ),
           ],
         ),
-      ],
-    );
-  }
-
-  Color _getAvatarColor(Personality personality) {
-    // 성격에 따른 아바타 색상 결정
-    if (personality.warmth > 70) {
-      return AppTheme.warmthHigh;
-    } else if (personality.competence > 70) {
-      return AppTheme.competenceHigh;
-    } else if (personality.extroversion > 70) {
-      return AppTheme.extroversionHigh;
-    } else {
-      return AppTheme.accent;
-    }
-  }
-
-  IconData _getAvatarIcon(String objectType) {
-    // 사물 타입에 따른 아이콘 결정
-    if (objectType.contains('컵') || objectType.contains('머그')) {
-      return Icons.local_cafe;
-    } else if (objectType.contains('책')) {
-      return Icons.book;
-    } else if (objectType.contains('인형') || objectType.contains('곰')) {
-      return Icons.toys;
-    } else if (objectType.contains('폰') || objectType.contains('핸드폰')) {
-      return Icons.phone_android;
-    } else if (objectType.contains('식물') || objectType.contains('화분')) {
-      return Icons.local_florist;
-    } else {
-      return Icons.favorite;
-    }
-  }
-
-  void _playGreeting(String greeting) {
-    // 향후 TTS 구현
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('음성 기능은 곧 구현될 예정입니다: "$greeting"'),
-        duration: const Duration(seconds: 3),
       ),
     );
   }
+}
 
-  double sin(double value) {
-    return (value % (2 * 3.14159) - 3.14159).abs() > 1.5708 
-        ? -1 * (value % (2 * 3.14159) > 3.14159 ? -1 : 1) * 
-          (1 - (value % (2 * 3.14159) - (value % (2 * 3.14159) > 3.14159 ? 3.14159 : 0)).abs() / 1.5708)
-        : (value % (2 * 3.14159) > 3.14159 ? -1 : 1) * 
-          (value % (2 * 3.14159) - (value % (2 * 3.14159) > 3.14159 ? 3.14159 : 0)) / 1.5708;
+// 커스텀 썸 모양 (얇은 둥근사각형)
+class RectangularSliderThumbShape extends SliderComponentShape {
+  const RectangularSliderThumbShape({this.borderColor});
+
+  final Color? borderColor;
+
+  @override
+  Size getPreferredSize(bool isEnabled, bool isDiscrete) {
+    return const Size(6, 26); // 높이를 22에서 26으로 증가
   }
-} 
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset center, {
+    required Animation<double> activationAnimation,
+    required Animation<double> enableAnimation,
+    required bool isDiscrete,
+    required TextPainter labelPainter,
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required TextDirection textDirection,
+    required double value,
+    required double textScaleFactor,
+    required Size sizeWithOverflow,
+  }) {
+    final Canvas canvas = context.canvas;
+
+    // 테두리 그리기
+    if (borderColor != null) {
+      final borderPaint =
+          Paint()
+            ..color = borderColor!
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 2; // 1px 테두리
+
+      final borderRect = Rect.fromCenter(center: center, width: 6, height: 26);
+
+      final borderRRect = RRect.fromRectAndRadius(
+        borderRect,
+        const Radius.circular(3),
+      );
+
+      canvas.drawRRect(borderRRect, borderPaint);
+    }
+
+    // 썸 본체 그리기
+    final paint =
+        Paint()
+          ..color = sliderTheme.thumbColor ?? Colors.black
+          ..style = PaintingStyle.fill;
+
+    final rect = Rect.fromCenter(center: center, width: 4, height: 24);
+
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(2));
+
+    canvas.drawRRect(rrect, paint);
+  }
+}

@@ -48,6 +48,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/ui_assets/
+    - assets/ui_assets/placeHolder_1@2x.png
     - .env
     - assets/google_icon.png
   fonts:
