@@ -77,7 +77,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   Future<void> _startListening() async {
     // 이미 듣고 있거나 Gemini/TTS 처리 중이면 호출 무시
     if (_isListening || _isProcessing) return;
-    _cancelLockTimer();
+    _cancelLockTimer(hideButton: true);
 
     _speech.listen(
       onResult: _onSpeechResult,
@@ -106,7 +106,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       _isListening = false;
       _lastSoundLevel = 0.0;
     });
-    _cancelLockTimer();
+    _cancelLockTimer(hideButton: true);
   }
 
   /// STT 상태 변화 콜백 (initialize 단계에서만 설정)
@@ -148,14 +148,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     final recognized = result.recognizedWords;
     if (recognized.isNotEmpty) {
       debugPrint('🎤 인식된 음성: ' + recognized);
-      if (!result.finalResult) {
-        _startLockTimer();
-      }
+      _startLockTimer();
     }
     if (result.finalResult && recognized.isNotEmpty) {
       // 최종 결과 확정 시 Gemini로 전송
       _sendToGemini(recognized);
-      _cancelLockTimer();
+      // 타이머는 Gemini 처리 단계에서 취소된다
     }
   }
 
@@ -165,10 +163,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     setState(() {
       _lastSoundLevel = amplified;
     });
-    if (amplified > 0.3) {
+    if (amplified > 0.1) {
       _startLockTimer();
     } else if (amplified < 0.1) {
-      _cancelLockTimer();
+      // 음성 레벨이 낮을 때 타이머는 중단하지만, 이미 잠금 버튼이
+      // 표시된 경우에는 유지한다.
+      _cancelLockTimer(hideButton: !_showLockButton);
     }
   }
 
@@ -183,6 +183,8 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
     });
     if (_isListening) {
       _stopListening();
+    } else {
+      _cancelLockTimer(hideButton: true);
     }
 
     try {
@@ -217,20 +219,21 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 
   void _startLockTimer() {
-    _lockTimer?.cancel();
-    _lockTimer = Timer(const Duration(seconds: 5), () {
+    if (_lockTimer != null) return; // already counting
+    _lockTimer = Timer(const Duration(seconds: 3), () {
       if (mounted) {
         setState(() => _showLockButton = true);
       }
+      _lockTimer = null;
     });
   }
 
-  void _cancelLockTimer() {
+  void _cancelLockTimer({bool hideButton = false}) {
     if (_lockTimer != null) {
       _lockTimer!.cancel();
       _lockTimer = null;
     }
-    if (_showLockButton) {
+    if (hideButton && _showLockButton) {
       setState(() => _showLockButton = false);
     }
   }
@@ -261,8 +264,10 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       child: Scaffold(
         backgroundColor: Colors.black,
         body: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
+              Column(
+                children: [
               // ─── 상단 바 ─────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(
@@ -311,33 +316,50 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
                       ),
                     ),
                     const SizedBox(height: 48),
-                    _showLockButton
-                        ? GestureDetector(
-                      onTap: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE64545),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    )
-                        : const SizedBox(height: 72),
+                    const SizedBox(height: 72),
                   ],
                 ),
               ),
+              ],
+            ),
+              if (_showLockButton) _buildLockButton(context),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLockButton(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    double scaleX = size.width / 375.0;
+    double scaleY = size.height / 812.0;
+    double left = 138 * scaleX;
+    double top = 606 * scaleY;
+    double diameter = 94 * scaleX;
+    double iconSize = 42 * scaleX;
+
+    return Positioned(
+      left: left,
+      top: top,
+      child: GestureDetector(
+        onTap: () {
+          if (_isListening) _stopListening();
+          Navigator.of(context).maybePop();
+        },
+        child: Container(
+          width: diameter,
+          height: diameter,
+          decoration: const BoxDecoration(
+            color: Color(0xFFFF3B2F),
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: Icon(
+              Icons.lock_outline,
+              color: Colors.white,
+              size: iconSize,
+            ),
           ),
         ),
       ),
