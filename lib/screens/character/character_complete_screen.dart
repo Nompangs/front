@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/services/character_manager.dart';
+import 'package:cross_file/cross_file.dart';
+import 'package:flutter/rendering.dart';
 
 class CharacterCompleteScreen extends StatefulWidget {
   final String characterName;
