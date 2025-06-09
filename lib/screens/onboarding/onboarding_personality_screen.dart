@@ -141,8 +141,13 @@ class _OnboardingPersonalityScreenState
                       value: introversionValue,
                       leftLabel: '수줍음',
                       rightLabel: '활발함',
-                      onChanged:
-                          (value) => setState(() => introversionValue = value),
+                      onChanged: (value) {
+                        setState(() => introversionValue = value);
+                        provider.updatePersonalitySlider(
+                          'introversion',
+                          (value * 10).round(),
+                        );
+                      },
                     ),
 
                     // 감정표현 슬라이더 섹션 (주황색)
@@ -153,8 +158,13 @@ class _OnboardingPersonalityScreenState
                       value: emotionalValue,
                       leftLabel: '차가운',
                       rightLabel: '따뜻한',
-                      onChanged:
-                          (value) => setState(() => emotionalValue = value),
+                      onChanged: (value) {
+                        setState(() => emotionalValue = value);
+                        provider.updatePersonalitySlider(
+                          'warmth',
+                          (value * 10).round(),
+                        );
+                      },
                     ),
 
                     // 유능함 슬라이더 섹션 (초록색)
@@ -165,8 +175,13 @@ class _OnboardingPersonalityScreenState
                       value: competenceValue,
                       leftLabel: '서툰',
                       rightLabel: '능숙한',
-                      onChanged:
-                          (value) => setState(() => competenceValue = value),
+                      onChanged: (value) {
+                        setState(() => competenceValue = value);
+                        provider.updatePersonalitySlider(
+                          'competence',
+                          (value * 10).round(),
+                        );
+                      },
                     ),
                   ],
                 ),
