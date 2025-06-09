@@ -663,7 +663,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       'createdAt': character.createdAt?.toIso8601String(),
     };
 
-    return 'nompangs://character?data=${base64Encode(utf8.encode(jsonEncode(data)))}';
+    return 'nompangs://character?data=${base64Url.encode(utf8.encode(jsonEncode(data)))}';
   }
 
   Future<void> _saveQRCode() async {
