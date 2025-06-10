@@ -62,3 +62,7 @@ This Flutter application powers the Nompangs experience. It relies on Firebase f
   ```bash
   flutter analyze
   ```
+
+### Android Notes
+
+The QR code backend currently uses HTTP. Recent Android versions block cleartext traffic unless explicitly allowed. The manifest sets `android:usesCleartextTraffic="true"` so the app can reach the backend during development. Remove this setting or switch the backend to HTTPS before releasing.
