@@ -497,7 +497,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
             if (_validationError != null)
               Container(
                 width: double.infinity,
-                color: const Color(0xFFFDF7E9),
+                color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 16,
@@ -512,10 +512,10 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                 ),
               ),
 
-            // 하단 아이보리 배경
+            // 하단 흰색 배경
             Container(
               width: double.infinity,
-              color: const Color(0xFFFDF7E9),
+              color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
               padding: EdgeInsets.fromLTRB(
                 screenWidth * 0.06,
                 32, // 상단 패딩 늘리기
@@ -569,6 +569,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                           ),
                         ),
 
+                        const SizedBox(width: 3), // 버튼 사이 간격 추가
                         // 카메라 촬영 버튼 (네모형 - 오른쪽)
                         Expanded(
                           child: Container(

@@ -149,7 +149,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     // 분홍색 섹션 (QR 코드)
                     Container(
                       width: double.infinity,
-                      height: 160,
+                      height: 140, // 160에서 140으로 줄임 (20px 감소)
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFD8F1),
                         border: Border.all(color: Colors.black, width: 1),
@@ -158,7 +158,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: screenWidth * 0.05,
-                          vertical: 20,
+                          vertical: 15, // 20에서 15로 줄임 (5px 감소)
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
@@ -167,7 +167,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                             Expanded(
                               flex: 2,
                               child: SizedBox(
-                                height: 120, // QR 코드와 같은 높이
+                                height: 110, // 120에서 110으로 줄임 (QR과 맞춤)
                                 child: Column(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -175,7 +175,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   children: [
                                     // QR 텍스트 (줄바꿈 추가)
                                     const Text(
-                                      'QR을 붙이면 언제 어디서든\n 대화할 수 있어요!',
+                                      'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
@@ -185,7 +185,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                       overflow: TextOverflow.ellipsis,
                                     ),
 
-                                    // 저장하기, 공유하기 버튼 (더 얇게)
+                                    // 저장하기, 공유하기 버튼 (색상 통일)
                                     Row(
                                       children: [
                                         Expanded(
@@ -201,7 +201,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(
-                                                0xFF6750A4,
+                                                0xFF6750A4, // 통일된 색상
                                               ),
                                               foregroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(
@@ -231,7 +231,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(
-                                                0xFF42A5F5,
+                                                0xFF6750A4, // 통일된 색상
                                               ),
                                               foregroundColor: Colors.white,
                                               shape: RoundedRectangleBorder(
@@ -255,25 +255,34 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
                             const SizedBox(width: 20),
 
-                            // 오른쪽: QR 코드 (얇은 여백)
-                            RepaintBoundary(
-                              key: _qrKey,
-                              child: Container(
-                                width: 120,
-                                height: 120,
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 1,
+                            // 오른쪽: QR 코드 (연보라색 배경)
+                            Container(
+                              width: 110,
+                              height: 110,
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xC8A6FF,
+                                ).withOpacity(0.66), // 연보라색 66% 투명도
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: RepaintBoundary(
+                                  key: _qrKey,
+                                  child: Container(
+                                    width: 108, // 110에서 108로 더 줄임
+                                    height: 108, // 110에서 108로 더 줄임
+                                    padding: const EdgeInsets.all(
+                                      0.5,
+                                    ), // 1에서 0.5로 더 줄임
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                    ),
+                                    child: QrImageView(
+                                      data: _generateQRData(character),
+                                      version: QrVersions.auto,
+                                      backgroundColor: Colors.white,
+                                    ),
                                   ),
-                                ),
-                                child: QrImageView(
-                                  data: _generateQRData(character),
-                                  version: QrVersions.auto,
-                                  backgroundColor: Colors.white,
                                 ),
                               ),
                             ),

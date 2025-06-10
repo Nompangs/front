@@ -15,7 +15,7 @@ class OnboardingInputScreen extends StatefulWidget {
 class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   final TextEditingController _nicknameController = TextEditingController();
   final TextEditingController _objectTypeController = TextEditingController();
-  
+
   String? _selectedLocation;
   String? _selectedDuration;
   String? _validationError;
@@ -114,11 +114,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // 화면 크기에 따른 반응형 높이 계산
     final blueHeight = screenHeight * 0.16; // 화면 높이의 16% (최소 120, 최대 150)
     final pinkHeight = screenHeight * 0.35; // 화면 높이의 35% (최소 280, 최대 320)
-    
+
     return Scaffold(
       resizeToAvoidBottomInset: true, // 키보드 오버플로우 방지
       // 일반적인 AppBar 사용
@@ -134,22 +134,25 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView( // 스크롤 가능하도록 수정
+      body: SingleChildScrollView(
+        // 스크롤 가능하도록 수정
         child: Column(
           children: [
             // 아이보리 섹션 (100% 폭) - Material 3 여백 최적화
             Container(
               width: double.infinity,
               color: const Color(0xFFFDF7E9),
-              padding: EdgeInsets.fromLTRB(screenWidth * 0.1, 32, screenWidth * 0.05, 32), // 상하 패딩 증가 (24 → 32)
+              padding: EdgeInsets.fromLTRB(
+                screenWidth * 0.1,
+                32,
+                screenWidth * 0.05,
+                32,
+              ), // 상하 패딩 증가 (24 → 32)
               child: Text(
                 '궁금해!\n나는 어떤 사물이야?',
                 style: TextStyle(
@@ -160,7 +163,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ),
               ),
             ),
-            
+
             // 하늘색 섹션 (100% 폭) - 반응형 높이
             Stack(
               children: [
@@ -169,10 +172,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   height: blueHeight.clamp(120.0, 150.0), // 최소 120, 최대 150
                   decoration: BoxDecoration(
                     color: const Color(0xFF57B3E6), // 단색으로 변경
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ),
+                    border: Border.all(color: Colors.black, width: 1),
                     borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(25),
                       bottomRight: Radius.circular(25),
@@ -187,10 +187,12 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     ],
                   ),
                 ),
-                
+
                 // 이름 입력 floating 카드
                 Positioned(
-                  top: (blueHeight.clamp(120.0, 150.0) - 56) / 2 - 10, // 중앙 배치 (카드 높이 56 고려)
+                  top:
+                      (blueHeight.clamp(120.0, 150.0) - 56) / 2 -
+                      10, // 중앙 배치 (카드 높이 56 고려)
                   left: screenWidth * 0.1, // 반응형 좌우 여백
                   right: screenWidth * 0.1,
                   child: Column(
@@ -213,7 +215,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ),
               ],
             ),
-            
+
             // 분홍색 섹션 (100% 폭 + 테두리 겹치기) - 반응형 높이
             Transform.translate(
               offset: const Offset(0, -1), // 테두리 겹치기
@@ -221,13 +223,13 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: pinkHeight.clamp(320.0, 380.0), // 400→320, 460→380으로 줄임 (상하 균일하게)
+                    height: pinkHeight.clamp(
+                      320.0,
+                      380.0,
+                    ), // 400→320, 460→380으로 줄임 (상하 균일하게)
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFD8F1), // 색상 변경
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 1,
-                      ),
+                      border: Border.all(color: Colors.black, width: 1),
                       borderRadius: BorderRadius.circular(25),
                       boxShadow: [
                         BoxShadow(
@@ -239,7 +241,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                       ],
                     ),
                   ),
-                  
+
                   // 입력 폼 floating 카드 - 상하 중앙 배치
                   Positioned(
                     top: 48, // 56→48로 조정 (상하 여백 균일하게)
@@ -250,13 +252,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ],
               ),
             ),
-            
+
             // 오류 메시지
             if (_validationError != null)
               Container(
                 width: double.infinity,
                 color: const Color(0xFFFDF7E9),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16), // 16은 8배수로 유지
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ), // 16은 8배수로 유지
                 child: Text(
                   _validationError!,
                   style: const TextStyle(
@@ -266,12 +271,17 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   ),
                 ),
               ),
-            
-            // 하단 아이보리 배경 - Material 3 최적화
+
+            // 하단 흰색 배경 - Material 3 최적화
             Container(
               width: double.infinity,
-              color: const Color(0xFFFDF7E9),
-              padding: EdgeInsets.fromLTRB(screenWidth * 0.06, 24, screenWidth * 0.06, 48), // 반응형 패딩
+              color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
+              padding: EdgeInsets.fromLTRB(
+                screenWidth * 0.06,
+                24,
+                screenWidth * 0.06,
+                48,
+              ), // 반응형 패딩
               child: _buildNextButton(),
             ),
           ],
@@ -302,15 +312,17 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               ),
             ),
             Expanded(
-              child: Center( // 중앙정렬
+              child: Center(
+                // 중앙정렬
                 child: Text(
-                  _nicknameController.text.isNotEmpty 
-                      ? _nicknameController.text 
+                  _nicknameController.text.isNotEmpty
+                      ? _nicknameController.text
                       : '', // 애칭란은 비워둠
                   style: TextStyle(
-                    color: _nicknameController.text.isNotEmpty 
-                        ? Colors.black 
-                        : Colors.grey, // 건너뛰기와 같은 색상
+                    color:
+                        _nicknameController.text.isNotEmpty
+                            ? Colors.black
+                            : Colors.grey, // 건너뛰기와 같은 색상
                     fontSize: 20, // 14 → 20으로 복원 (예시 텍스트 크기 원래대로)
                     fontWeight: FontWeight.w600, // 더 굵게
                   ),
@@ -328,35 +340,29 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     return Column(
       children: [
         // 위치 드롭다운
-        _buildDropdownRow(
-          _selectedLocation, 
-          _locationOptions, 
-          '에서', 
-          '우리집 거실',
-          (value) {
-            setState(() {
-              _selectedLocation = value;
-            });
-          }
-        ),
-        
+        _buildDropdownRow(_selectedLocation, _locationOptions, '에서', '우리집 거실', (
+          value,
+        ) {
+          setState(() {
+            _selectedLocation = value;
+          });
+        }),
+
         const SizedBox(height: 8), // 4 → 8 (8배수 간격)
-        
         // 기간 드롭다운
         _buildDropdownRow(
-          _selectedDuration, 
-          _durationOptions, 
-          '정도 함께한', 
+          _selectedDuration,
+          _durationOptions,
+          '정도 함께한',
           '3개월',
           (value) {
             setState(() {
               _selectedDuration = value;
             });
-          }
+          },
         ),
-        
+
         const SizedBox(height: 8), // 4 → 8 (8배수 간격)
-        
         // 사물 종류 입력 (애칭과 같은 형태로 변경)
         _buildObjectTypeCard(),
       ],
@@ -376,20 +382,25 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(28), // 다음 버튼과 동일한 라운딩
-                    border: Border.all(color: Colors.transparent, width: 0), // 테두리 제거
+                    border: Border.all(
+                      color: Colors.transparent,
+                      width: 0,
+                    ), // 테두리 제거
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _objectTypeController.text.isNotEmpty 
-                            ? _objectTypeController.text 
+                        _objectTypeController.text.isNotEmpty
+                            ? _objectTypeController.text
                             : '이 빠진 머그컵', // 미리보기 텍스트
                         style: TextStyle(
-                          color: _objectTypeController.text.isNotEmpty 
-                              ? Colors.grey  // Colors.black → Colors.grey로 변경
-                              : Colors.grey, // 건너뛰기와 같은 색상
+                          color:
+                              _objectTypeController.text.isNotEmpty
+                                  ? Colors
+                                      .grey // Colors.black → Colors.grey로 변경
+                                  : Colors.grey, // 건너뛰기와 같은 색상
                           fontSize: 18, // Material 3 Body Large+ (16 → 18)
                           fontWeight: FontWeight.w500, // 약간 더 굵게
                         ),
@@ -426,19 +437,35 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  Widget _buildDropdownRow(String? selectedValue, List<String> options, String suffix, String preview, Function(String?) onChanged) {
+  Widget _buildDropdownRow(
+    String? selectedValue,
+    List<String> options,
+    String suffix,
+    String preview,
+    Function(String?) onChanged,
+  ) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
               child: GestureDetector(
-                onTap: () => _showCustomDropdown(context, options, selectedValue, onChanged, offsetY: options == _locationOptions ? 98 : 124),
+                onTap:
+                    () => _showCustomDropdown(
+                      context,
+                      options,
+                      selectedValue,
+                      onChanged,
+                      offsetY: options == _locationOptions ? 98 : 124,
+                    ),
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.transparent, width: 0), // 테두리 제거
+                    border: Border.all(
+                      color: Colors.transparent,
+                      width: 0,
+                    ), // 테두리 제거
                   ),
                   child: Container(
                     height: 56,
@@ -453,12 +480,19 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           Text(
                             selectedValue ?? preview,
                             style: TextStyle(
-                              color: selectedValue != null ? Colors.black : Colors.grey,
+                              color:
+                                  selectedValue != null
+                                      ? Colors.black
+                                      : Colors.grey,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          const Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 24),
+                          const Icon(
+                            Icons.keyboard_arrow_down,
+                            color: Colors.grey,
+                            size: 24,
+                          ),
                         ],
                       ),
                     ),
@@ -494,10 +528,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   }
 
   // 커스텀 드롭다운 표시 (오버레이 방식) - 개별 설정 가능
-  void _showCustomDropdown(BuildContext context, List<String> options, String? selectedValue, Function(String?) onChanged, {double offsetY = 80}) {
+  void _showCustomDropdown(
+    BuildContext context,
+    List<String> options,
+    String? selectedValue,
+    Function(String?) onChanged, {
+    double offsetY = 80,
+  }) {
     final RenderBox renderBox = context.findRenderObject() as RenderBox;
     final position = renderBox.localToGlobal(Offset.zero);
-    
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.3), // 배경 흐리게
@@ -513,7 +553,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 height: double.infinity,
               ),
             ),
-            
+
             // 드롭다운 박스 - 개별 오프셋 적용
             Positioned(
               left: 40,
@@ -526,43 +566,65 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: Colors.black, width: 1), // 검은색 테두리 1px
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 1,
+                    ), // 검은색 테두리 1px
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: options.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final option = entry.value;
-                      final isSelected = selectedValue == option;
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          onChanged(option);
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: isSelected ? const Color(0xFFDAB7FA) : Colors.white, // 선택된 항목 #DAB7FA
-                            borderRadius: BorderRadius.only(
-                              topLeft: index == 0 ? const Radius.circular(10) : Radius.zero,
-                              topRight: index == 0 ? const Radius.circular(10) : Radius.zero,
-                              bottomLeft: index == options.length - 1 ? const Radius.circular(10) : Radius.zero,
-                              bottomRight: index == options.length - 1 ? const Radius.circular(10) : Radius.zero,
+                    children:
+                        options.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final option = entry.value;
+                          final isSelected = selectedValue == option;
+
+                          return GestureDetector(
+                            onTap: () {
+                              onChanged(option);
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isSelected
+                                        ? const Color(0xFFDAB7FA)
+                                        : Colors.white, // 선택된 항목 #DAB7FA
+                                borderRadius: BorderRadius.only(
+                                  topLeft:
+                                      index == 0
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  topRight:
+                                      index == 0
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  bottomLeft:
+                                      index == options.length - 1
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                  bottomRight:
+                                      index == options.length - 1
+                                          ? const Radius.circular(10)
+                                          : Radius.zero,
+                                ),
+                              ),
+                              child: Text(
+                                option,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            option,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
                   ),
                 ),
               ),
@@ -580,7 +642,10 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(28), // 높이에 맞는 라운딩
-        border: Border.all(color: Colors.grey.shade400, width: 1), // 회색 외곽선으로 변경
+        border: Border.all(
+          color: Colors.grey.shade400,
+          width: 1,
+        ), // 회색 외곽선으로 변경
       ),
       child: ElevatedButton(
         onPressed: _proceedToNext,
@@ -606,146 +671,170 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   void _showNicknameDialog() {
     showDialog(
       context: context,
-      barrierColor: const Color(0x4D000000), // Colors.black.withOpacity(0.3) → const로 최적화
+      barrierColor: const Color(
+        0x4D000000,
+      ), // Colors.black.withOpacity(0.3) → const로 최적화
       barrierDismissible: true, // 성능 개선
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(25)), // const로 최적화
-            border: Border.fromBorderSide(BorderSide(color: Colors.black, width: 1)), // const로 최적화
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '애칭 설정',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
-                ),
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(25),
+                ), // const로 최적화
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.black, width: 1),
+                ), // const로 최적화
               ),
-              const SizedBox(height: 20),
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.all(Radius.circular(28)), // const로 최적화
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: TextField(
-                  controller: _nicknameController,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    hintText: '애칭을 입력해주세요',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    border: const OutlineInputBorder( // const로 최적화
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    isDense: true,
-                  ),
-                  style: const TextStyle( // const로 최적화
-                    color: Colors.black87,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  autofocus: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 3),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            border: Border.all(color: Colors.grey.shade300, width: 1),
-                            borderRadius: const BorderRadius.only( // const로 최적화
-                              topLeft: Radius.circular(20),
-                              bottomLeft: Radius.circular(20),
-                              topRight: Radius.zero,
-                              bottomRight: Radius.zero,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '취소',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  Text(
+                    '애칭 설정',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 3),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {});
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDAB7FA).withOpacity(0.7),
-                            border: Border.all(color: const Color(0xFFDAB7FA).withOpacity(0.7), width: 1),
-                            borderRadius: const BorderRadius.only( // const로 최적화
-                              topLeft: Radius.zero,
-                              bottomLeft: Radius.zero,
-                              topRight: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '확인',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade700,
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(28),
+                      ), // const로 최적화
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                    ),
+                    child: TextField(
+                      controller: _nicknameController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '애칭을 입력해주세요',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: const OutlineInputBorder(
+                          // const로 최적화
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(
+                        // const로 최적화
+                        color: Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      autofocus: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 3),
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  // const로 최적화
+                                  topLeft: Radius.circular(20),
+                                  bottomLeft: Radius.circular(20),
+                                  topRight: Radius.zero,
+                                  bottomRight: Radius.zero,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 3),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {});
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDAB7FA).withOpacity(0.7),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFDAB7FA,
+                                  ).withOpacity(0.7),
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  // const로 최적화
+                                  topLeft: Radius.zero,
+                                  bottomLeft: Radius.zero,
+                                  topRight: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '확인',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -753,146 +842,170 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   void _showObjectTypeDialog() {
     showDialog(
       context: context,
-      barrierColor: const Color(0x4D000000), // Colors.black.withOpacity(0.3) → const로 최적화
+      barrierColor: const Color(
+        0x4D000000,
+      ), // Colors.black.withOpacity(0.3) → const로 최적화
       barrierDismissible: true, // 성능 개선
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
-        child: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.all(Radius.circular(25)), // const로 최적화
-            border: Border.fromBorderSide(BorderSide(color: Colors.black, width: 1)), // const로 최적화
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '사물 종류 설정',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey.shade700,
-                ),
+      builder:
+          (context) => Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.all(
+                  Radius.circular(25),
+                ), // const로 최적화
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.black, width: 1),
+                ), // const로 최적화
               ),
-              const SizedBox(height: 20),
-              Container(
-                height: 56,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: const BorderRadius.all(Radius.circular(28)), // const로 최적화
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
-                ),
-                child: TextField(
-                  controller: _objectTypeController,
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    hintText: '사물의 종류를 입력해주세요',
-                    hintStyle: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    border: const OutlineInputBorder( // const로 최적화
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(28)),
-                      borderSide: BorderSide.none,
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                    isDense: true,
-                  ),
-                  style: const TextStyle( // const로 최적화
-                    color: Colors.black87,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  autofocus: true,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 3),
-                      child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade50,
-                            border: Border.all(color: Colors.grey.shade300, width: 1),
-                            borderRadius: const BorderRadius.only( // const로 최적화
-                              topLeft: Radius.circular(20),
-                              bottomLeft: Radius.circular(20),
-                              topRight: Radius.zero,
-                              bottomRight: Radius.zero,
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '취소',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                  Text(
+                    '사물 종류 설정',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
                     ),
                   ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(left: 3),
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() {});
-                          Navigator.pop(context);
-                        },
-                        child: Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFDAB7FA).withOpacity(0.7),
-                            border: Border.all(color: const Color(0xFFDAB7FA).withOpacity(0.7), width: 1),
-                            borderRadius: const BorderRadius.only( // const로 최적화
-                              topLeft: Radius.zero,
-                              bottomLeft: Radius.zero,
-                              topRight: Radius.circular(20),
-                              bottomRight: Radius.circular(20),
-                            ),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '확인',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w200,
-                                color: Colors.grey.shade700,
+                  const SizedBox(height: 20),
+                  Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.all(
+                        Radius.circular(28),
+                      ), // const로 최적화
+                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                    ),
+                    child: TextField(
+                      controller: _objectTypeController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '사물의 종류를 입력해주세요',
+                        hintStyle: TextStyle(
+                          color: Colors.grey.shade500,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        border: const OutlineInputBorder(
+                          // const로 최적화
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(28)),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        isDense: true,
+                      ),
+                      style: const TextStyle(
+                        // const로 최적화
+                        color: Colors.black87,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      autofocus: true,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 3),
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade50,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  // const로 최적화
+                                  topLeft: Radius.circular(20),
+                                  bottomLeft: Radius.circular(20),
+                                  topRight: Radius.zero,
+                                  bottomRight: Radius.zero,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '취소',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 3),
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {});
+                              Navigator.pop(context);
+                            },
+                            child: Container(
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFDAB7FA).withOpacity(0.7),
+                                border: Border.all(
+                                  color: const Color(
+                                    0xFFDAB7FA,
+                                  ).withOpacity(0.7),
+                                  width: 1,
+                                ),
+                                borderRadius: const BorderRadius.only(
+                                  // const로 최적화
+                                  topLeft: Radius.zero,
+                                  bottomLeft: Radius.zero,
+                                  topRight: Radius.circular(20),
+                                  bottomRight: Radius.circular(20),
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '확인',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w200,
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
-} 
+}

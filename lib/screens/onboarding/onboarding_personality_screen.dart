@@ -186,10 +186,10 @@ class _OnboardingPersonalityScreenState
                   ],
                 ),
 
-                // 하단 베이지 섹션 (저장 버튼)
+                // 하단 흰색 섹션 (저장 버튼)
                 Container(
                   width: double.infinity,
-                  color: const Color(0xFFF5F5DC),
+                  color: Colors.white,
                   padding: EdgeInsets.fromLTRB(
                     screenWidth * 0.06,
                     24,

@@ -22,8 +22,8 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
   final List<GenerationStep> steps = [
     GenerationStep(0.25, '캐릭터 깨우는 중...', '사물의 기본 특성을 분석하고 있어요'),
-    GenerationStep(0.5, '개성을 찾고 있어요', '입력하신 정보를 바탕으로 고유한 성격을 만들어요'),
-    GenerationStep(0.75, '마음을 열고 있어요', '당신만의 특별한 캐릭터가 탄생하고 있어요'),
+    GenerationStep(0.5, '개성을 찾고 있어요', '사물의 고유한 성격을 만들어요'),
+    GenerationStep(0.75, '마음을 열고 있어요', '당신만의 특별한 친구가 탄생하고 있어요'),
     GenerationStep(1.0, '거의 완성되었어요', '마지막 손질을 하고 있어요'),
   ];
 
@@ -119,143 +119,136 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
             return _buildErrorScreen(state.errorMessage!);
           }
 
-          return Column(
-            children: [
-              // 상단 여백 (화면의 6%)
-              SizedBox(height: screenHeight * 0.06),
+          return SingleChildScrollView(
+            // 스택 오버플로우 방지
+            child: Column(
+              children: [
+                // 상단 여백 (애니메이션이 앱바에 잘리지 않도록)
+                SizedBox(height: screenHeight * 0.08),
 
-              // 중앙 애니메이션 영역 (화면의 약 38%)
-              SizedBox(
-                height: screenHeight * 0.38,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                // 중앙 애니메이션 영역
+                SizedBox(
+                  width: 240,
+                  height: 240,
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      // 원형 확산 애니메이션 (최적 비율로 조정)
-                      SizedBox(
-                        width: 320,
-                        height: 320,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // 배경 원형 확산 애니메이션
-                            AnimatedBuilder(
-                              animation: _circleAnimation,
-                              builder: (context, child) {
-                                return CustomPaint(
-                                  size: const Size(320, 320),
-                                  painter: CircleAnimationPainter(
-                                    _circleAnimation.value,
-                                  ),
-                                );
-                              },
+                      // 배경 원형 확산 애니메이션
+                      AnimatedBuilder(
+                        animation: _circleAnimation,
+                        builder: (context, child) {
+                          return CustomPaint(
+                            size: const Size(240, 240),
+                            painter: CircleAnimationPainter(
+                              _circleAnimation.value,
                             ),
+                          );
+                        },
+                      ),
 
-                            // 중앙에 촬영한 사진 표시 (더 세련된 디자인)
-                            Container(
-                              width: 135, // 130에서 135로 증가
-                              height: 135,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 3, // 4에서 3으로 줄임
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(
-                                      0.04,
-                                    ), // 아주 미묘한 그림자
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: ClipOval(
-                                child:
-                                    state.photoPath != null
-                                        ? Image.file(
-                                          File(state.photoPath!),
-                                          fit: BoxFit.cover,
-                                          width: 135,
-                                          height: 135,
-                                        )
-                                        : Container(
-                                          color: const Color(
-                                            0xFFFAFAFA,
-                                          ), // 더 세련된 배경색
-                                          child: const Icon(
-                                            Icons
-                                                .camera_alt_outlined, // outlined 버전으로 변경
-                                            size: 42, // 45에서 42로 조정
-                                            color: Color(
-                                              0xFF9CA3AF,
-                                            ), // 더 세련된 그레이
-                                          ),
-                                        ),
-                              ),
+                      // 중앙에 촬영한 사진 표시
+                      Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
                             ),
                           ],
+                        ),
+                        child: ClipOval(
+                          child:
+                              state.photoPath != null
+                                  ? Image.file(
+                                    File(state.photoPath!),
+                                    fit: BoxFit.cover,
+                                    width: 140,
+                                    height: 140,
+                                  )
+                                  : Container(
+                                    color: const Color(0xFFFAFAFA),
+                                    child: const Icon(
+                                      Icons.camera_alt_outlined,
+                                      size: 38,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
 
-              // 텍스트 영역 (화면의 약 22%)
-              SizedBox(
-                height: screenHeight * 0.22,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // 현재 단계 표시 (더 세련된 타이포그래피)
-                    Text(
-                      state.generationMessage,
-                      style: const TextStyle(
-                        fontSize: 24, // 22에서 24로 증가
-                        fontWeight: FontWeight.w700, // w600에서 w700으로 증가
-                        color: Color(0xFF1F2937), // 더 세련된 다크 그레이
-                        letterSpacing: -0.8, // -0.5에서 -0.8로 조정
-                        height: 1.2, // 줄 간격 추가
-                      ),
-                      textAlign: TextAlign.center,
+                // 작은 간격 (동심원과 작은 텍스트 사이)
+                SizedBox(height: screenHeight * 0.03),
+
+                // 작은글씨 (설명 텍스트) - 동심원 바로 아래
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 50),
+                  child: Text(
+                    _getCurrentStepDescription(state.generationProgress),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: Colors.black87,
+                      height: 1.6,
+                      letterSpacing: -0.1,
                     ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                  ),
+                ),
 
-                    const SizedBox(height: 20), // 16에서 20으로 증가
-                    // 설명 텍스트 (더 세련된 스타일)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 50,
-                      ), // 40에서 50으로 증가
-                      child: Text(
-                        _getCurrentStepDescription(state.generationProgress),
-                        style: const TextStyle(
-                          fontSize: 14, // 15에서 14로 줄임
-                          fontWeight: FontWeight.w400, // w300에서 w400으로 조정
-                          color: Color(0xFF6B7280), // 더 세련된 그레이
-                          height: 1.6, // 1.4에서 1.6으로 증가
-                          letterSpacing: -0.1, // -0.2에서 -0.1로 조정
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                      ),
+                // 프로그레스바가 화면 2/3 지점에 오도록 하는 간격
+                // 현재까지 사용된 높이: 0.08 + 240px + 0.03 + 작은텍스트높이
+                // 프로그레스바 위치: 0.67 * screenHeight
+                // 큰 텍스트와 프로그레스바 간격을 고려한 계산
+                SizedBox(
+                  height:
+                      screenHeight * 0.70 -
+                      screenHeight * 0.08 -
+                      240 -
+                      screenHeight * 0.03 -
+                      60 -
+                      screenHeight * 0.03, // 큰 텍스트 높이와 간격 고려
+                ),
+
+                // 큰글씨 (메인 텍스트) - 프로그레스바 조금 위
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  child: Text(
+                    state.generationMessage.isNotEmpty
+                        ? state.generationMessage
+                        : '캐릭터 깨우는 중...',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      letterSpacing: -0.8,
+                      height: 1.2,
                     ),
-                  ],
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-              ),
 
-              // 하단 프로그레스바 영역 (화면의 하단 12%)
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  screenWidth * 0.12,
-                  0,
-                  screenWidth * 0.12,
-                  screenHeight * 0.12,
+                // 큰 텍스트와 프로그레스바 사이 간격
+                SizedBox(height: screenHeight * 0.03),
+
+                // 프로그레스바 영역 (화면의 3/4 지점)
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.12),
+                  child: _buildProgressIndicator(state.generationProgress),
                 ),
-                child: _buildProgressIndicator(state.generationProgress),
-              ),
-            ],
+
+                // 하단 여백
+                SizedBox(height: screenHeight * 0.1),
+              ],
+            ),
           );
         },
       ),
@@ -268,10 +261,10 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
         // 세련된 프로그레스바
         Container(
           width: double.infinity,
-          height: 3, // 5에서 3으로 더 얇게
+          height: 6, // 4에서 6으로 더 두껍게
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15), // 투명도 더 낮춤
-            borderRadius: BorderRadius.circular(1.5),
+            color: Colors.white, // 투명도 제거하고 순수한 흰색으로 변경
+            borderRadius: BorderRadius.circular(3), // 2에서 3으로 조정
           ),
           child: Stack(
             children: [
@@ -281,17 +274,10 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
                 ), // 800에서 1200으로 더 부드럽게
                 curve: Curves.easeOutQuart, // 더 세련된 곡선
                 width: MediaQuery.of(context).size.width * 0.76 * progress,
-                height: 3,
+                height: 6, // 4에서 6으로 변경
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFF8B5CF6),
-                      Color(0xFF6366F1), // 더 모던한 인디고 블루
-                    ],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(1.5),
+                  color: const Color(0xFF6750A4), // gradient에서 단일 색상으로 변경
+                  borderRadius: BorderRadius.circular(3), // 2에서 3으로 조정
                 ),
               ),
             ],
@@ -393,7 +379,7 @@ class CircleAnimationPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     // 동심원 애니메이션 - 중앙에서 바깥으로 퍼져나가는 원들
-    const maxRadius = 140.0; // 120.0에서 140.0으로 조정 (새로운 영역에 맞춤)
+    const maxRadius = 120.0; // 130.0에서 120.0으로 조정 (새로운 240 영역에 맞춤)
     const ringCount = 4; // 동심원 개수
 
     for (int i = 0; i < ringCount; i++) {
@@ -403,19 +389,14 @@ class CircleAnimationPainter extends CustomPainter {
 
       // 큰 원과 작은 원을 번갈아 표시 (크기 조정)
       final isLargeCircle = i % 2 == 0;
-      final baseSize = isLargeCircle ? 10.0 : 6.0; // 12.0과 8.0에서 10.0과 6.0으로 조정
+      final baseSize =
+          isLargeCircle ? 14.0 : 10.0; // 10.0과 6.0에서 14.0과 10.0으로 더 크게
 
       // 원의 반지름 - 중앙에서 바깥으로 확장
       final radius = maxRadius * adjustedAnimation;
 
-      // 투명도 - 시작할 때 불투명하고 퍼지면서 투명해짐
-      final opacity =
-          adjustedAnimation < 0.15
-              ? 1.0 // 시작할 때는 완전 불투명
-              : (1.0 - (adjustedAnimation - 0.15) / 0.85) * 0.85; // 더 자연스러운 페이드
-
-      if (radius > 67.5) {
-        // 중앙 사진 영역은 피하기 (135px 원이므로 67.5px 반지름)
+      if (radius > 70.0) {
+        // 중앙 사진 영역은 피하기 (140px 원이므로 70px 반지름)
         // 동심원 위에 작은 원들을 배치
         const pointCount = 12;
         for (int j = 0; j < pointCount; j++) {
@@ -428,7 +409,9 @@ class CircleAnimationPainter extends CustomPainter {
 
           final circlePaint =
               Paint()
-                ..color = Colors.white.withOpacity(opacity * 0.9) // 약간 더 부드럽게
+                ..color =
+                    Colors
+                        .white // 투명도 제거하여 완전 불투명
                 ..style = PaintingStyle.fill;
 
           canvas.drawCircle(pointCenter, baseSize, circlePaint);
