@@ -332,10 +332,12 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                             style: TextStyle(
                                               color:
                                                   _selectedHumorStyle != null
-                                                      ? Colors.black87
+                                                      ? Colors.black
                                                       : Colors.grey.shade600,
                                               fontSize: 18,
-                                              fontWeight: FontWeight.w600,
+                                              fontWeight: FontWeight.w700,
+                                              letterSpacing: -0.8,
+                                              height: 1.2,
                                             ),
                                           ),
                                         ),
@@ -385,10 +387,10 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                     ),
                   ),
 
-                // 하단 아이보리 배경
+                // 하단 흰색 배경
                 Container(
                   width: double.infinity,
-                  color: const Color(0xFFFDF7E9),
+                  color: Colors.white,
                   padding: EdgeInsets.fromLTRB(
                     screenWidth * 0.06,
                     24,
