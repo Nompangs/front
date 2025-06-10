@@ -4,7 +4,6 @@ import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
 
 /// 온보딩 사물 정보 입력 화면
-/// 캡처된 이미지 디자인을 참조하여 새롭게 구현
 class OnboardingInputScreen extends StatefulWidget {
   const OnboardingInputScreen({Key? key}) : super(key: key);
 
@@ -19,6 +18,13 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   String? _selectedLocation;
   String? _selectedDuration;
   String? _validationError;
+
+  // 사용자가 실제로 입력했는지 추적하는 변수들
+  bool _hasNicknameInput = false;
+  bool _hasObjectTypeInput = false;
+
+  // 검증 시도 여부 - 다음 버튼을 눌렀을 때만 경고문 표시
+  bool _showValidationErrors = false;
 
   // 위치 옵션 (캡처 이미지 기준)
   final List<String> _locationOptions = [
@@ -42,11 +48,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   @override
   void initState() {
     super.initState();
-    // 기본값 설정 (캡처 이미지 기준)
-    _nicknameController.text = '털찐 말랑이';
-    _selectedLocation = '우리집 거실';
-    _selectedDuration = '3개월';
-    _objectTypeController.text = '이 빠진 머그컵';
+    // 기본값 설정하지 않음 - 처음엔 모두 회색으로 표시
+    // 사용자가 입력하면 그때 검은색으로 변경
   }
 
   @override
@@ -60,9 +63,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   bool _validateInputs() {
     setState(() {
       _validationError = null;
+      _showValidationErrors = true; // 검증 시도했음을 표시
     });
 
-    if (_nicknameController.text.trim().isEmpty) {
+    // 닉네임 검증 - 실제 입력이 있거나 기본값 사용
+    final nickname =
+        _hasNicknameInput && _nicknameController.text.isNotEmpty
+            ? _nicknameController.text.trim()
+            : '털찐 말랑이';
+
+    if (nickname.isEmpty) {
       setState(() {
         _validationError = '이름을 입력해주세요!';
       });
@@ -83,7 +93,13 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       return false;
     }
 
-    if (_objectTypeController.text.trim().isEmpty) {
+    // 사물 종류 검증 - 실제 입력이 있거나 기본값 사용
+    final objectType =
+        _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
+            ? _objectTypeController.text.trim()
+            : '이 빠진 머그컵';
+
+    if (objectType.isEmpty) {
       setState(() {
         _validationError = '사물의 종류를 입력해주세요!';
       });
@@ -96,11 +112,22 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   /// 다음 단계로 이동
   void _proceedToNext() {
     if (_validateInputs()) {
+      // 실제 입력값 또는 기본값 사용
+      final nickname =
+          _hasNicknameInput && _nicknameController.text.isNotEmpty
+              ? _nicknameController.text.trim()
+              : '털찐 말랑이';
+
+      final objectType =
+          _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
+              ? _objectTypeController.text.trim()
+              : '이 빠진 머그컵';
+
       final userInput = UserInput(
-        nickname: _nicknameController.text.trim(),
+        nickname: nickname,
         location: _selectedLocation!,
         duration: _selectedDuration!,
-        objectType: _objectTypeController.text.trim(),
+        objectType: objectType,
       );
 
       final provider = Provider.of<OnboardingProvider>(context, listen: false);
@@ -202,7 +229,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: Text(
-                          '이름을 입력해주세요',
+                          _showValidationErrors &&
+                                  (!_hasNicknameInput ||
+                                      _nicknameController.text.isEmpty)
+                              ? '이름을 입력해주세요'
+                              : '',
                           style: TextStyle(
                             color: Colors.red.shade400,
                             fontSize: 10,
@@ -294,11 +325,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     return GestureDetector(
       onTap: () => _showNicknameDialog(),
       child: Container(
-        height: 56, // 다음 버튼과 동일한 높이
+        height: 56,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(28), // 다음 버튼과 동일한 라운딩
-          border: Border.all(color: Colors.transparent, width: 0), // 테두리 제거
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: Colors.transparent, width: 0),
         ),
         child: Row(
           children: [
@@ -307,24 +338,23 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               '애칭',
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: 14, // 16 → 14로 축소 (애칭 레이블 작게)
+                fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
             ),
             Expanded(
               child: Center(
-                // 중앙정렬
                 child: Text(
-                  _nicknameController.text.isNotEmpty
+                  _hasNicknameInput && _nicknameController.text.isNotEmpty
                       ? _nicknameController.text
-                      : '', // 애칭란은 비워둠
+                      : '털찐 말랑이',
                   style: TextStyle(
                     color:
-                        _nicknameController.text.isNotEmpty
+                        _hasNicknameInput && _nicknameController.text.isNotEmpty
                             ? Colors.black
-                            : Colors.grey, // 건너뛰기와 같은 색상
-                    fontSize: 20, // 14 → 20으로 복원 (예시 텍스트 크기 원래대로)
-                    fontWeight: FontWeight.w600, // 더 굵게
+                            : Colors.grey.shade500,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -348,7 +378,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           });
         }),
 
-        const SizedBox(height: 8), // 4 → 8 (8배수 간격)
+        const SizedBox(height: 8),
         // 기간 드롭다운
         _buildDropdownRow(
           _selectedDuration,
@@ -362,8 +392,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           },
         ),
 
-        const SizedBox(height: 8), // 4 → 8 (8배수 간격)
-        // 사물 종류 입력 (애칭과 같은 형태로 변경)
+        const SizedBox(height: 8),
+        // 사물 종류 입력
         _buildObjectTypeCard(),
       ],
     );
@@ -378,31 +408,29 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               child: GestureDetector(
                 onTap: () => _showObjectTypeDialog(),
                 child: Container(
-                  height: 56, // 다음 버튼과 동일한 높이
+                  height: 56,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(28), // 다음 버튼과 동일한 라운딩
-                    border: Border.all(
-                      color: Colors.transparent,
-                      width: 0,
-                    ), // 테두리 제거
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: Colors.transparent, width: 0),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        _objectTypeController.text.isNotEmpty
+                        _hasObjectTypeInput &&
+                                _objectTypeController.text.isNotEmpty
                             ? _objectTypeController.text
-                            : '이 빠진 머그컵', // 미리보기 텍스트
+                            : '이 빠진 머그컵',
                         style: TextStyle(
                           color:
-                              _objectTypeController.text.isNotEmpty
-                                  ? Colors
-                                      .grey // Colors.black → Colors.grey로 변경
-                                  : Colors.grey, // 건너뛰기와 같은 색상
-                          fontSize: 18, // Material 3 Body Large+ (16 → 18)
-                          fontWeight: FontWeight.w500, // 약간 더 굵게
+                              _hasObjectTypeInput &&
+                                      _objectTypeController.text.isNotEmpty
+                                  ? Colors.black
+                                  : Colors.grey.shade500,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -410,25 +438,28 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 8), // 12 → 8 (8배수 간격)
-            Text(
+            const SizedBox(width: 8),
+            const Text(
               '(이)에요.',
-              style: const TextStyle(
-                fontSize: 16, // Material 3 Body Large
+              style: TextStyle(
+                fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 8), // 8배수 간격
+        const SizedBox(height: 8),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            _objectTypeController.text.isEmpty ? '입력해주세요' : '',
+            _showValidationErrors &&
+                    (!_hasObjectTypeInput || _objectTypeController.text.isEmpty)
+                ? '입력해주세요'
+                : '',
             style: TextStyle(
               color: Colors.red.shade400,
-              fontSize: 10, // Material 3 Caption
+              fontSize: 10,
               fontWeight: FontWeight.w400,
             ),
           ),
@@ -462,10 +493,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: Colors.transparent,
-                      width: 0,
-                    ), // 테두리 제거
+                    border: Border.all(color: Colors.transparent, width: 0),
                   ),
                   child: Container(
                     height: 56,
@@ -483,7 +511,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                               color:
                                   selectedValue != null
                                       ? Colors.black
-                                      : Colors.grey,
+                                      : Colors.grey.shade500,
                               fontSize: 18,
                               fontWeight: FontWeight.w500,
                             ),
@@ -515,7 +543,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            selectedValue == null ? '선택해주세요' : '',
+            _showValidationErrors && selectedValue == null ? '선택해주세요' : '',
             style: TextStyle(
               color: Colors.red.shade400,
               fontSize: 10,
@@ -527,7 +555,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     );
   }
 
-  // 커스텀 드롭다운 표시 (오버레이 방식) - 개별 설정 가능
+  // 커스텀 드롭다운 표시 (성능 최적화)
   void _showCustomDropdown(
     BuildContext context,
     List<String> options,
@@ -535,18 +563,16 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     Function(String?) onChanged, {
     double offsetY = 80,
   }) {
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final position = renderBox.localToGlobal(Offset.zero);
-
     showDialog(
       context: context,
-      barrierColor: Colors.black.withOpacity(0.3), // 배경 흐리게
-      builder: (BuildContext context) {
+      barrierColor: Colors.black26, // 미리 정의된 상수 사용
+      useSafeArea: false, // 성능 최적화
+      builder: (BuildContext dialogContext) {
         return Stack(
           children: [
             // 배경 터치하면 닫기
             GestureDetector(
-              onTap: () => Navigator.pop(context),
+              onTap: () => Navigator.of(dialogContext).pop(),
               child: Container(
                 color: Colors.transparent,
                 width: double.infinity,
@@ -554,11 +580,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               ),
             ),
 
-            // 드롭다운 박스 - 개별 오프셋 적용
+            // 드롭다운 박스 - 성능 최적화된 버전
             Positioned(
               left: 40,
               right: 40,
-              top: position.dy + offsetY, // 개별 오프셋 적용
+              top: MediaQuery.of(context).size.height * 0.3, // 고정 위치로 성능 개선
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(25),
@@ -566,65 +592,79 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(25),
-                    border: Border.all(
-                      color: Colors.black,
-                      width: 1,
-                    ), // 검은색 테두리 1px
+                    border: Border.all(color: Colors.black, width: 1),
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children:
-                        options.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final option = entry.value;
-                          final isSelected = selectedValue == option;
+                    children: List.generate(options.length, (index) {
+                      final option = options[index];
+                      final isSelected = selectedValue == option;
 
-                          return GestureDetector(
-                            onTap: () {
-                              onChanged(option);
-                              Navigator.pop(context);
-                            },
-                            child: Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 16,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected
-                                        ? const Color(0xFFDAB7FA)
-                                        : Colors.white, // 선택된 항목 #DAB7FA
-                                borderRadius: BorderRadius.only(
-                                  topLeft:
-                                      index == 0
-                                          ? const Radius.circular(10)
-                                          : Radius.zero,
-                                  topRight:
-                                      index == 0
-                                          ? const Radius.circular(10)
-                                          : Radius.zero,
-                                  bottomLeft:
-                                      index == options.length - 1
-                                          ? const Radius.circular(10)
-                                          : Radius.zero,
-                                  bottomRight:
-                                      index == options.length - 1
-                                          ? const Radius.circular(10)
-                                          : Radius.zero,
-                                ),
-                              ),
-                              child: Text(
-                                option,
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
+                      return InkWell(
+                        // GestureDetector 대신 InkWell 사용 (성능 개선)
+                        onTap: () {
+                          onChanged(option);
+                          Navigator.of(dialogContext).pop();
+                        },
+                        borderRadius: BorderRadius.only(
+                          topLeft:
+                              index == 0
+                                  ? const Radius.circular(24)
+                                  : Radius.zero,
+                          topRight:
+                              index == 0
+                                  ? const Radius.circular(24)
+                                  : Radius.zero,
+                          bottomLeft:
+                              index == options.length - 1
+                                  ? const Radius.circular(24)
+                                  : Radius.zero,
+                          bottomRight:
+                              index == options.length - 1
+                                  ? const Radius.circular(24)
+                                  : Radius.zero,
+                        ),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? const Color(0xFFDAB7FA)
+                                    : Colors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft:
+                                  index == 0
+                                      ? const Radius.circular(24)
+                                      : Radius.zero,
+                              topRight:
+                                  index == 0
+                                      ? const Radius.circular(24)
+                                      : Radius.zero,
+                              bottomLeft:
+                                  index == options.length - 1
+                                      ? const Radius.circular(24)
+                                      : Radius.zero,
+                              bottomRight:
+                                  index == options.length - 1
+                                      ? const Radius.circular(24)
+                                      : Radius.zero,
                             ),
-                          );
-                        }).toList(),
+                          ),
+                          child: Text(
+                            option,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
                   ),
                 ),
               ),
@@ -669,267 +709,127 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   }
 
   void _showNicknameDialog() {
-    showDialog(
+    _showFastDialog(
       context: context,
-      barrierColor: const Color(
-        0x4D000000,
-      ), // Colors.black.withOpacity(0.3) → const로 최적화
-      barrierDismissible: true, // 성능 개선
-      builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(25),
-                ), // const로 최적화
-                border: Border.fromBorderSide(
-                  BorderSide(color: Colors.black, width: 1),
-                ), // const로 최적화
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '애칭 설정',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(28),
-                      ), // const로 최적화
-                      border: Border.all(color: Colors.grey.shade300, width: 1),
-                    ),
-                    child: TextField(
-                      controller: _nicknameController,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        hintText: '애칭을 입력해주세요',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w400,
-                        ),
-                        border: const OutlineInputBorder(
-                          // const로 최적화
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        isDense: true,
-                      ),
-                      style: const TextStyle(
-                        // const로 최적화
-                        color: Colors.black87,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      autofocus: true,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 3),
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                                borderRadius: const BorderRadius.only(
-                                  // const로 최적화
-                                  topLeft: Radius.circular(20),
-                                  bottomLeft: Radius.circular(20),
-                                  topRight: Radius.zero,
-                                  bottomRight: Radius.zero,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '취소',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w200,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 3),
-                          child: GestureDetector(
-                            onTap: () {
-                              setState(() {});
-                              Navigator.pop(context);
-                            },
-                            child: Container(
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDAB7FA).withOpacity(0.7),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFFDAB7FA,
-                                  ).withOpacity(0.7),
-                                  width: 1,
-                                ),
-                                borderRadius: const BorderRadius.only(
-                                  // const로 최적화
-                                  topLeft: Radius.zero,
-                                  bottomLeft: Radius.zero,
-                                  topRight: Radius.circular(20),
-                                  bottomRight: Radius.circular(20),
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '확인',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w200,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+      title: '애칭 설정',
+      controller: _nicknameController,
+      hintText: '애칭을 입력해주세요',
+      onSave: () {
+        setState(() {
+          _hasNicknameInput = true;
+        });
+      },
     );
   }
 
-  // 사물 종류 입력 다이얼로그
   void _showObjectTypeDialog() {
-    showDialog(
+    _showFastDialog(
       context: context,
-      barrierColor: const Color(
-        0x4D000000,
-      ), // Colors.black.withOpacity(0.3) → const로 최적화
-      barrierDismissible: true, // 성능 개선
+      title: '사물 종류 설정',
+      controller: _objectTypeController,
+      hintText: '사물의 종류를 입력해주세요',
+      onSave: () {
+        setState(() {
+          _hasObjectTypeInput = true;
+        });
+      },
+    );
+  }
+
+  // 즉시 표시되는 빠른 다이얼로그
+  void _showFastDialog({
+    required BuildContext context,
+    required String title,
+    required TextEditingController controller,
+    required String hintText,
+    required VoidCallback onSave,
+  }) {
+    final overlay = Overlay.of(context);
+    late OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
       builder:
-          (context) => Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.all(40), // 기본값 명시로 최적화
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.all(
-                  Radius.circular(25),
-                ), // const로 최적화
-                border: Border.fromBorderSide(
-                  BorderSide(color: Colors.black, width: 1),
-                ), // const로 최적화
-              ),
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '사물 종류 설정',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey.shade700,
-                    ),
+          (context) => Material(
+            color: Colors.black26,
+            child: Center(
+              child: Container(
+                margin: const EdgeInsets.all(40),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.all(Radius.circular(25)),
+                  border: Border.fromBorderSide(
+                    BorderSide(color: Colors.black, width: 1),
                   ),
-                  const SizedBox(height: 20),
-                  Container(
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: const BorderRadius.all(
-                        Radius.circular(28),
-                      ), // const로 최적화
-                      border: Border.all(color: Colors.grey.shade300, width: 1),
+                ),
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey.shade700,
+                      ),
                     ),
-                    child: TextField(
-                      controller: _objectTypeController,
-                      textAlign: TextAlign.center,
-                      decoration: InputDecoration(
-                        hintText: '사물의 종류를 입력해주세요',
-                        hintStyle: TextStyle(
-                          color: Colors.grey.shade500,
+                    const SizedBox(height: 20),
+                    Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: const BorderRadius.all(
+                          Radius.circular(28),
+                        ),
+                        border: Border.all(
+                          color: Colors.grey.shade300,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: controller,
+                        textAlign: TextAlign.center,
+                        decoration: InputDecoration(
+                          hintText: hintText,
+                          hintStyle: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(28)),
+                            borderSide: BorderSide.none,
+                          ),
+                          enabledBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(28)),
+                            borderSide: BorderSide.none,
+                          ),
+                          focusedBorder: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(28)),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                          isDense: true,
+                        ),
+                        style: const TextStyle(
+                          color: Colors.black87,
                           fontSize: 18,
-                          fontWeight: FontWeight.w400,
+                          fontWeight: FontWeight.w600,
                         ),
-                        border: const OutlineInputBorder(
-                          // const로 최적화
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: const OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(28)),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
-                        ),
-                        isDense: true,
+                        autofocus: true,
                       ),
-                      style: const TextStyle(
-                        // const로 최적화
-                        color: Colors.black87,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      autofocus: true,
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 3),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
                           child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
+                            onTap: () => overlayEntry.remove(),
                             child: Container(
                               height: 40,
                               decoration: BoxDecoration(
@@ -939,11 +839,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                   width: 1,
                                 ),
                                 borderRadius: const BorderRadius.only(
-                                  // const로 최적화
                                   topLeft: Radius.circular(20),
                                   bottomLeft: Radius.circular(20),
-                                  topRight: Radius.zero,
-                                  bottomRight: Radius.zero,
                                 ),
                               ),
                               child: Center(
@@ -959,14 +856,12 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                             ),
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 3),
+                        const SizedBox(width: 6),
+                        Expanded(
                           child: GestureDetector(
                             onTap: () {
-                              setState(() {});
-                              Navigator.pop(context);
+                              onSave();
+                              overlayEntry.remove();
                             },
                             child: Container(
                               height: 40,
@@ -979,9 +874,6 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                   width: 1,
                                 ),
                                 borderRadius: const BorderRadius.only(
-                                  // const로 최적화
-                                  topLeft: Radius.zero,
-                                  bottomLeft: Radius.zero,
                                   topRight: Radius.circular(20),
                                   bottomRight: Radius.circular(20),
                                 ),
@@ -999,13 +891,15 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
     );
+
+    overlay.insert(overlayEntry);
   }
 }
