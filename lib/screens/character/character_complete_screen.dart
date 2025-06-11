@@ -49,6 +49,20 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
       if (mounted) setState(() => _qrUuid = uuid);
     } catch (e) {
       print('QR 생성 실패: $e');
+      if (mounted) {
+        String message = 'QR 생성 실패';
+        final match = RegExp(r'(\d{3})').firstMatch(e.toString());
+        if (match != null) {
+          message = 'QR 생성 실패 (HTTP ${match.group(1)})';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -108,16 +122,18 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
+                  final characterData = {
+                    'characterName': widget.characterName,
+                    'characterHandle': '@User_${DateTime.now().millisecondsSinceEpoch}',
+                    'personalityTags': widget.personalityTags,
+                    'greeting': widget.greeting,
+                    'personaId': _qrUuid, // QR 생성 시 받은 ID
+                  };
+
+                  Navigator.pushNamed(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatTextScreen(
-                        characterName: widget.characterName,
-                        characterHandle: '@User_${DateTime.now().millisecondsSinceEpoch}',
-                        personalityTags: widget.personalityTags,
-                        greeting: widget.greeting,
-                      ),
-                    ),
+                    '/chat/$_qrUuid',
+                    arguments: characterData,
                   );
                 },
                 icon: const Icon(Icons.chat),

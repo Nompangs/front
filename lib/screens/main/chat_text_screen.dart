@@ -1,45 +1,32 @@
-// lib/chat_text_screen.dart
-
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:nompangs/providers/chat_provider.dart';
 import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 
-
-class ChatTextScreen extends StatefulWidget {
-  final String characterName;
-  final String characterHandle;
-  final List<String> personalityTags;
-  final String greeting;
-
-  const ChatTextScreen({
-    Key? key,
-    required this.characterName,
-    required this.characterHandle,
-    required this.personalityTags,
-    required this.greeting,
-  }) : super(key: key);
+class ChatTextScreen extends StatelessWidget {
+  const ChatTextScreen({Key? key}) : super(key: key);
 
   @override
-  State<ChatTextScreen> createState() => _ChatTextScreenState();
+  Widget build(BuildContext context) {
+    return Consumer<ChatProvider>(
+      builder: (context, provider, child) {
+        return _ChatTextScreenContent();
+      },
+    );
+  }
 }
 
-class _ChatTextScreenState extends State<ChatTextScreen> {
-  final ScrollController _scrollController = ScrollController();
-  final TextEditingController _inputController = TextEditingController();
-
-  List<_Message> _messages = [];
+class _ChatTextScreenContent extends StatefulWidget {
+  const _ChatTextScreenContent();
 
   @override
-  void initState() {
-    super.initState();
-    // 초기 왼쪽 버블 한 개만 추가
-    _messages = [
-      _Message(
-        text: '헤이~ 오늘 강남 어땠어? 사람 많았지? 나였으면 정신 살짝 나갔을지도 ㅋㅋ 🤯',
-        isUser: false,
-      ),
-    ];
-  }
+  State<_ChatTextScreenContent> createState() => __ChatTextScreenContentState();
+}
+
+class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _inputController = TextEditingController();
 
   @override
   void dispose() {
@@ -48,29 +35,17 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
-    final text = _inputController.text.trim();
-    if (text.isEmpty) return;
-
-    setState(() {
-      _messages.add(_Message(text: text, isUser: true));
-      _inputController.clear();
-    });
+  @override
+  Widget build(BuildContext context) {
+    final chatProvider = context.watch<ChatProvider>();
+    final messages = chatProvider.messages;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent + 80,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
+        _scrollController.animateTo(0.0,
+            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasUserMessage = _messages.any((msg) => msg.isUser);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -78,36 +53,31 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
         child: Column(
           children: [
             _TopNavigationBar(
-              characterName: widget.characterName,
-              characterHandle: widget.characterHandle,
-            ),
-
+                characterName: chatProvider.characterName,
+                characterHandle: chatProvider.characterHandle),
             Expanded(
               child: Container(
                 color: const Color(0xFFF2F2F2),
                 child: Column(
                   children: [
-                    if (!hasUserMessage)
+                    if (!messages.any((msg) => msg.isUser))
                       _ProfileCard(
-                        characterName: widget.characterName,
-                        characterHandle: widget.characterHandle,
-                        personalityTags: widget.personalityTags,
-                      ),
-
+                          characterName: chatProvider.characterName,
+                          characterHandle: chatProvider.characterHandle,
+                          personalityTags: chatProvider.personalityTags),
+                    if (chatProvider.isProcessing)
+                      const LinearProgressIndicator(),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
                         child: ListView.builder(
+                          reverse: true,
                           controller: _scrollController,
-                          itemCount: _messages.length,
+                          itemCount: messages.length,
                           itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final bool isFirst = index == 0;
-                            final double topPadding = isFirst
-                                ? (hasUserMessage ? 24 : 16)
-                                : 8;
+                            final msg = messages[index];
                             return Padding(
-                              padding: EdgeInsets.only(top: topPadding),
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
                               child: _ChatBubble(
                                 text: msg.text,
                                 isUser: msg.isUser,
@@ -117,12 +87,24 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
                         ),
                       ),
                     ),
-
-                    // 하단 입력창: 이 위치에서 ChatInputBar 호출
                     _ChatInputBar(
                       controller: _inputController,
-                      onSend: _sendMessage,
-                    ),
+                      onSend: () {
+                        context.read<ChatProvider>().sendMessage(_inputController.text);
+                        _inputController.clear();
+                      },
+                      onSpeakerModePressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ChangeNotifierProvider.value(
+                              value: context.read<ChatProvider>(),
+                              child: const ChatSpeakerScreen(),
+                            ),
+                          ),
+                        );
+                      },
+                    ),                    
                   ],
                 ),
               ),
@@ -132,12 +114,6 @@ class _ChatTextScreenState extends State<ChatTextScreen> {
       ),
     );
   }
-}
-
-class _Message {
-  final String text;
-  final bool isUser;
-  _Message({required this.text, required this.isUser});
 }
 
 class _TopNavigationBar extends StatelessWidget {
@@ -424,11 +400,13 @@ class _ChatBubble extends StatelessWidget {
 class _ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
+  final VoidCallback onSpeakerModePressed;
 
   const _ChatInputBar({
     Key? key,
     required this.controller,
     required this.onSend,
+    required this.onSpeakerModePressed,
   }) : super(key: key);
 
   @override
@@ -531,14 +509,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   if (_hasText) {
                     widget.onSend();
                   } else {
-                    // ⑦-1) 사용자가 텍스트를 입력하지 않은 상태에서 전화 버튼 누르면
-                    //       ChatSpeakerScreen으로 이동
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const ChatSpeakerScreen(),
-                      ),
-                    );
+                    widget.onSpeakerModePressed();
                   }
                 },
               ),
