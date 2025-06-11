@@ -62,13 +62,16 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
             final jsonString = text.substring(jsonStart, jsonEnd + 1);
             final Map<String, dynamic> map = jsonDecode(jsonString);
             return PersonalityProfile(
-              aiPersonalityProfile: map['aiPersonalityProfile'] ?? '',
-              photoAnalysis: map['photoAnalysis'] ?? '',
-              lifeStory: map['lifeStory'] ?? '',
-              humorMatrix: map['humorMatrix'] ?? '',
-              attractiveFlaws: map['attractiveFlaws'] ?? '',
-              contradictions: map['contradictions'] ?? '',
-              communicationStyle: map['communicationStyle'] ?? '',
+              aiPersonalityProfile:
+                  _ensureMap(map['aiPersonalityProfile']),
+              photoAnalysis: _ensureMap(map['photoAnalysis']),
+              lifeStory: _ensureMap(map['lifeStory']),
+              humorMatrix: _ensureMap(map['humorMatrix']),
+              attractiveFlaws:
+                  _ensureList(map['attractiveFlaws']),
+              contradictions: _ensureList(map['contradictions']),
+              communicationStyle:
+                  _ensureMap(map['communicationStyle']),
               structuredPrompt: map['structuredPrompt'] ?? '',
             );
           }
@@ -112,14 +115,30 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
         '내향성:$introversion, 따뜻함:$warmth, 능숙함:$competence.';
 
     return PersonalityProfile(
-      aiPersonalityProfile: aiPersonalityProfile,
-      photoAnalysis: photoAnalysis,
-      lifeStory: lifeStory,
-      humorMatrix: humorMatrix,
-      attractiveFlaws: attractiveFlaws,
-      contradictions: contradictions,
-      communicationStyle: communicationStyle,
+      aiPersonalityProfile: {'summary': aiPersonalityProfile},
+      photoAnalysis: {'summary': photoAnalysis},
+      lifeStory: {'summary': lifeStory},
+      humorMatrix: {'summary': humorMatrix},
+      attractiveFlaws: [attractiveFlaws],
+      contradictions: [contradictions],
+      communicationStyle: {'summary': communicationStyle},
       structuredPrompt: structuredPrompt,
     );
+  }
+
+  Map<String, dynamic> _ensureMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is String) return {'summary': value};
+    return {};
+  }
+
+  List<String> _ensureList(dynamic value) {
+    if (value is List) {
+      return value.map((e) => e.toString()).toList();
+    }
+    if (value is String && value.isNotEmpty) {
+      return [value];
+    }
+    return [];
   }
 }

@@ -1,11 +1,11 @@
 class PersonalityProfile {
-  final String aiPersonalityProfile;
-  final String photoAnalysis;
-  final String lifeStory;
-  final String humorMatrix;
-  final String attractiveFlaws;
-  final String contradictions;
-  final String communicationStyle;
+  final Map<String, dynamic> aiPersonalityProfile;
+  final Map<String, dynamic> photoAnalysis;
+  final Map<String, dynamic> lifeStory;
+  final Map<String, dynamic> humorMatrix;
+  final List<String> attractiveFlaws;
+  final List<String> contradictions;
+  final Map<String, dynamic> communicationStyle;
   final String structuredPrompt;
 
   const PersonalityProfile({
@@ -20,17 +20,17 @@ class PersonalityProfile {
   });
 
   factory PersonalityProfile.empty() => const PersonalityProfile(
-        aiPersonalityProfile: '',
-        photoAnalysis: '',
-        lifeStory: '',
-        humorMatrix: '',
-        attractiveFlaws: '',
-        contradictions: '',
-        communicationStyle: '',
+        aiPersonalityProfile: {},
+        photoAnalysis: {},
+        lifeStory: {},
+        humorMatrix: {},
+        attractiveFlaws: [],
+        contradictions: [],
+        communicationStyle: {},
         structuredPrompt: '',
       );
 
-  Map<String, String> toMap() => {
+  Map<String, dynamic> toMap() => {
         'aiPersonalityProfile': aiPersonalityProfile,
         'photoAnalysis': photoAnalysis,
         'lifeStory': lifeStory,
