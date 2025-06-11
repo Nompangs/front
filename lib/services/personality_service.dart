@@ -53,7 +53,7 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
     try {
       final response = await http.post(uri, headers: headers, body: body);
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
         final text = data['choices'][0]['message']['content'] as String?;
         if (text != null) {
           final jsonStart = text.indexOf('{');
