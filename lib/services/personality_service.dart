@@ -21,16 +21,18 @@ class PersonalityService {
     final warmth = state.warmth ?? 5;
     final competence = state.competence ?? 5;
 
-    final systemPrompt =
-        '다음 사용자 정보를 활용해 AI 캐릭터 프로필을 JSON으로 만들어줘. '\
-        '모든 필드는 한글로 작성하고 한 문단으로 요약해. '\
-        '필드 목록: aiPersonalityProfile, photoAnalysis, lifeStory, humorMatrix, '\
-        'attractiveFlaws, contradictions, communicationStyle, structuredPrompt.';
+    final systemPrompt = '''
+다음 사용자 정보를 활용해 AI 캐릭터 프로필을 JSON으로 만들어줘.
+모든 필드는 한글로 작성하고 한 문단으로 요약해.
+필드 목록: aiPersonalityProfile, photoAnalysis, lifeStory, humorMatrix,
+attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
+''';
 
-    final userPrompt =
-        '이름:${userInput.nickname}, 위치:${userInput.location}, 기간:${userInput.duration}, '\
-        '사물:${userInput.objectType}, 용도:${state.purpose}, 유머:${state.humorStyle}, '\
-        '내향성:$introversion, 따뜻함:$warmth, 능숙함:$competence.';
+    final userPrompt = '''
+이름:${userInput.nickname}, 위치:${userInput.location}, 기간:${userInput.duration},
+사물:${userInput.objectType}, 용도:${state.purpose}, 유머:${state.humorStyle},
+내향성:$introversion, 따뜻함:$warmth, 능숙함:$competence.
+''';
 
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
     final headers = {
