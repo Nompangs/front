@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:nompangs/services/gemini_service.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:nompangs/services/supertone_service.dart'; 
-// import 'package:nompangs/services/hume_service.dart';
+import 'package:nompangs/services/openai_tts_service.dart';
+
+class ChatMessage {
+  String text;
+  final bool isUser;
+  ChatMessage({required this.text, required this.isUser});
+}
 
 class ChatScreen extends StatefulWidget {
   final String characterName;
@@ -28,136 +34,129 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  
-  late SupertoneService _supertoneService; 
-  // late HumeAiTtsService _humeAiTtsService;
+  StreamSubscription<String>? _geminiStreamSubscription;
+  late OpenAiTtsService _openAiTtsService;
   late GeminiService _geminiService;
   bool _isProcessing = false;
-  int _messageLogCounter = 0; // 로그용 카운터
+  String _sentenceBuffer = '';
+  Future<void>? _firstSentencePlaybackFuture;
 
   @override
   void initState() {
     super.initState();
-    
-    _supertoneService = SupertoneService(); 
-    // _humeAiTtsService = HumeAiTtsService();
+    _openAiTtsService = OpenAiTtsService();
     _geminiService = GeminiService();
     _initSpeech();
 
     if (widget.greeting != null && widget.greeting!.isNotEmpty) {
       _addMessage(widget.greeting!, false, speak: true);
     }
-
     if (widget.initialUserMessage != null && widget.initialUserMessage!.isNotEmpty) {
       _addMessage(widget.initialUserMessage!, true, speak: false);
-      _requestAiResponse(widget.initialUserMessage!);
+      _requestAiResponseStream(widget.initialUserMessage!);
     }
   }
 
   void _initSpeech() async {
-    if (await Permission.microphone.request().isGranted) {
-      bool available = await _speech.initialize(
-        onError: (errorNotification) => print('STT Error: $errorNotification'),
-        onStatus: (status) => print('STT Status: $status'),
-      );
-      if (!available) {
-        print('STT를 사용할 수 없음. 마이크 권한이 거부되었거나 초기화에 실패했습니다.');
-      }
-    } else {
-      print('마이크 권한이 필요합니다.');
-    }
+    await Permission.microphone.request();
+    await _speech.initialize();
   }
 
-
-  void _addMessage(String text, bool isUser, {bool speak = false}) async {
-    final logId = _messageLogCounter++;
-
-    if (!mounted) return;
+  void _requestAiResponseStream(String userInput) {
+    if (_isProcessing) return;
+    _sentenceBuffer = '';
+    _firstSentencePlaybackFuture = null;
 
     setState(() {
-      _messages.insert(0, ChatMessage(text: text, isUser: isUser));
+      _isProcessing = true;
+      _messages.insert(0, ChatMessage(text: '', isUser: false));
     });
 
-    if (speak && text.isNotEmpty) {
-      try {
-        await _supertoneService.speak(text);
-      } catch (e) {
-        print("[ChatScreen_addMessage][$logId] TTS 재생 중 오류: $e");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('음성 재생 중 오류가 발생했습니다.')),
-          );
-        }
-      }
-    }
-  }
-
-  Future<void> _requestAiResponse(String userInput) async {
-    if (_isProcessing) {
-      return;
-    }
-    if (!mounted) return;
-
-    setState(() => _isProcessing = true);
-
-    final Map<String, dynamic> characterProfile = {
+    final characterProfile = {
       'name': widget.characterName,
       'tags': widget.personalityTags,
       'greeting': widget.greeting,
     };
 
+    _geminiStreamSubscription = _geminiService
+        .analyzeUserInputStream(userInput, characterProfile: characterProfile)
+        .listen(
+      (textChunk) {
+        if (mounted) {
+          setState(() => _messages[0].text += textChunk);
+          if (_firstSentencePlaybackFuture == null) {
+            _sentenceBuffer += textChunk;
+            RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
+            if (sentenceEnd.hasMatch(_sentenceBuffer)) {
+              final match = sentenceEnd.firstMatch(_sentenceBuffer)!;
+              final firstSentence = _sentenceBuffer.substring(0, match.end).trim();
+              if (firstSentence.isNotEmpty) {
+                _firstSentencePlaybackFuture = _openAiTtsService.speak(firstSentence);
+              }
+            }
+          }
+        }
+      },
+      onDone: () async {
+        if (mounted) {
+          await _firstSentencePlaybackFuture;
+          String fullText = _messages[0].text;
+          String restOfText = '';
+          if (_firstSentencePlaybackFuture != null) {
+            RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
+            final firstMatch = sentenceEnd.firstMatch(fullText);
+            if (firstMatch != null && fullText.length > firstMatch.end) {
+              restOfText = fullText.substring(firstMatch.end).trim();
+            }
+          } else if (fullText.isNotEmpty) {
+            restOfText = fullText;
+          }
+          if (restOfText.isNotEmpty) {
+            await _openAiTtsService.speak(restOfText);
+          }
+          setState(() => _isProcessing = false);
+        }
+      },
+      onError: (e) {
+        if (mounted) {
+          setState(() {
+            _messages[0].text = "AI 응답 중 오류 발생";
+            _isProcessing = false;
+          });
+        }
+      },
+    );
+  }
 
-    try {
-      final response = await _geminiService.analyzeUserInput(userInput, characterProfile: characterProfile);
-      String aiResponseText = "죄송합니다. 응답을 생성하는 데 문제가 발생했습니다."; 
-      if (response['response'] != null && (response['response'] as String).isNotEmpty) {
-        aiResponseText = response['response'] as String;
-      }
-      
-      if (mounted) {
-        _addMessage(aiResponseText, false, speak: true);
-      }
-    } catch (e) {
-        print('[ChatScreen_requestAiResponse] Gemini API 호출 오류: $e');
-        if (mounted) {
-            _addMessage("AI 응답 생성 중 오류가 발생했어요.", false, speak: true);
-        }
-    } finally {
-        if (mounted) {
-            setState(() => _isProcessing = false);
-        }
+  void _addMessage(String text, bool isUser, {bool speak = false}) {
+    setState(() => _messages.insert(0, ChatMessage(text: text, isUser: isUser)));
+    if (speak) {
+      _openAiTtsService.speak(text);
     }
   }
 
   void _handleSubmitted(String text) {
     if (text.trim().isEmpty) return;
-    final String userMessage = text.trim();
+    final userMessage = text.trim();
     _textController.clear();
-    _addMessage(userMessage, true, speak: false);
-    _requestAiResponse(userMessage);
+    _addMessage(userMessage, true);
+    _requestAiResponseStream(userMessage);
   }
 
   void _startListening() async {
-    if (!_isListening && !_isProcessing) {
-      bool available = await _speech.initialize(
-        onError: (errorNotification) => print('STT Error: $errorNotification'),
-        onStatus: (status) => print('STT Status: $status'),
+    bool available = await _speech.initialize();
+    if (available) {
+      setState(() => _isListening = true);
+      _speech.listen(
+        onResult: (result) {
+          _textController.text = result.recognizedWords;
+          if (result.finalResult) {
+            _handleSubmitted(result.recognizedWords);
+            _stopListening();
+          }
+        },
+        localeId: "ko_KR",
       );
-      if (available) {
-        setState(() => _isListening = true);
-        _speech.listen(
-          onResult: (result) {
-            _textController.text = result.recognizedWords;
-            if (result.finalResult) {
-              _handleSubmitted(result.recognizedWords);
-              _stopListening();
-            }
-          },
-          localeId: "ko_KR",
-          listenFor: Duration(seconds: 10), 
-          pauseFor: Duration(seconds: 3),   
-        );
-      }
     }
   }
 
@@ -170,11 +169,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    _textController.dispose(); //
-    _speech.stop(); //
-    // _humeAiTtsService.dispose();
+    _textController.dispose();
+    _speech.stop();
+    _geminiStreamSubscription?.cancel();
+    _openAiTtsService.dispose();
     super.dispose();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -234,7 +235,10 @@ class _ChatScreenState extends State<ChatScreen> {
           if (_isProcessing)
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: LinearProgressIndicator(backgroundColor: Colors.grey[800], valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent)),
+              child: LinearProgressIndicator(
+                  backgroundColor: Colors.grey[800],
+                  valueColor:
+                      AlwaysStoppedAnimation<Color>(Colors.purpleAccent)),
             ),
           Container(
             decoration: BoxDecoration(
@@ -245,7 +249,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.text_fields, color: Colors.white), 
+                  icon: Icon(Icons.text_fields, color: Colors.white),
                   onPressed: () {},
                 ),
                 Expanded(
@@ -291,12 +295,15 @@ class _ChatScreenState extends State<ChatScreen> {
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(20.0),
             topRight: Radius.circular(20.0),
-            bottomLeft: message.isUser ? Radius.circular(20.0) : Radius.circular(0),
-            bottomRight: message.isUser ? Radius.circular(0) : Radius.circular(20.0),
+            bottomLeft:
+                message.isUser ? Radius.circular(20.0) : Radius.circular(0),
+            bottomRight:
+                message.isUser ? Radius.circular(0) : Radius.circular(20.0),
           ),
         ),
         child: Column(
-          crossAxisAlignment: message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment:
+              message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
               message.isUser ? "나" : widget.characterName,
@@ -319,11 +326,4 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
     );
   }
-}
-
-class ChatMessage {
-  final String text;
-  final bool isUser;
-
-  ChatMessage({required this.text, required this.isUser});
 }
