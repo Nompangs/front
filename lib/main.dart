@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:app_links/app_links.dart';
 import 'package:provider/provider.dart';
+import 'package:nompangs/providers/onboarding_provider.dart';
+import 'package:nompangs/providers/chat_provider.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:nompangs/screens/auth/intro_screen.dart';
@@ -10,7 +12,6 @@ import 'package:nompangs/screens/auth/login_screen.dart';
 import 'package:nompangs/screens/main/home_screen.dart';
 import 'package:nompangs/screens/auth/register_screen.dart';
 import 'package:nompangs/screens/main/qr_scanner_screen.dart';
-import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_input_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_purpose_screen.dart';
@@ -18,13 +19,13 @@ import 'package:nompangs/screens/onboarding/onboarding_photo_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_generation_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_personality_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_completion_screen.dart';
-import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/theme/app_theme.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:nompangs/services/firebase_manager.dart';
 import 'package:nompangs/helpers/deeplink_helper.dart';
 import 'package:nompangs/screens/chat/chat_history_screen.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
 
 String? pendingRoomId;
 
@@ -49,11 +50,30 @@ class TestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue,
+      appBar: AppBar(title: const Text('테스트 화면')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ChangeNotifierProvider(
+                      create: (_) => ChatProvider(
+                        characterName: '정적 테스트 봇',
+                        characterHandle: '@static_bot', 
+                        personalityTags: ['테스트', '안정적'],
+                        greeting: '정적 캐릭터 테스트를 시작합니다. 무엇이 궁금하신가요?',
+                      ),
+                      child: const ChatTextScreen(),
+                    ),
+                  ),
+                );
+              },
+              child: const Text('정적 캐릭터로 채팅 테스트'),
+            ),
             Text(
               '테스트 화면',
               style: TextStyle(
@@ -118,13 +138,11 @@ class _NompangsAppState extends State<NompangsApp> {
   }
 
   Future<void> _initDeepLinks() async {
-    // Cold start 처리
     final initialUri = await _appLinks.getInitialLink();
     if (initialUri != null) {
       _handleDeepLink(initialUri);
     }
 
-    // Hot start 처리
     _linkSubscription = _appLinks.uriLinkStream.listen(
       (uri) {
         _handleDeepLink(uri);
@@ -156,7 +174,6 @@ class _NompangsAppState extends State<NompangsApp> {
           );
         }
       } else {
-        // id 파라미터가 없는 경우
         DeepLinkHelper.showError(
           _navigatorKey.currentContext!,
           '캐릭터 정보가 없는 QR 코드입니다.',
@@ -194,70 +211,29 @@ class _NompangsAppState extends State<NompangsApp> {
               (context) => const OnboardingCompletionScreen(),
         },
         onGenerateRoute: (settings) {
-          if (settings.name?.startsWith('/chat/') ?? false) {
-            final roomId = settings.name?.split('/').last;
-            if (roomId != null) {
-              final args = settings.arguments as Map<String, dynamic>?;
+          final Uri uri = Uri.parse(settings.name ?? '');
 
-              if (args == null) {
-                return MaterialPageRoute(
-                  settings: settings,
-                  builder:
-                      (context) => Scaffold(
-                        appBar: AppBar(
-                          title: Text('오류'),
-                          backgroundColor: Colors.black,
-                        ),
-                        backgroundColor: Colors.black,
-                        body: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red,
-                              ),
-                              SizedBox(height: 16),
-                              Text(
-                                '캐릭터 정보를 찾을 수 없습니다.',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                '올바른 QR 코드를 스캔해주세요.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              SizedBox(height: 24),
-                              ElevatedButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: Text('돌아가기'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                );
-              }
+          if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'chat') {
+            final characterId = uri.pathSegments.last;
+            final args = settings.arguments as Map<String, dynamic>?;
 
-              return MaterialPageRoute(
-                settings: settings,
-                builder:
-                    (context) => ChatScreen(
-                      characterName: args['characterName'] ?? '캐릭터 $roomId',
-                      personalityTags:
-                          args['personalityTags'] ?? ['친절한', '도움이 되는'],
-                      greeting: args['greeting'],
-                    ),
-              );
+            if (args == null) {
+              return MaterialPageRoute(builder: (_) => Scaffold(body: Center(child: Text('캐릭터 정보 없음'))));
             }
+            return MaterialPageRoute(
+              builder: (context) {
+                return ChangeNotifierProvider(
+                  create: (_) => ChatProvider(
+                    characterName: args['characterName'] ?? '이름 없음',
+                    characterHandle: args['characterHandle'] ?? '@unknown_handle',
+                    personalityTags: List<String>.from(args['personalityTags'] ?? []),
+                    greeting: args['greeting'],
+                  ),
+                  child: const ChatTextScreen(),
+                );
+              },
+              settings: settings,
+            );
           }
           return null;
         },
