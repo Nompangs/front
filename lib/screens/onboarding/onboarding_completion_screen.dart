@@ -87,6 +87,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
     final providerState = context.read<OnboardingProvider>();
     final profile = providerState.personalityProfile;
+    final userInput = providerState.state.userInput;
     final data = {
       'name': character.name,
       'tags': character.traits,
@@ -105,6 +106,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       'contradictions': profile.contradictions,
       'communicationStyle': profile.communicationStyle,
       'structuredPrompt': profile.structuredPrompt,
+      'location': userInput?.location ?? '',
+      'duration': userInput?.duration ?? '',
+      'purpose': providerState.state.purpose,
+      'humorStyle': providerState.state.humorStyle,
+      'photoUrl': providerState.state.photoPath ?? '',
     };
     try {
       final uuid = await CharacterManager.instance.saveCharacterForQR(data);
