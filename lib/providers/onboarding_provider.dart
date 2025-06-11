@@ -1,9 +1,13 @@
 import 'package:flutter/foundation.dart';
 import 'package:nompangs/models/onboarding_state.dart';
+import 'package:nompangs/models/personality_profile.dart';
 import 'dart:math';
 
 class OnboardingProvider extends ChangeNotifier {
   OnboardingState _state = const OnboardingState();
+  PersonalityProfile _profile = PersonalityProfile.empty();
+
+  PersonalityProfile get personalityProfile => _profile;
   
   OnboardingState get state => _state;
   
@@ -225,9 +229,15 @@ class OnboardingProvider extends ChangeNotifier {
     _state = _state.copyWith(generatedCharacter: updatedCharacter);
     notifyListeners();
   }
-  
-  void reset() {
-    _state = const OnboardingState();
+
+  void setPersonalityProfile(PersonalityProfile profile) {
+    _profile = profile;
     notifyListeners();
   }
-} 
+
+  void reset() {
+    _state = const OnboardingState();
+    _profile = PersonalityProfile.empty();
+    notifyListeners();
+  }
+}
