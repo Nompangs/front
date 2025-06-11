@@ -108,16 +108,18 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
               const SizedBox(height: 20),
               ElevatedButton.icon(
                 onPressed: () {
-                  Navigator.push(
+                  final characterData = {
+                    'characterName': widget.characterName,
+                    'characterHandle': '@User_${DateTime.now().millisecondsSinceEpoch}',
+                    'personalityTags': widget.personalityTags,
+                    'greeting': widget.greeting,
+                    'personaId': _qrUuid, // QR 생성 시 받은 ID
+                  };
+
+                  Navigator.pushNamed(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatTextScreen(
-                        characterName: widget.characterName,
-                        characterHandle: '@User_${DateTime.now().millisecondsSinceEpoch}',
-                        personalityTags: widget.personalityTags,
-                        greeting: widget.greeting,
-                      ),
-                    ),
+                    '/chat/$_qrUuid',
+                    arguments: characterData,
                   );
                 },
                 icon: const Icon(Icons.chat),
