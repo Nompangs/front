@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/gemini_service.dart';
-import 'package:nompangs/services/supertone_service.dart';
+import 'package:nompangs/services/openai_tts_service.dart';
 import 'chat_setting.dart';
 
 class ChatSpeakerScreen extends StatefulWidget {
@@ -20,7 +20,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
 
-  late SupertoneService _supertoneService;
+  late OpenAiTtsService _openAiTtsService;
   late GeminiService _geminiService;
   bool _isProcessing = false; // Gemini 요청 또는 TTS 재생 중인 상태
 
@@ -34,7 +34,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   @override
   void initState() {
     super.initState();
-    _supertoneService = SupertoneService();
+    _openAiTtsService = OpenAiTtsService();
     _geminiService = GeminiService();
     _initSpeech();
     _initEqualizerControllers();
@@ -178,22 +178,17 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
 
     // (1) Gemini/TTS 처리 중임을 나타내는 플래그를 켜고,
     //     STT가 듣고 있으면 중단한다.
-    setState(() {
-      _isProcessing = true;
-    });
-    if (_isListening) {
-      _stopListening();
-    } else {
-      _cancelLockTimer(hideButton: true);
-    }
+    setState(() => _isProcessing = true);
+    if (_isListening) _stopListening();
 
     try {
-      final response = await _geminiService.analyzeUserInput(text);
-      final reply = response['response'] ?? '';
+      final responseMap = await _geminiService.analyzeUserInput(text);
+      final reply = responseMap['response'] as String? ?? '';
+
       if (reply.isNotEmpty) {
         debugPrint('💎 Gemini 응답: ' + reply);
-        // (2) TTS 재생: 이 Future가 꺼질 때까지 STT를 절대 재시작하지 않는다.
-        await _supertoneService.speak(reply);
+        // await를 사용하여 음성 재생이 끝날 때까지 기다림
+        await _openAiTtsService.speak(reply);
       }
     } catch (e) {
       debugPrint('Gemini 통신 오류: ' + e.toString());
@@ -204,15 +199,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
       }
     } finally {
       if (mounted) {
-        // (3) TTS 재생이 모두 끝난 뒤에만 플래그 해제
-        setState(() {
-          _isProcessing = false;
-        });
-        // (4) 딜레이를 충분히 준 뒤(1초) STT를 다시 시작
+        setState(() => _isProcessing = false);
         Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted && !_isListening && !_isProcessing) {
-            _startListening();
-          }
+          if (mounted && !_isListening) _startListening();
         });
       }
     }
