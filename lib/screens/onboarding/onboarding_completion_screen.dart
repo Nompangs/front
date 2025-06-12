@@ -8,6 +8,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/widgets/common/primary_button.dart';
 import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
+import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -85,6 +86,14 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     setState(() {
       _creatingQr = true;
     });
+    final providerState = context.read<OnboardingProvider>();
+    var profile = providerState.personalityProfile;
+    if (profile.structuredPrompt.isEmpty) {
+      final service = const PersonalityService();
+      profile = await service.generateProfile(providerState.state);
+      providerState.setPersonalityProfile(profile);
+    }
+    final userInput = providerState.state.userInput;
     final data = {
       'name': character.name,
       'tags': character.traits,
@@ -94,7 +103,20 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         'warmth': character.personality.warmth,
         'competence': character.personality.competence,
         'extroversion': character.personality.extroversion,
-      }
+      },
+      'aiPersonalityProfile': profile.aiPersonalityProfile,
+      'photoAnalysis': profile.photoAnalysis,
+      'lifeStory': profile.lifeStory,
+      'humorMatrix': profile.humorMatrix,
+      'attractiveFlaws': profile.attractiveFlaws,
+      'contradictions': profile.contradictions,
+      'communicationStyle': profile.communicationStyle,
+      'structuredPrompt': profile.structuredPrompt,
+      'location': userInput?.location ?? '',
+      'duration': userInput?.duration ?? '',
+      'purpose': providerState.state.purpose,
+      'humorStyle': providerState.state.humorStyle,
+      'photoUrl': providerState.state.photoPath ?? '',
     };
     try {
       final uuid = await CharacterManager.instance.saveCharacterForQR(data);
