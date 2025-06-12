@@ -61,159 +61,154 @@ class _MainScreenState extends State<MainScreen> {
     final scale = width / baseWidth;
 
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 223, 25, 25),
-      body: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          color: const Color.fromARGB(255, 123, 0, 255),
-          borderRadius: BorderRadius.zero,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.zero,
-          child: Column(
-            children: [
-              // Header with cream background (높이 240)
-              Container(
-                width: double.infinity,
-                height: 240 * scale,
-                color: const Color(0xFFFDF7E9),
+      backgroundColor: const Color.fromARGB(255, 255, 20, 251),
+      body: ClipRRect(
+        borderRadius: BorderRadius.zero,
+        child: Column(
+          children: [
+            // Header with cream background (높이 240)
+            Container(
+              width: double.infinity,
+              height: 240 * scale,
+              color: const Color(0xFFFDF7E9),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 24 * scale, top: 60 * scale, bottom: 32 * scale, right: 8 * scale),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          Text(
+                            '오늘, 2025년 06월 04일',
+                            style: TextStyle(
+                              color: Color(0xFF666666),
+                              fontSize: 14 * scale,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(height: 24 * scale),
+                          Text(
+                            '안녕하세요, 씅님',
+                            style: TextStyle(
+                              color: Color(0xFF222222),
+                              fontSize: 30 * scale,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 12 * scale),
+                          Text(
+                            '오늘은 누구랑 대화할까요?',
+                            style: TextStyle(
+                              color: Color(0xFF666666),
+                              fontSize: 20 * scale,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(top: 60 * scale, right: 32 * scale),
+                    child: Container(
+                      width: 64 * scale,
+                      height: 64 * scale,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(32 * scale),
+                        gradient: LinearGradient(
+                          colors: [Colors.blue[400]!, Colors.green[400]!, Colors.yellow[400]!],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        border: Border.all(color: Colors.white),
+                      ),
+                      child: Center(
+                        child: Text('🧑‍💼', style: TextStyle(fontSize: 32 * scale)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Yellow notification bar
+            Transform.translate(
+              offset: Offset(0, -29 * scale),
+              child: Container(
+                margin: EdgeInsets.symmetric(horizontal: 24 * scale),
+                height: 48 * scale,
+                decoration: BoxDecoration(
+                  color: Color(0xFFFFEB3B),
+                  borderRadius: BorderRadius.circular(40 * scale),
+                  border: Border.all(color: Colors.black),
+                ),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    SizedBox(width: 45 * scale),
                     Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(left: 24 * scale, top: 60 * scale, bottom: 32 * scale, right: 8 * scale),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
+                      child: RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            color: Color(0xFF666666),
+                            fontSize: 14 * scale,
+                          ),
                           children: [
-                            Text(
-                              '오늘, 2025년 06월 04일',
-                              style: TextStyle(
-                                color: Color(0xFF666666),
-                                fontSize: 14 * scale,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            TextSpan(
+                              text: '털찐 말랑이',
+                              style: TextStyle(fontWeight: FontWeight.bold),
                             ),
-                            SizedBox(height: 24 * scale),
-                            Text(
-                              '안녕하세요, 씅님',
-                              style: TextStyle(
-                                color: Color(0xFF222222),
-                                fontSize: 30 * scale,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 12 * scale),
-                            Text(
-                              '오늘은 누구랑 대화할까요?',
-                              style: TextStyle(
-                                color: Color(0xFF666666),
-                                fontSize: 20 * scale,
-                                fontWeight: FontWeight.w400,
-                              ),
+                            TextSpan(
+                              text: '와 최근 마지막으로 대화했어요.',
+                              style: TextStyle(fontWeight: FontWeight.w300),
                             ),
                           ],
                         ),
                       ),
                     ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 60 * scale, right: 32 * scale),
-                      child: Container(
-                        width: 64 * scale,
-                        height: 64 * scale,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(32 * scale),
-                          gradient: LinearGradient(
-                            colors: [Colors.blue[400]!, Colors.green[400]!, Colors.yellow[400]!],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(color: Colors.white),
-                        ),
-                        child: Center(
-                          child: Text('🧑‍💼', style: TextStyle(fontSize: 32 * scale)),
+                    Container(
+                      width: 45 * scale,
+                      height: 44 * scale,
+                      margin: EdgeInsets.only(right: 1 * scale),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(22 * scale),
+                      ),
+                      child: Center(
+                        child: Transform.rotate(
+                          angle: -0.785398, // -45 degrees
+                          child: Icon(Icons.arrow_upward, size: 16 * scale, color: Colors.black),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-              
-              // Yellow notification bar
-              Transform.translate(
-                offset: Offset(0, -29 * scale),
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 24 * scale),
-                  height: 48 * scale,
-                  decoration: BoxDecoration(
-                    color: Color(0xFFFFEB3B),
-                    borderRadius: BorderRadius.circular(40 * scale),
-                    border: Border.all(color: Colors.black),
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 45 * scale),
-                      Expanded(
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: Color(0xFF666666),
-                              fontSize: 14 * scale,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: '털찐 말랑이',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: '와 최근 마지막으로 대화했어요.',
-                                style: TextStyle(fontWeight: FontWeight.w300),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 45 * scale,
-                        height: 44 * scale,
-                        margin: EdgeInsets.only(right: 1 * scale),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22 * scale),
-                        ),
-                        child: Center(
-                          child: Transform.rotate(
-                            angle: -0.785398, // -45 degrees
-                            child: Icon(Icons.arrow_upward, size: 16 * scale, color: Colors.black),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              
+            ),
+            
 
 
-              // 파랑/핑크/초록 타원 버튼 영역 (가로 스크롤 없이 화면에 꽉 차게 겹침)
-              Container(
+            // 파랑/핑크/초록 타원 버튼 영역 (가로 스크롤 없이 화면에 꽉 차게 겹침)
+            Transform.translate(
+              offset: Offset(0,-30 * scale),
+              child: Container(
                 width: double.infinity,
-                color: Colors.black,
-                height: 130 * scale,
+                color: const Color.fromARGB(255, 255, 19, 19),
+                height: 180 * scale,
                 alignment: Alignment.center,
                 child: Builder(
                   builder: (context) {
-                    final overlap = 0 * scale;
-                    final buttonWidth = 100 * scale;
-                    final buttonHeight = 170 * scale;
+                    final overlap = 20 * scale;
+                    final buttonWidth = 125 * scale;
+                    final buttonHeight = 280 * scale;
                     return Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // 첫 번째 버튼 (파랑)
+                                                // 첫 번째 버튼 (파랑)
                         Transform.rotate(
-                          angle: -45 * 3.141592 / 180,
+                          angle: 45 * 3.141592 / 180,
                           child: ClipOval(
                             child: Container(
                               width: buttonWidth,
@@ -221,26 +216,26 @@ class _MainScreenState extends State<MainScreen> {
                                 color: Color(0xFF4DB6FF),
                               child: Center(
                                 child: Transform.rotate(
-                                  angle: 45 * 3.141592 / 180,
-                                child: Text(
-                                  '나와\n접촉한 모멘티',
-                                  style: TextStyle(
-                                    color: Colors.white,
+                                  angle: -45 * 3.141592 / 180,
+                                  child: Text(
+                                    '나와\n접촉한 모멘티',
+                                    style: TextStyle(
+                                      color: Colors.white,
                                       fontSize: 16 * scale,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                        // 두 번째 버튼 (핑크, 왼쪽으로 overlap만큼 겹침)
+                                                // 두 번째 버튼 (핑크, 왼쪽으로 overlap만큼 겹침)
                         Transform.translate(
                           offset: Offset(-overlap, 0),
                           child: Transform.rotate(
-                            angle: -45 * 3.141592 / 180,
+                            angle: 45 * 3.141592 / 180,
                             child: ClipOval(
                             child: Container(
                                 width: buttonWidth,
@@ -248,7 +243,7 @@ class _MainScreenState extends State<MainScreen> {
                                 color: Color(0xFFFFB6D5),
                                 child: Center(
                                   child: Transform.rotate(
-                                    angle: 45 * 3.141592 / 180,
+                                    angle: -45 * 3.141592 / 180,
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -277,10 +272,10 @@ class _MainScreenState extends State<MainScreen> {
                                         SizedBox(width: 4 * scale),
                                         Text(
                                           '+',
-                                  style: TextStyle(
-                                    color: Colors.white,
+                                          style: TextStyle(
+                                            color: Colors.white,
                                             fontSize: 24 * scale,
-                                    fontWeight: FontWeight.bold,
+                                            fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                       ],
@@ -291,11 +286,11 @@ class _MainScreenState extends State<MainScreen> {
                             ),
                           ),
                         ),
-                        // 세 번째 버튼 (초록, 왼쪽으로 overlap만큼 겹침)
+                                                // 세 번째 버튼 (초록, 왼쪽으로 overlap만큼 겹침)
                         Transform.translate(
                           offset: Offset(-overlap, 0),
                           child: Transform.rotate(
-                            angle: -45 * 3.141592 / 180,
+                            angle: 45 * 3.141592 / 180,
                             child: ClipOval(
                             child: Container(
                                 width: buttonWidth,
@@ -303,7 +298,7 @@ class _MainScreenState extends State<MainScreen> {
                                 color: Color(0xFF4DEB8A),
                                 child: Center(
                                   child: Transform.rotate(
-                                    angle: 45 * 3.141592 / 180,
+                                    angle: -45 * 3.141592 / 180,
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -321,10 +316,10 @@ class _MainScreenState extends State<MainScreen> {
                                             ),
                                             Text(
                                               '모멘티 탐색',
-                                  style: TextStyle(
-                                    color: Colors.white,
+                                              style: TextStyle(
+                                                color: Colors.white,
                                                 fontSize: 16 * scale,
-                                    fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.bold,
                                               ),
                                             ),
                                           ],
@@ -344,95 +339,88 @@ class _MainScreenState extends State<MainScreen> {
                   },
                 ),
               ),
-              
-              // 필터 칩~카드 리스트 영역을 Expanded로 감싸서 카드가 바닥에 닿게
-              Expanded(
+            ),
+            
+            // Black section with filters
+            Container(
+              width: double.infinity,
+              height: 45 * scale,
+              color: const Color.fromARGB(255, 0, 0, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 5 * scale),
+                child: Row(
+                  children: filterOptions.map((filter) => 
+                    FilterChip(
+                      label: filter,
+                      selected: selectedFilter == filter,
+                      onTap: () => setState(() => selectedFilter = filter),
+                      scale: scale,
+                    )
+                  ).toList(),
+                ),
+              ),
+            ),
+            
+            // Cards section - 남은 공간을 모두 차지
+            Expanded(
+              child: Container(
+                color: Colors.white,
+                padding: EdgeInsets.fromLTRB(16 * scale, 21 * scale, 16 * scale, 8 * scale),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Black section with filters
-                    Container(
-                      width: double.infinity,
-                      height: 45 * scale,
-                      color: Colors.black,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: EdgeInsets.symmetric(horizontal: 5 * scale),
-                        child: Row(
-                          children: filterOptions.map((filter) => 
-                            FilterChip(
-                              label: filter,
-                              selected: selectedFilter == filter,
-                              onTap: () => setState(() => selectedFilter = filter),
-                              scale: scale,
-                            )
-                          ).toList(),
+                    // Header
+                    Row(
+                      children: [
+                        Text(
+                          '내가 깨운 사물들',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16 * scale,
+                            fontWeight: FontWeight.bold,
+                            height: 1.4,
+                          ),
                         ),
-                      ),
-                    ),
-                    // Cards section
-                    Expanded(
-                      child: Container(
-                        color: Colors.white,
-                        padding: EdgeInsets.fromLTRB(16 * scale, 21 * scale, 16 * scale, 8 * scale),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header
-                            Row(
-                              children: [
-                                Text(
-                                  '내가 깨운 사물들',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontSize: 16 * scale,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.4,
-                                  ),
-                                ),
-                                SizedBox(width: 12 * scale),
-                                Container(
-                                  width: 20 * scale,
-                                  height: 20 * scale,
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFFF5F5F5),
-                                    borderRadius: BorderRadius.circular(10 * scale),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '99',
-                                      style: TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 13 * scale,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 16 * scale),
-                            // Horizontal scrollable cards
-                            SizedBox(
-                              height: 240 * scale,
-                              child: ListView.separated(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: objectData.length,
-                                separatorBuilder: (context, index) => SizedBox(width: 12 * scale),
-                                itemBuilder: (context, index) => ObjectCard(
-                                  data: objectData[index],
-                                  scale: scale,
-                                ),
+                        SizedBox(width: 12 * scale),
+                        Container(
+                          width: 20 * scale,
+                          height: 20 * scale,
+                          decoration: BoxDecoration(
+                            color: Color(0xFFF5F5F5),
+                            borderRadius: BorderRadius.circular(10 * scale),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '99',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 13 * scale,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                          ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16 * scale),
+                    // Horizontal scrollable cards
+                    Expanded(
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: objectData.length,
+                        separatorBuilder: (context, index) => SizedBox(width: 12 * scale),
+                        itemBuilder: (context, index) => ObjectCard(
+                          data: objectData[index],
+                          scale: scale,
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -498,6 +486,7 @@ class ObjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 148 * scale,
+      height: 220 * scale,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,7 +496,7 @@ class ObjectCard extends StatelessWidget {
             width: 148 * scale,
             height: 148 * scale,
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.black),
+              border: Border.all(color: const Color.fromARGB(255, 0, 0, 0)),
             ),
             child: ClipPath(
               clipper: CustomShapeClipper(),
