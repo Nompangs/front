@@ -9,55 +9,47 @@ class OnboardingProvider extends ChangeNotifier {
   PersonalityProfile _profile = PersonalityProfile.empty();
 
   PersonalityProfile get personalityProfile => _profile;
-  
+
   OnboardingState get state => _state;
-  
-  void nextStep() {
-    _state = _state.copyWith(currentStep: _state.currentStep + 1);
-    notifyListeners();
-    debugPrint('=== Onboarding Status [nextStep] ===');
+
+  void _logStatus(String action) {
+    debugPrint('=== Onboarding Status [$action] ===');
     debugPrint(jsonEncode(_state.toJson()));
     debugPrint(jsonEncode(_profile.toMap()));
     debugPrint('===============================');
   }
   
+  void nextStep() {
+    _state = _state.copyWith(currentStep: _state.currentStep + 1);
+    notifyListeners();
+    _logStatus('nextStep');
+  }
+  
   void setUserInput(UserInput input) {
     _state = _state.copyWith(userInput: input);
     notifyListeners();
-    debugPrint('=== Onboarding Status [setUserInput] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('setUserInput');
   }
   
   /// 용도 업데이트 (Step 3)
   void updatePurpose(String purpose) {
     _state = _state.copyWith(purpose: purpose);
     notifyListeners();
-    debugPrint('=== Onboarding Status [updatePurpose] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updatePurpose');
   }
   
   /// 유머스타일 업데이트 (Step 3)
   void updateHumorStyle(String style) {
     _state = _state.copyWith(humorStyle: style);
     notifyListeners();
-    debugPrint('=== Onboarding Status [updateHumorStyle] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updateHumorStyle');
   }
   
   /// 사진 경로 업데이트 (Step 4)
   void updatePhotoPath(String? path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
-    debugPrint('=== Onboarding Status [updatePhotoPath] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updatePhotoPath');
   }
   
   /// 성격 슬라이더 업데이트 (Step 6)
@@ -74,56 +66,38 @@ class OnboardingProvider extends ChangeNotifier {
         break;
     }
     notifyListeners();
-    debugPrint('=== Onboarding Status [updatePersonalitySlider] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updatePersonalitySlider');
   }
   
   /// QR 코드 URL 업데이트 (완료 단계)
   void updateQRCodeUrl(String url) {
     _state = _state.copyWith(qrCodeUrl: url);
     notifyListeners();
-    debugPrint('=== Onboarding Status [updateQRCodeUrl] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updateQRCodeUrl');
   }
   
   void setPhotoPath(String path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
-    debugPrint('=== Onboarding Status [setPhotoPath] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('setPhotoPath');
   }
   
   void setGeneratedCharacter(Character character) {
     _state = _state.copyWith(generatedCharacter: character);
     notifyListeners();
-    debugPrint('=== Onboarding Status [setGeneratedCharacter] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('setGeneratedCharacter');
   }
   
   void setError(String error) {
     _state = _state.copyWith(errorMessage: error, isLoading: false);
     notifyListeners();
-    debugPrint('=== Onboarding Status [setError] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('setError');
   }
   
   void clearError() {
     _state = _state.copyWith(errorMessage: null);
     notifyListeners();
-    debugPrint('=== Onboarding Status [clearError] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('clearError');
   }
   
   Future<void> generateCharacter() async {
@@ -138,10 +112,7 @@ class OnboardingProvider extends ChangeNotifier {
       generationMessage: "캐릭터 깨우는 중..."
     );
     notifyListeners();
-    debugPrint("=== Onboarding Status [startGenerateCharacter] ===");
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint("===============================");
+    _logStatus('startGenerateCharacter');
     
     try {
       // 3단계 시뮬레이션 (Figma 정확)
@@ -158,10 +129,7 @@ class OnboardingProvider extends ChangeNotifier {
         generationProgress: 1.0,
       );
       notifyListeners();
-    debugPrint("=== Onboarding Status [generateCharacterComplete] ===");
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint("===============================");
+      _logStatus('generateCharacterComplete');
       
     } catch (e) {
       _state = _state.copyWith(
@@ -169,10 +137,7 @@ class OnboardingProvider extends ChangeNotifier {
         errorMessage: '캐릭터 생성 중 오류가 발생했습니다: $e'
       );
       notifyListeners();
-    debugPrint("=== Onboarding Status [generateCharacterError] ===");
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint("===============================");
+      _logStatus('generateCharacterError');
     }
   }
   
@@ -184,10 +149,7 @@ class OnboardingProvider extends ChangeNotifier {
         generationMessage: message,
       );
       notifyListeners();
-      debugPrint("=== Onboarding Status [simulateProgress] ===");
-      debugPrint(jsonEncode(_state.toJson()));
-      debugPrint(jsonEncode(_profile.toMap()));
-      debugPrint("===============================");
+      _logStatus('simulateProgress');
     }
   }
   
@@ -289,28 +251,19 @@ class OnboardingProvider extends ChangeNotifier {
     
     _state = _state.copyWith(generatedCharacter: updatedCharacter);
     notifyListeners();
-    debugPrint('=== Onboarding Status [updatePersonality] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('updatePersonality');
   }
 
   void setPersonalityProfile(PersonalityProfile profile) {
     _profile = profile;
     notifyListeners();
-    debugPrint('=== Onboarding Status [setPersonalityProfile] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('setPersonalityProfile');
   }
 
   void reset() {
     _state = const OnboardingState();
     _profile = PersonalityProfile.empty();
     notifyListeners();
-    debugPrint('=== Onboarding Status [reset] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    _logStatus('reset');
   }
 }
