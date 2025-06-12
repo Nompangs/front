@@ -3,6 +3,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/onboarding_state.dart';
 import '../models/personality_profile.dart';
+import '../advanced/advanced_personality_profile.dart';
+import '../advanced/humor_matrix.dart';
 
 class PersonalityService {
   const PersonalityService();
@@ -62,6 +64,7 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
             final jsonString = text.substring(jsonStart, jsonEnd + 1);
             final Map<String, dynamic> map = jsonDecode(jsonString);
             return PersonalityProfile(
+              variables: _ensureIntMap(map['variables']),
               aiPersonalityProfile:
                   _ensureMap(map['aiPersonalityProfile']),
               photoAnalysis: _ensureMap(map['photoAnalysis']),
@@ -94,34 +97,69 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
     final purpose = state.purpose;
     final humorStyle = state.humorStyle;
 
-    final aiPersonalityProfile =
-        '${userInput.nickname}의 $purpose를 돕는 ${userInput.objectType}. 성격은 '
-        '내향성 $introversion/10, 따뜻함 $warmth/10, 능숙함 $competence/10.';
-    final photoAnalysis = state.photoPath != null
-        ? '사진 속 ${userInput.objectType}의 매력이 잘 드러나.'
-        : '아직 사진이 없어.';
-    final lifeStory = '${userInput.location}에서 ${userInput.duration} 동안 지냈어.';
-    final humorMatrix = '주된 유머 스타일은 $humorStyle.';
-    final attractiveFlaws =
-        warmth >= 6 ? '가끔 지나치게 다정해.' : '조금 무뚝뚝해.';
-    final contradictions = introversion > 5
-        ? '활발하지만 내성적이기도 해.'
-        : '조용하지만 가끔 대담해.';
-    final communicationStyle = introversion > 5
-        ? '말이 많고 직설적이야.'
-        : '짧고 조심스러운 편이야.';
+    final advProfile = AdvancedPersonalityProfile();
+    final humorMatrix = HumorMatrix(
+      warmthVsWit: warmth * 10,
+      selfVsObservational: introversion * 10,
+      subtleVsExpressive: competence * 10,
+    );
+
+    final aiPersonalityProfile = {
+      'coreTraits': {
+        'warmth': warmth * 10,
+        'competence': competence * 10,
+        'introversion': introversion * 10,
+      },
+      'objectType': userInput.objectType,
+      'purpose': purpose,
+      'summary': '${userInput.nickname}의 $purpose를 돕는 ${userInput.objectType}. '
+          '성격은 내향성 $introversion/10, 따뜻함 $warmth/10, 능숙함 $competence/10.'
+    };
+
+    final photoAnalysis = {
+      'hasPhoto': state.photoPath != null,
+      'path': state.photoPath ?? '',
+      'summary': state.photoPath != null
+          ? '사진 속 ${userInput.objectType}의 매력이 잘 드러나.'
+          : '아직 사진이 없어.'
+    };
+
+    final lifeStory = {
+      'location': userInput.location,
+      'duration': userInput.duration,
+      'purpose': purpose,
+      'summary': '${userInput.location}에서 ${userInput.duration} 동안 지냈어.'
+    };
+
+    final humorMatrixMap = humorMatrix.toMap();
+    humorMatrixMap['description'] = '주된 유머 스타일은 $humorStyle';
+
+    final attractiveFlaws = [
+      warmth >= 6 ? '가끔 지나치게 다정해.' : '조금 무뚝뚝해.'
+    ];
+
+    final contradictions = [
+      introversion > 5 ? '활발하지만 내성적이기도 해.' : '조용하지만 가끔 대담해.'
+    ];
+
+    final communicationStyle = {
+      'tone': warmth >= 6 ? 'friendly' : 'blunt',
+      'verbosity': introversion >= 6 ? 'talkative' : 'concise',
+      'summary': introversion > 5 ? '말이 많고 직설적이야.' : '짧고 조심스러운 편이야.'
+    };
+
     final structuredPrompt =
-        '이름:${userInput.nickname}, 목적:$purpose, 유머:$humorStyle, '
-        '내향성:$introversion, 따뜻함:$warmth, 능숙함:$competence.';
+        '이름:${userInput.nickname}, 목적:$purpose, 유머:$humorStyle, 내향성:$introversion, 따뜻함:$warmth, 능숙함:$competence.';
 
     return PersonalityProfile(
-      aiPersonalityProfile: {'summary': aiPersonalityProfile},
-      photoAnalysis: {'summary': photoAnalysis},
-      lifeStory: {'summary': lifeStory},
-      humorMatrix: {'summary': humorMatrix},
-      attractiveFlaws: [attractiveFlaws],
-      contradictions: [contradictions],
-      communicationStyle: {'summary': communicationStyle},
+      variables: advProfile.toMap().map((k, v) => MapEntry(k, v as int)),
+      aiPersonalityProfile: aiPersonalityProfile,
+      photoAnalysis: photoAnalysis,
+      lifeStory: lifeStory,
+      humorMatrix: humorMatrixMap,
+      attractiveFlaws: attractiveFlaws,
+      contradictions: contradictions,
+      communicationStyle: communicationStyle,
       structuredPrompt: structuredPrompt,
     );
   }
@@ -140,5 +178,12 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
       return [value];
     }
     return [];
+  }
+
+  Map<String, int> _ensureIntMap(dynamic value) {
+    if (value is Map) {
+      return value.map((k, v) => MapEntry(k.toString(), int.tryParse(v.toString()) ?? (v is num ? v.toInt() : 0)));
+    }
+    return {};
   }
 }

@@ -1,4 +1,5 @@
 class PersonalityProfile {
+  final Map<String, int> variables;
   final Map<String, dynamic> aiPersonalityProfile;
   final Map<String, dynamic> photoAnalysis;
   final Map<String, dynamic> lifeStory;
@@ -9,6 +10,7 @@ class PersonalityProfile {
   final String structuredPrompt;
 
   const PersonalityProfile({
+    this.variables = const {},
     required this.aiPersonalityProfile,
     required this.photoAnalysis,
     required this.lifeStory,
@@ -20,6 +22,7 @@ class PersonalityProfile {
   });
 
   factory PersonalityProfile.empty() => const PersonalityProfile(
+        variables: {},
         aiPersonalityProfile: {},
         photoAnalysis: {},
         lifeStory: {},
@@ -31,6 +34,7 @@ class PersonalityProfile {
       );
 
   Map<String, dynamic> toMap() => {
+        'variables': variables,
         'aiPersonalityProfile': aiPersonalityProfile,
         'photoAnalysis': photoAnalysis,
         'lifeStory': lifeStory,
