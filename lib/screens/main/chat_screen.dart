@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:nompangs/services/gemini_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/services/openai_chat_service.dart';
 import 'package:nompangs/services/openai_tts_service.dart';
 
 class ChatMessage {
@@ -34,9 +34,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  StreamSubscription<String>? _geminiStreamSubscription;
+  StreamSubscription<String>? _apiStreamSubscription;
   late OpenAiTtsService _openAiTtsService;
-  late GeminiService _geminiService;
+  late OpenAiChatService _openAiChatService;
   bool _isProcessing = false;
   String _sentenceBuffer = '';
   Future<void>? _firstSentencePlaybackFuture;
@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _openAiTtsService = OpenAiTtsService();
-    _geminiService = GeminiService();
+    _openAiChatService = OpenAiChatService();
     _initSpeech();
 
     if (widget.greeting != null && widget.greeting!.isNotEmpty) {
@@ -78,8 +78,8 @@ class _ChatScreenState extends State<ChatScreen> {
       'greeting': widget.greeting,
     };
 
-    _geminiStreamSubscription = _geminiService
-        .analyzeUserInputStream(userInput, characterProfile: characterProfile)
+    _apiStreamSubscription = _openAiChatService
+        .getChatCompletionStream(userInput, characterProfile: characterProfile)
         .listen(
       (textChunk) {
         if (mounted) {
@@ -171,8 +171,9 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _textController.dispose();
     _speech.stop();
-    _geminiStreamSubscription?.cancel();
+    _apiStreamSubscription?.cancel(); 
     _openAiTtsService.dispose();
+    _openAiChatService.dispose();
     super.dispose();
   }
 
