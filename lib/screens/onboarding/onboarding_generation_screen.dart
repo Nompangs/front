@@ -4,6 +4,7 @@ import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
 import 'dart:math' as math;
 import 'dart:io';
+import 'dart:async';
 
 class OnboardingGenerationScreen extends StatefulWidget {
   const OnboardingGenerationScreen({Key? key}) : super(key: key);
@@ -19,6 +20,12 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   late AnimationController _circleController;
   late Animation<double> _progressAnimation;
   late Animation<double> _circleAnimation;
+
+  // 타임아웃 관련 변수 추가
+  Timer? _timeoutTimer;
+  bool _isTimedOut = false;
+  int _remainingSeconds = 6;
+  Timer? _countdownTimer;
 
   final List<GenerationStep> steps = [
     GenerationStep(0.25, '캐릭터 깨우는 중...', '사물의 기본 특성을 분석하고 있어요'),
@@ -59,6 +66,8 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   void dispose() {
     _progressController.dispose();
     _circleController.dispose();
+    _timeoutTimer?.cancel();
+    _countdownTimer?.cancel();
     super.dispose();
   }
 
@@ -71,18 +80,154 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
       return;
     }
 
-    // 이미 생성 중이거나 완성된 경우가 아니라면 생성 시작
-    if (!provider.state.isGenerating &&
-        provider.state.generatedCharacter == null) {
-      _startGeneration();
+    // 이미 생성된 캐릭터가 있는 경우 바로 다음 페이지로 이동
+    if (provider.state.generatedCharacter != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/onboarding/personality');
+        }
+      });
+      return;
     }
+
+    // 생성 중이 아니고 캐릭터가 없는 경우에만 생성 시작
+    if (!provider.state.isGenerating) {
+      _startGeneration();
+      _startTimeoutTimer(); // 타임아웃 타이머 시작
+    }
+  }
+
+  void _startTimeoutTimer() {
+    // 6초 후 타임아웃 처리
+    _timeoutTimer = Timer(const Duration(seconds: 6), () {
+      if (mounted && !_isTimedOut) {
+        setState(() {
+          _isTimedOut = true;
+        });
+        _showTimeoutDialog();
+      }
+    });
+
+    // 카운트다운 타이머 (UI 표시용)
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted && _remainingSeconds > 0) {
+        setState(() {
+          _remainingSeconds--;
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  void _showTimeoutDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+            side: const BorderSide(color: Colors.black, width: 1),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.access_time, color: Colors.orange, size: 24),
+              SizedBox(width: 8),
+              Text(
+                '시간이 오래 걸리고 있어요',
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            '캐릭터 생성이 예상보다 오래 걸리고 있어요.\n사진을 다시 촬영하거나 잠시 후 다시 시도해보세요.',
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 14,
+              color: Colors.black87,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                _goBackToPhoto(); // 사진 촬영 화면으로 이동
+              },
+              child: const Text(
+                '사진 다시 촬영',
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  color: Colors.grey,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // 다이얼로그 닫기
+                _retryGeneration(); // 다시 시도
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFD8F1),
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                '다시 시도',
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _goBackToPhoto() {
+    // 캐시 클린업
+    final provider = Provider.of<OnboardingProvider>(context, listen: false);
+    provider.clearError();
+
+    // 사진 촬영 화면으로 이동
+    Navigator.pushReplacementNamed(context, '/onboarding/photo');
+  }
+
+  void _retryGeneration() {
+    // 상태 초기화
+    setState(() {
+      _isTimedOut = false;
+      _remainingSeconds = 6;
+    });
+
+    // 타이머 재시작
+    _timeoutTimer?.cancel();
+    _countdownTimer?.cancel();
+
+    // 생성 다시 시도
+    _startGeneration();
+    _startTimeoutTimer();
   }
 
   void _startGeneration() async {
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
     await provider.generateCharacter();
 
-    if (mounted && provider.state.generatedCharacter != null) {
+    if (mounted && provider.state.generatedCharacter != null && !_isTimedOut) {
+      _timeoutTimer?.cancel(); // 성공 시 타이머 취소
+      _countdownTimer?.cancel();
       Navigator.pushReplacementNamed(context, '/onboarding/personality');
     }
   }
@@ -93,20 +238,37 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFD8F1), // 분홍색 배경
+      backgroundColor: const Color(0xFFFFD8F1), // 전체 배경을 분홍색으로 설정
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFFD8F1),
+        backgroundColor: Colors.transparent, // 앱바 배경을 투명하게 하여 통합된 느낌
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            // 타이머 정리
+            _timeoutTimer?.cancel();
+            _countdownTimer?.cancel();
+
+            // 캐시 클린업
+            final provider = Provider.of<OnboardingProvider>(
+              context,
+              listen: false,
+            );
+            provider.clearError();
+
+            Navigator.pop(context);
+          },
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -119,6 +281,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
             return _buildErrorScreen(state.errorMessage!);
           }
 
+          // 별도의 Container 없이 직접 Column 사용하여 통합된 배경 구현
           return SingleChildScrollView(
             // 스택 오버플로우 방지
             child: Column(
@@ -193,6 +356,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
                   child: Text(
                     _getCurrentStepDescription(state.generationProgress),
                     style: const TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: Colors.black87,
@@ -226,6 +390,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
                         ? state.generationMessage
                         : '캐릭터 깨우는 중...',
                     style: const TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
                       color: Colors.black,
@@ -242,7 +407,29 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
                 // 프로그레스바 영역 (화면의 3/4 지점)
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.12),
-                  child: _buildProgressIndicator(state.generationProgress),
+                  child: Column(
+                    children: [
+                      _buildProgressIndicator(state.generationProgress),
+
+                      // 남은 시간 표시 (자연스럽게)
+                      if (!_isTimedOut &&
+                          _remainingSeconds > 0 &&
+                          state.isGenerating)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            '잠시만 기다려주세요... (${_remainingSeconds}초)',
+                            style: TextStyle(
+                              fontFamily: 'Pretendard',
+                              fontSize: 12,
+                              color: Colors.black.withOpacity(0.5),
+                              fontWeight: FontWeight.w400,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
 
                 // 하단 여백
@@ -298,71 +485,88 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   }
 
   Widget _buildErrorScreen(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 80, color: Colors.red[400]),
+    return Container(
+      color: Colors.white, // 에러 화면 배경도 흰색
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 80, color: Colors.red[400]),
 
-            const SizedBox(height: 24),
+              const SizedBox(height: 24),
 
-            Text(
-              '생성 중 오류가 발생했어요',
-              style: Theme.of(context).textTheme.headlineMedium,
-              textAlign: TextAlign.center,
-            ),
+              Text(
+                '생성 중 오류가 발생했어요',
+                style: const TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            Text(
-              error,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
+              Text(
+                error,
+                style: TextStyle(
+                  fontFamily: 'Pretendard',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  color: Colors.grey[600],
+                ),
+                textAlign: TextAlign.center,
+              ),
 
-            const SizedBox(height: 40),
+              const SizedBox(height: 40),
 
-            Consumer<OnboardingProvider>(
-              builder: (context, provider, child) {
-                final hasUserInput = provider.state.userInput != null;
+              Consumer<OnboardingProvider>(
+                builder: (context, provider, child) {
+                  final hasUserInput = provider.state.userInput != null;
 
-                return Column(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        provider.clearError();
+                  return Column(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          provider.clearError();
 
-                        if (hasUserInput) {
-                          _startGeneration();
-                        } else {
-                          Navigator.pushReplacementNamed(
-                            context,
-                            '/onboarding/input',
-                          );
-                        }
-                      },
-                      child: Text(hasUserInput ? '다시 시도' : '정보 입력하러 가기'),
-                    ),
+                          if (hasUserInput) {
+                            _startGeneration();
+                          } else {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              '/onboarding/input',
+                            );
+                          }
+                        },
+                        child: Text(
+                          hasUserInput ? '다시 시도' : '정보 입력하러 가기',
+                          style: const TextStyle(fontFamily: 'Pretendard'),
+                        ),
+                      ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    TextButton(
-                      onPressed:
-                          () => Navigator.pushReplacementNamed(
-                            context,
-                            '/onboarding/input',
-                          ),
-                      child: const Text('이전으로 돌아가기'),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
+                      TextButton(
+                        onPressed:
+                            () => Navigator.pushReplacementNamed(
+                              context,
+                              '/onboarding/input',
+                            ),
+                        child: const Text(
+                          '이전으로 돌아가기',
+                          style: TextStyle(fontFamily: 'Pretendard'),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

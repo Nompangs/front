@@ -70,7 +70,7 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen>
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFDF7E9), // 아이보리 배경색
+      backgroundColor: Colors.white, // 아이보리 -> 흰색으로 변경
       body: Column(
         children: [
           // 메인 콘텐츠 영역 (아이보리 섹션) - 앱바 포함
@@ -201,7 +201,11 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen>
             },
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 16,
+                fontFamily: 'Pretendard',
+              ),
             ),
           ),
         ],
@@ -291,6 +295,7 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen>
       '지금부터 당신의\n애착 사물을 깨워볼게요',
       textAlign: TextAlign.center,
       style: TextStyle(
+        fontFamily: 'Pretendard',
         fontWeight: FontWeight.w700,
         fontSize: 22, // 26 -> 22로 축소
         height: 1.5,
@@ -308,6 +313,7 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen>
         key: ValueKey(_currentTextIndex),
         textAlign: TextAlign.center,
         style: const TextStyle(
+          fontFamily: 'Pretendard',
           fontWeight: FontWeight.w400,
           fontSize: 14,
           color: Colors.black87,
@@ -340,6 +346,7 @@ class _OnboardingIntroScreenState extends State<OnboardingIntroScreen>
         child: const Text(
           '다음',
           style: TextStyle(
+            fontFamily: 'Pretendard',
             color: Colors.black,
             fontSize: 16,
             fontWeight: FontWeight.w500,

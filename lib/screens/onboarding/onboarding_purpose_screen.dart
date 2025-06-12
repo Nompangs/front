@@ -17,6 +17,13 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   String? _selectedHumorStyle;
   String? _validationError;
 
+  // 사용자가 실제로 입력했는지 추적하는 변수들
+  bool _hasPurposeInput = false;
+  bool _hasHumorStyleInput = false;
+
+  // 검증 시도 여부 - 다음 버튼을 눌렀을 때만 경고문 표시
+  bool _showValidationErrors = false;
+
   // 유머 스타일 옵션
   final List<String> _humorStyles = [
     "따뜻한",
@@ -29,9 +36,8 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   @override
   void initState() {
     super.initState();
-    // 기본값 설정 (이미지 기준)
-    _selectedHumorStyle = "위트있는";
-    _purposeController.text = "내가 운동 까먹지 않게 인정사정없이 채찍질해줘. 착하게 굴지마. 너는 조교야.";
+    // 기본값 설정하지 않음 - 처음엔 모두 회색으로 표시
+    // 사용자가 입력하면 그때 검은색으로 변경
   }
 
   @override
@@ -44,16 +50,19 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   bool _validateInputs() {
     setState(() {
       _validationError = null;
+      _showValidationErrors = true; // 검증 시도했음을 표시
     });
 
-    if (_purposeController.text.trim().isEmpty) {
+    // 용도 검증 - 반드시 사용자가 입력해야 함
+    if (!_hasPurposeInput || _purposeController.text.trim().isEmpty) {
       setState(() {
         _validationError = '구체적인 역할을 입력해주세요!';
       });
       return false;
     }
 
-    if (_selectedHumorStyle == null) {
+    // 유머 스타일 검증 - 반드시 사용자가 선택해야 함
+    if (!_hasHumorStyleInput || _selectedHumorStyle == null) {
       setState(() {
         _validationError = '유머 스타일을 선택해주세요!';
       });
@@ -89,6 +98,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
         final objectName = userInput?.nickname ?? "털찐 말랑이";
 
         return Scaffold(
+          backgroundColor: Colors.white, // 기본 배경을 흰색으로 설정
           resizeToAvoidBottomInset: true,
           // AppBar
           appBar: AppBar(
@@ -104,7 +114,11 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                     () => Navigator.pushReplacementNamed(context, '/home'),
                 child: const Text(
                   '건너뛰기',
-                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    color: Colors.grey,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ],
@@ -144,6 +158,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                             child: Text(
                               objectName,
                               style: const TextStyle(
+                                fontFamily: 'Pretendard',
                                 fontSize: 24,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black,
@@ -155,6 +170,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                           const Text(
                             '라니..! 😂',
                             style: TextStyle(
+                              fontFamily: 'Pretendard',
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
                               color: Colors.black,
@@ -167,6 +183,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                       const Text(
                         '너에게 나는 어떤 존재야?',
                         style: TextStyle(
+                          fontFamily: 'Pretendard',
                           fontSize: 24,
                           fontWeight: FontWeight.w500,
                           color: Colors.black,
@@ -232,6 +249,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                   Text(
                                     '용도',
                                     style: TextStyle(
+                                      fontFamily: 'Pretendard',
                                       color: Colors.grey.shade600,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
@@ -246,10 +264,14 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                             ? _purposeController.text
                                             : '구체적인 역할을 입력해주세요',
                                         style: TextStyle(
+                                          fontFamily: 'Pretendard',
                                           color:
-                                              _purposeController.text.isNotEmpty
+                                              _hasPurposeInput &&
+                                                      _purposeController
+                                                          .text
+                                                          .isNotEmpty
                                                   ? Colors.black87
-                                                  : Colors.grey.shade600,
+                                                  : Colors.grey.shade500,
                                           fontSize:
                                               16, // 14 → 16으로 조정 (더 읽기 쉽게)
                                           fontWeight: FontWeight.w500,
@@ -270,9 +292,19 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              '200자 내외로 상세히 입력해주세요',
+                              _showValidationErrors &&
+                                      (!_hasPurposeInput ||
+                                          _purposeController.text.isEmpty)
+                                  ? '구체적인 역할을 입력해주세요'
+                                  : '200자 내외로 상세히 입력해주세요',
                               style: TextStyle(
-                                color: Colors.red.shade400,
+                                fontFamily: 'Pretendard',
+                                color:
+                                    _showValidationErrors &&
+                                            (!_hasPurposeInput ||
+                                                _purposeController.text.isEmpty)
+                                        ? Colors.red.shade400
+                                        : Colors.red.shade400,
                                 fontSize: 10,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -330,10 +362,13 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                           child: Text(
                                             _selectedHumorStyle ?? '위트있는',
                                             style: TextStyle(
+                                              fontFamily: 'Pretendard',
                                               color:
-                                                  _selectedHumorStyle != null
+                                                  _hasHumorStyleInput &&
+                                                          _selectedHumorStyle !=
+                                                              null
                                                       ? Colors.black
-                                                      : Colors.grey.shade600,
+                                                      : Colors.grey.shade500,
                                               fontSize: 18,
                                               fontWeight: FontWeight.w700,
                                               letterSpacing: -0.8,
@@ -357,6 +392,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                           const Text(
                             '유머 스타일',
                             style: TextStyle(
+                              fontFamily: 'Pretendard',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: Colors.black87,
@@ -368,11 +404,36 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                   ],
                 ),
 
+                // 유머 스타일 경고문 추가
+                if (_showValidationErrors &&
+                    (!_hasHumorStyleInput || _selectedHumorStyle == null))
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.1,
+                      8,
+                      screenWidth * 0.1,
+                      0,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '유머 스타일을 선택해주세요',
+                        style: TextStyle(
+                          fontFamily: 'Pretendard',
+                          color: Colors.red.shade400,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+
                 // 오류 메시지
                 if (_validationError != null)
                   Container(
                     width: double.infinity,
-                    color: const Color(0xFFFDF7E9),
+                    color: Colors.white, // 아이보리에서 흰색으로 변경
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 16,
@@ -380,6 +441,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                     child: Text(
                       _validationError!,
                       style: const TextStyle(
+                        fontFamily: 'Pretendard',
                         color: Colors.red,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -428,6 +490,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
         child: const Text(
           '다음',
           style: TextStyle(
+            fontFamily: 'Pretendard',
             color: Colors.black,
             fontSize: 16,
             fontWeight: FontWeight.w500,
@@ -482,6 +545,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedHumorStyle = option;
+                                _hasHumorStyleInput = true;
                               });
                               Navigator.pop(context);
                             },
@@ -518,6 +582,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                               child: Text(
                                 option,
                                 style: const TextStyle(
+                                  fontFamily: 'Pretendard',
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.black,
@@ -561,6 +626,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                   Text(
                     '구체적인 역할 설정',
                     style: TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade700,
@@ -582,6 +648,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                       decoration: InputDecoration(
                         hintText: '구체적인 역할을 입력해주세요\n예: 운동을 까먹지 않게 채찍질해주는 조교',
                         hintStyle: TextStyle(
+                          fontFamily: 'Pretendard',
                           color: Colors.grey.shade500,
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
@@ -608,6 +675,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                         counterText: '', // 글자 수 카운터 숨김
                       ),
                       style: const TextStyle(
+                        fontFamily: 'Pretendard',
                         color: Colors.black87,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -642,6 +710,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                 child: Text(
                                   '취소',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade600,
@@ -657,7 +726,9 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                           padding: const EdgeInsets.only(left: 3),
                           child: GestureDetector(
                             onTap: () {
-                              setState(() {});
+                              setState(() {
+                                _hasPurposeInput = true; // 사용자가 입력했음을 표시
+                              });
                               Navigator.pop(context);
                             },
                             child: Container(
@@ -681,6 +752,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                 child: Text(
                                   '확인',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade700,

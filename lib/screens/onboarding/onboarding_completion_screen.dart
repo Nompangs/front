@@ -32,6 +32,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   late Animation<double> _celebrationAnimation;
   late Animation<double> _bounceAnimation;
   final GlobalKey _qrKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolledToBottom = false;
 
   @override
   void initState() {
@@ -55,6 +57,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       CurvedAnimation(parent: _bounceController, curve: Curves.bounceOut),
     );
 
+    // 스크롤 리스너 추가
+    _scrollController.addListener(_onScroll);
+
     // 축하 애니메이션 시작
     _celebrationController.forward();
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -62,10 +67,26 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final threshold = maxScroll * 0.9; // 90% 스크롤 시 하단으로 간주
+
+      final isAtBottom = currentScroll >= threshold;
+      if (isAtBottom != _isScrolledToBottom) {
+        setState(() {
+          _isScrolledToBottom = isAtBottom;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _celebrationController.dispose();
     _bounceController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -90,60 +111,19 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         }
 
         return Scaffold(
+          backgroundColor: Colors.white, // 전체 배경은 흰색으로 유지
           resizeToAvoidBottomInset: false,
-          // AppBar with rounded corners and notification emoji
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFC5FF35),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                border: Border(
-                  left: BorderSide(color: Colors.black, width: 1),
-                  right: BorderSide(color: Colors.black, width: 1),
-                  bottom: BorderSide(color: Colors.black, width: 1),
-                ),
-              ),
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.notifications,
-                      size: 16,
-                      color: Colors.black,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                centerTitle: true,
-              ),
-            ),
-          ),
           body: Stack(
             children: [
-              // 전체 스크롤 가능한 컨테이너
+              // 전체 스크롤 가능한 컨테이너 (앱바 아래부터 시작)
               SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 80), // 플로팅 버튼 공간
+                padding: EdgeInsets.only(
+                  top:
+                      MediaQuery.of(context).padding.top +
+                      56, // 시스템 상태바 + 앱바 높이만
+                  bottom: 80, // 플로팅 버튼 공간
+                ),
+                controller: _scrollController,
                 child: Column(
                   children: [
                     // 분홍색 섹션 (QR 코드)
@@ -177,6 +157,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     const Text(
                                       'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
                                       style: TextStyle(
+                                        fontFamily: 'Pretendard',
                                         fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                         color: Colors.black,
@@ -193,11 +174,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             onPressed: () => _saveQRCode(),
                                             icon: const Icon(
                                               Icons.download,
-                                              size: 16,
+                                              size: 16, // 원래 크기로 되돌림
+                                              color:
+                                                  Colors.white, // 명시적으로 흰색 지정
                                             ),
                                             label: const Text(
                                               '저장하기',
-                                              style: TextStyle(fontSize: 12),
+                                              style: TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                fontSize: 12,
+                                                color:
+                                                    Colors.white, // 명시적으로 흰색 지정
+                                              ),
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(
@@ -210,9 +198,12 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                               ),
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    vertical: 6,
+                                                    vertical: 6, // 원래 크기로 되돌림
                                                   ),
-                                              minimumSize: const Size(0, 36),
+                                              minimumSize: const Size(
+                                                0,
+                                                36,
+                                              ), // 원래 크기로 되돌림
                                             ),
                                           ),
                                         ),
@@ -223,11 +214,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                                 () => _shareQRCode(character),
                                             icon: const Icon(
                                               Icons.share,
-                                              size: 16,
+                                              size: 16, // 원래 크기로 되돌림
+                                              color:
+                                                  Colors.white, // 명시적으로 흰색 지정
                                             ),
                                             label: const Text(
                                               '공유하기',
-                                              style: TextStyle(fontSize: 12),
+                                              style: TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                fontSize: 12,
+                                                color:
+                                                    Colors.white, // 명시적으로 흰색 지정
+                                              ),
                                             ),
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: const Color(
@@ -240,9 +238,12 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                               ),
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    vertical: 6,
+                                                    vertical: 6, // 원래 크기로 되돌림
                                                   ),
-                                              minimumSize: const Size(0, 36),
+                                              minimumSize: const Size(
+                                                0,
+                                                36,
+                                              ), // 원래 크기로 되돌림
                                             ),
                                           ),
                                         ),
@@ -321,6 +322,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     Text(
                                       '털찐말랑이',
                                       style: const TextStyle(
+                                        fontFamily: 'Pretendard',
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black,
@@ -329,6 +331,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     Text(
                                       '${DateTime.now().year}년 ${DateTime.now().month}월생',
                                       style: TextStyle(
+                                        fontFamily: 'Pretendard',
                                         fontSize: 14,
                                         color: Colors.grey.shade700,
                                       ),
@@ -344,7 +347,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         SizedBox(width: 4),
                                         Text(
                                           '멘탈지기',
-                                          style: TextStyle(fontSize: 12),
+                                          style: TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -356,7 +362,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         Text(
                                           provider.state.userInput?.location ??
                                               '우리집 거실',
-                                          style: const TextStyle(fontSize: 12),
+                                          style: const TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -486,6 +495,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                                 Text(
                                                   '가끔 털이 엉킬까봐 걱정돼 :(',
                                                   style: TextStyle(
+                                                    fontFamily: 'Pretendard',
                                                     fontSize: 18,
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.w500,
@@ -496,6 +506,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                                 Text(
                                                   '가끔 털이 엉킬까봐 걱정돼 :(',
                                                   style: TextStyle(
+                                                    fontFamily: 'Pretendard',
                                                     fontSize: 18,
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.w500,
@@ -513,6 +524,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                               ),
                             ),
 
+                            // 사진/말풍선과 성격차트 사이 간격 (두 배로 증가)
+                            const SizedBox(height: 80), // 기존 40에서 80으로 두 배 증가
+
+                            const SizedBox(height: 40), // 성격차트 위 간격
                             // 성격 차트 추가
                             Builder(
                               builder: (context) {
@@ -578,12 +593,144 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     child: const Text(
                       '지금 바로 대화해요',
                       style: TextStyle(
+                        fontFamily: 'Pretendard',
                         color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
+                ),
+              ),
+
+              // 플로팅 스크롤 힌트 화살표 (말풍선 아래 오른쪽 고정 위치)
+              Positioned(
+                right: 30,
+                bottom:
+                    MediaQuery.of(context).padding.bottom +
+                    24 +
+                    56 +
+                    15, // 버튼 아래 여백 + 버튼 높이 + 15px 위
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.black.withOpacity(0.1),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isScrolledToBottom
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: Colors.black.withOpacity(0.6),
+                    size: 24,
+                  ),
+                ),
+              ),
+
+              // 상단 고정 앱바 (라운딩 처리)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    // 시스템 상태바 영역만 연두색
+                    Container(
+                      height: MediaQuery.of(context).padding.top,
+                      width: double.infinity,
+                      color: const Color(0xFFC5FF35), // 시스템 상태바만 연두색
+                    ),
+
+                    // 앱바 영역 (라운딩된 부분 밖은 투명)
+                    Container(
+                      height: 56,
+                      width: double.infinity,
+                      color: Colors.transparent, // 라운딩 밖 영역은 투명
+                      child: Stack(
+                        children: [
+                          // 라운딩된 앱바 배경
+                          Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFC5FF35), // 앱바만 연두색
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                                bottomRight: Radius.circular(20),
+                              ),
+                              border: Border(
+                                left: BorderSide(color: Colors.black, width: 1),
+                                right: BorderSide(
+                                  color: Colors.black,
+                                  width: 1,
+                                ),
+                                bottom: BorderSide(
+                                  color: Colors.black,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 앱바 콘텐츠
+                          Row(
+                            children: [
+                              // 뒤로가기 버튼
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.black,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+
+                              // 중앙 타이틀
+                              Expanded(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications,
+                                      size: 16,
+                                      color: Colors.black,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
+                                        style: const TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // 오른쪽 여백 (뒤로가기 버튼과 대칭)
+                              const SizedBox(width: 48),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -604,6 +751,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       child: Text(
         tag,
         style: const TextStyle(
+          fontFamily: 'Pretendard',
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.black,

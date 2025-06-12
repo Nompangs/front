@@ -66,7 +66,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       _showValidationErrors = true; // 검증 시도했음을 표시
     });
 
-    // 닉네임 검증 - 실제 입력이 있거나 기본값 사용
+    // 닉네임 검증 - 실제 입력이 있거나 기본값 사용 (선택사항)
     final nickname =
         _hasNicknameInput && _nicknameController.text.isNotEmpty
             ? _nicknameController.text.trim()
@@ -93,13 +93,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       return false;
     }
 
-    // 사물 종류 검증 - 실제 입력이 있거나 기본값 사용
-    final objectType =
-        _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
-            ? _objectTypeController.text.trim()
-            : '이 빠진 머그컵';
-
-    if (objectType.isEmpty) {
+    // 사물 종류 검증 - 반드시 사용자가 입력해야 함
+    if (!_hasObjectTypeInput || _objectTypeController.text.trim().isEmpty) {
       setState(() {
         _validationError = '사물의 종류를 입력해주세요!';
       });
@@ -112,16 +107,14 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   /// 다음 단계로 이동
   void _proceedToNext() {
     if (_validateInputs()) {
-      // 실제 입력값 또는 기본값 사용
+      // 실제 입력값 또는 기본값 사용 (닉네임만 기본값 허용)
       final nickname =
           _hasNicknameInput && _nicknameController.text.isNotEmpty
               ? _nicknameController.text.trim()
               : '털찐 말랑이';
 
-      final objectType =
-          _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
-              ? _objectTypeController.text.trim()
-              : '이 빠진 머그컵';
+      // 사물 종류는 반드시 사용자 입력값 사용
+      final objectType = _objectTypeController.text.trim();
 
       final userInput = UserInput(
         nickname: nickname,
@@ -147,6 +140,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     final pinkHeight = screenHeight * 0.35; // 화면 높이의 35% (최소 280, 최대 320)
 
     return Scaffold(
+      backgroundColor: Colors.white, // 기본 배경을 흰색으로 설정
       resizeToAvoidBottomInset: true, // 키보드 오버플로우 방지
       // 일반적인 AppBar 사용
       appBar: AppBar(
@@ -161,7 +155,11 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -183,6 +181,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
               child: Text(
                 '궁금해!\n나는 어떤 사물이야?',
                 style: TextStyle(
+                  fontFamily: 'Pretendard',
                   fontSize: screenWidth * 0.06, // 폰트 크기 줄임 (0.07 → 0.06)
                   fontWeight: FontWeight.w600, // Material 3 표준 (bold → w600)
                   color: Colors.black,
@@ -235,6 +234,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                               ? '이름을 입력해주세요'
                               : '',
                           style: TextStyle(
+                            fontFamily: 'Pretendard',
                             color: Colors.red.shade400,
                             fontSize: 10,
                             fontWeight: FontWeight.w400,
@@ -288,7 +288,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             if (_validationError != null)
               Container(
                 width: double.infinity,
-                color: const Color(0xFFFDF7E9),
+                color: Colors.white, // 아이보리에서 흰색으로 변경
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 16,
@@ -296,6 +296,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 child: Text(
                   _validationError!,
                   style: const TextStyle(
+                    fontFamily: 'Pretendard',
                     color: Colors.red,
                     fontSize: 14, // Material 3 Body Small
                     fontWeight: FontWeight.w500,
@@ -337,6 +338,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             Text(
               '애칭',
               style: TextStyle(
+                fontFamily: 'Pretendard',
                 color: Colors.grey.shade600,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -349,6 +351,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                       ? _nicknameController.text
                       : '털찐 말랑이',
                   style: TextStyle(
+                    fontFamily: 'Pretendard',
                     color:
                         _hasNicknameInput && _nicknameController.text.isNotEmpty
                             ? Colors.black
@@ -424,6 +427,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                             ? _objectTypeController.text
                             : '이 빠진 머그컵',
                         style: TextStyle(
+                          fontFamily: 'Pretendard',
                           color:
                               _hasObjectTypeInput &&
                                       _objectTypeController.text.isNotEmpty
@@ -442,6 +446,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             const Text(
               '(이)에요.',
               style: TextStyle(
+                fontFamily: 'Pretendard',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
@@ -458,6 +463,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ? '입력해주세요'
                 : '',
             style: TextStyle(
+              fontFamily: 'Pretendard',
               color: Colors.red.shade400,
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -508,6 +514,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           Text(
                             selectedValue ?? preview,
                             style: TextStyle(
+                              fontFamily: 'Pretendard',
                               color:
                                   selectedValue != null
                                       ? Colors.black
@@ -532,6 +539,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             Text(
               suffix,
               style: const TextStyle(
+                fontFamily: 'Pretendard',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
@@ -545,6 +553,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           child: Text(
             _showValidationErrors && selectedValue == null ? '선택해주세요' : '',
             style: TextStyle(
+              fontFamily: 'Pretendard',
               color: Colors.red.shade400,
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -657,6 +666,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           child: Text(
                             option,
                             style: const TextStyle(
+                              fontFamily: 'Pretendard',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: Colors.black,
@@ -699,6 +709,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
         child: const Text(
           '다음',
           style: TextStyle(
+            fontFamily: 'Pretendard',
             color: Colors.black,
             fontSize: 16, // Material 3 body large로 통일
             fontWeight: FontWeight.w500,
@@ -768,6 +779,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     Text(
                       title,
                       style: TextStyle(
+                        fontFamily: 'Pretendard',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade700,
@@ -792,6 +804,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                         decoration: InputDecoration(
                           hintText: hintText,
                           hintStyle: TextStyle(
+                            fontFamily: 'Pretendard',
                             color: Colors.grey.shade500,
                             fontSize: 18,
                             fontWeight: FontWeight.w400,
@@ -817,6 +830,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           isDense: true,
                         ),
                         style: const TextStyle(
+                          fontFamily: 'Pretendard',
                           color: Colors.black87,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -847,6 +861,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                 child: Text(
                                   '취소',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade600,
@@ -882,6 +897,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                 child: Text(
                                   '확인',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade700,
