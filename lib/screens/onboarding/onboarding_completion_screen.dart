@@ -8,6 +8,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/widgets/common/primary_button.dart';
 import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
+import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -86,7 +87,12 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       _creatingQr = true;
     });
     final providerState = context.read<OnboardingProvider>();
-    final profile = providerState.personalityProfile;
+    var profile = providerState.personalityProfile;
+    if (profile.structuredPrompt.isEmpty) {
+      final service = const PersonalityService();
+      profile = await service.generateProfile(providerState.state);
+      providerState.setPersonalityProfile(profile);
+    }
     final userInput = providerState.state.userInput;
     final data = {
       'name': character.name,

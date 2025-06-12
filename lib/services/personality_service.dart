@@ -24,11 +24,20 @@ class PersonalityService {
     final competence = state.competence ?? 5;
 
     final systemPrompt = '''
-다음 사용자 정보를 활용해 AI 캐릭터 프로필을 JSON으로 만들어줘.
-모든 필드는 한글로 작성하고 한 문단으로 요약해.
-필드 목록: aiPersonalityProfile, photoAnalysis, lifeStory, humorMatrix,
-attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
-''';
+다음 사용자 정보를 활용해 AI 캐릭터 프로필을 JSON 형식으로 만들어줘.
+각 필드는 한글로 요약된 한 문단 설명을 포함해야 하고, 특히 `aiPersonalityProfile` 안에는
+156개 성격 변수를 담은 `variables` 맵이 포함되어야 해. 필드 목록은 다음과 같아.
+
+- aiPersonalityProfile
+- photoAnalysis
+- lifeStory
+- humorMatrix
+- attractiveFlaws
+- contradictions
+- communicationStyle
+- structuredPrompt
+
+가능하면 실제 데이터를 자세히 채워줘.''';
 
     final userPrompt = '''
 이름:${userInput.nickname}, 위치:${userInput.location}, 기간:${userInput.duration},
@@ -105,34 +114,49 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
     );
 
     final aiPersonalityProfile = {
-      'coreTraits': {
-        'warmth': warmth * 10,
-        'competence': competence * 10,
-        'introversion': introversion * 10,
-      },
-      'objectType': userInput.objectType,
-      'purpose': purpose,
+      'version': '3.0',
+      'variables': advProfile.variables,
+      'warmthFactors': _extractSection(advProfile.variables, 'W'),
+      'competenceFactors': _extractSection(advProfile.variables, 'C'),
+      'extraversionFactors': _extractSection(advProfile.variables, 'E'),
+      'humorFactors': _extractSection(advProfile.variables, 'H'),
+      'flawFactors': _extractSection(advProfile.variables, 'F'),
+      'speechPatterns': _extractSection(advProfile.variables, 'S'),
+      'relationshipStyles': _extractSection(advProfile.variables, 'R'),
       'summary': '${userInput.nickname}의 $purpose를 돕는 ${userInput.objectType}. '
           '성격은 내향성 $introversion/10, 따뜻함 $warmth/10, 능숙함 $competence/10.'
     };
 
     final photoAnalysis = {
-      'hasPhoto': state.photoPath != null,
-      'path': state.photoPath ?? '',
-      'summary': state.photoPath != null
-          ? '사진 속 ${userInput.objectType}의 매력이 잘 드러나.'
-          : '아직 사진이 없어.'
+      'objectDetection': userInput.objectType,
+      'materialAnalysis': '알 수 없는 재질',
+      'conditionAssessment': '보통',
+      'personalityHints': {
+        'warmth_factor': warmth * 10,
+        'competence_factor': competence * 10,
+      },
+      'confidence': 0.5,
     };
 
     final lifeStory = {
-      'location': userInput.location,
-      'duration': userInput.duration,
-      'purpose': purpose,
-      'summary': '${userInput.location}에서 ${userInput.duration} 동안 지냈어.'
+      'background': '${userInput.location}에서 ${userInput.duration}을 보낸 이야기',
+      'emotionalJourney': '사용자와 함께하며 느낀 다양한 감정들',
+      'relationships': '${userInput.nickname}과의 특별한 추억',
+      'secretWishes': ['더 많이 사용되고 싶어'],
+      'innerComplaints': ['가끔 방치되는 것'],
+      'deepSatisfactions': ['도움이 될 때 큰 기쁨'],
     };
 
-    final humorMatrixMap = humorMatrix.toMap();
-    humorMatrixMap['description'] = '주된 유머 스타일은 $humorStyle';
+    final humorMatrixMap = {
+      'categories': humorMatrix.dimensions,
+      'preferences': humorMatrix.derivedAttributes,
+      'avoidancePatterns': {
+        'sarcasmAvoid': (humorMatrix.derivedAttributes['sarcasm_level'] ?? 0) < 20
+      },
+      'timingFactors': {
+        'expressive': humorMatrix.dimensions['subtle_vs_expressive']
+      }
+    };
 
     final attractiveFlaws = [
       warmth >= 6 ? '가끔 지나치게 다정해.' : '조금 무뚝뚝해.'
@@ -143,9 +167,11 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
     ];
 
     final communicationStyle = {
-      'tone': warmth >= 6 ? 'friendly' : 'blunt',
-      'verbosity': introversion >= 6 ? 'talkative' : 'concise',
-      'summary': introversion > 5 ? '말이 많고 직설적이야.' : '짧고 조심스러운 편이야.'
+      'speakingTone': warmth >= 6 ? 'friendly' : 'blunt',
+      'preferredTopics': [purpose ?? '일상'],
+      'avoidedTopics': <String>[],
+      'expressionPatterns': introversion > 5 ? '장황한 설명' : '간결한 문장',
+      'emotionalRange': warmth >= 6 ? '넓음' : '좁음',
     };
 
     final structuredPrompt =
@@ -185,5 +211,15 @@ attractiveFlaws, contradictions, communicationStyle, structuredPrompt.
       return value.map((k, v) => MapEntry(k.toString(), int.tryParse(v.toString()) ?? (v is num ? v.toInt() : 0)));
     }
     return {};
+  }
+
+  Map<String, int> _extractSection(Map<String, int> vars, String prefix) {
+    final Map<String, int> section = {};
+    for (final entry in vars.entries) {
+      if (entry.key.startsWith(prefix)) {
+        section[entry.key] = entry.value;
+      }
+    }
+    return section;
   }
 }
