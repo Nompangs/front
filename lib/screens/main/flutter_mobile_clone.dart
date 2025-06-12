@@ -28,6 +28,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   String selectedFilter = "전체";
   final List<String> filterOptions = ["전체", "내 방", "우리집 안방", "사무실", "단골 카페"];
+  int? selectedCardIndex;
 
   final List<ObjectData> objectData = [
     ObjectData(
@@ -50,6 +51,14 @@ class _MainScreenState extends State<MainScreen> {
       imageUrl: "https://images.pexels.com/photos/32372040/pexels-photo-32372040.png",
     ),
   ];
+
+  List<ObjectData> get filteredObjectData {
+    if (selectedFilter == "전체") {
+      return objectData;
+    } else {
+      return objectData.where((data) => data.location == selectedFilter).toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,7 +318,7 @@ class _MainScreenState extends State<MainScreen> {
                               ),
                               child: Center(
                                 child: Text(
-                                  '99',
+                                  '${filteredObjectData.length}',
                                   style: TextStyle(
                                     color: Colors.black,
                                     fontSize: 13 * scale,
@@ -325,11 +334,19 @@ class _MainScreenState extends State<MainScreen> {
                         Expanded(
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
-                            itemCount: objectData.length,
+                            itemCount: filteredObjectData.length,
                             separatorBuilder: (context, index) => SizedBox(width: 12 * scale),
-                            itemBuilder: (context, index) => ObjectCard(
-                              data: objectData[index],
-                              scale: scale,
+                            itemBuilder: (context, index) => GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedCardIndex = selectedCardIndex == index ? null : index;
+                                });
+                              },
+                              child: ObjectCard(
+                                data: filteredObjectData[index],
+                                scale: scale,
+                                isSelected: selectedCardIndex == index,
+                              ),
                             ),
                           ),
                         ),
@@ -460,8 +477,9 @@ class FilterChip extends StatelessWidget {
 class ObjectCard extends StatelessWidget {
   final ObjectData data;
   final double scale;
+  final bool isSelected;
 
-  const ObjectCard({Key? key, required this.data, this.scale = 1.0}) : super(key: key);
+  const ObjectCard({Key? key, required this.data, this.scale = 1.0, this.isSelected = false}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +495,7 @@ class ObjectCard extends StatelessWidget {
             width: 130 * scale,
             height: 130 * scale,
             decoration: BoxDecoration(
-              border: Border.all(color: const Color.fromARGB(255, 0, 0, 0)),
+              border: isSelected ? Border.all(color: Colors.black, width: 1) : null,
             ),
             child: ClipPath(
               clipper: CustomShapeClipper(),
