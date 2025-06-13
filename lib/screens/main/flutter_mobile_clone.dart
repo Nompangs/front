@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
+import 'package:nompangs/main/find_momenti_screen.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,7 +31,14 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String selectedFilter = "전체";
-  final List<String> filterOptions = ["전체", "내 방", "우리집 안방", "사무실", "단골 카페"];
+  final List<String> filterOptions = [
+    "전체",
+    "NEW",
+    "내 방",
+    "우리집 안방",
+    "사무실",
+    "단골 카페",
+  ];
   int? selectedCardIndex;
 
   AnimationController? _morphController1;
@@ -41,6 +50,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Animation<double>? _shapeAnimation1;
   Animation<double>? _shapeAnimation2;
   Animation<double>? _shapeAnimation3;
+
+  AnimationController? _notificationIconController;
+  Animation<double>? _notificationIconRotation;
 
   final List<ObjectData> objectData = [
     ObjectData(
@@ -83,11 +95,26 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   List<ObjectData> get filteredObjectData {
     if (selectedFilter == "전체") {
       return objectData;
+    } else if (selectedFilter == "NEW") {
+      return objectData.where((data) => data.isNew == true).toList();
     } else {
       return objectData
           .where((data) => data.location == selectedFilter)
           .toList();
     }
+  }
+
+  // 스케일 애니메이션 생성 헬퍼 메소드
+  Animation<double> _createScaleAnimation(
+    AnimationController controller,
+    double endValue,
+  ) {
+    return Tween<double>(begin: 1.0, end: endValue).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
+      ),
+    );
   }
 
   @override
@@ -96,37 +123,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     // 각 버튼별 애니메이션 컨트롤러 초기화
     _morphController1 = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
     _morphController2 = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
     _morphController3 = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
     // 스케일 애니메이션 (크기 변화)
-    _scaleAnimation1 = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
-    );
+    _scaleAnimation1 = _createScaleAnimation(_morphController1!, 1.2);
+    _scaleAnimation2 = _createScaleAnimation(_morphController2!, 1.2);
+    _scaleAnimation3 = _createScaleAnimation(_morphController3!, 1.2);
+
     _shapeAnimation1 = Tween<double>(begin: 1.0, end: 0.65).animate(
       CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
     );
-
-    _scaleAnimation2 = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
-    );
     _shapeAnimation2 = Tween<double>(begin: 1.0, end: 0.65).animate(
       CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
-    );
-
-    _scaleAnimation3 = Tween<double>(begin: 1.0, end: 1.15).animate(
-      CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
     );
     _shapeAnimation3 = Tween<double>(begin: 1.0, end: 0.65).animate(
       CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
@@ -140,6 +160,20 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     Future.delayed(const Duration(milliseconds: 750), () {
       _morphController2?.repeat(reverse: true);
     });
+
+    _notificationIconController = AnimationController(
+      duration: const Duration(seconds: 9),
+      vsync: this,
+    )..repeat();
+    _notificationIconRotation = Tween<double>(
+      begin: 0,
+      end: 2 * 3.141592,
+    ).animate(
+      CurvedAnimation(
+        parent: _notificationIconController!,
+        curve: Curves.linear,
+      ),
+    );
   }
 
   // 버튼 클릭 애니메이션 함수들 - 이제 즉시 화면 전환
@@ -148,11 +182,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _playAnimation2() {
-    // 두 번째 버튼 클릭 동작
+    Navigator.pushNamed(context, '/onboarding/intro');
   }
 
   void _playAnimation3() {
-    // 세 번째 버튼 클릭 동작
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FindMomentiScreen()),
+    );
   }
 
   @override
@@ -160,6 +197,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _morphController1?.dispose();
     _morphController2?.dispose();
     _morphController3?.dispose();
+    _notificationIconController?.dispose();
     super.dispose();
   }
 
@@ -207,6 +245,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   fontSize: 12 * scale,
                                   fontWeight: FontWeight.w400,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 12 * scale),
                               Text(
@@ -216,6 +256,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   fontSize: 30 * scale,
                                   fontWeight: FontWeight.bold,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                               SizedBox(height: 2 * scale),
                               Text(
@@ -225,6 +267,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                   fontSize: 20 * scale,
                                   fontWeight: FontWeight.w400,
                                 ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),
@@ -241,8 +285,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24 * scale),
                             border: Border.all(
-                              color: Colors.white,
-                              width: 2 * scale,
+                              color: const Color.fromARGB(255, 255, 255, 255),
+                              width: 1,
                             ),
                           ),
                           child: ClipRRect(
@@ -359,7 +403,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               ),
                               // 두 번째 버튼 (핑크)
                               Transform.translate(
-                                offset: Offset(-overlap, 0),
+                                offset: Offset(-overlap * 0.5, 0),
                                 child: AnimatedBuilder(
                                   animation: Listenable.merge(
                                     [
@@ -629,46 +673,93 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
                 child: Row(
                   children: [
-                    SizedBox(width: 40 * scale),
+                    SizedBox(width: 30 * scale),
                     Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 13 * scale,
+                      child: Center(
+                        child: RichText(
+                          text: TextSpan(
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 13 * scale,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: lastChattedObjectName,
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              TextSpan(
+                                text: '와 마지막으로 대화했어요.',
+                                style: TextStyle(fontWeight: FontWeight.w300),
+                              ),
+                            ],
                           ),
-                          children: [
-                            TextSpan(
-                              text: '털찐 말랑이',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: '와 최근 마지막으로 대화했어요.',
-                              style: TextStyle(fontWeight: FontWeight.w300),
-                            ),
-                          ],
                         ),
                       ),
                     ),
-                    Container(
-                      width: 54 * scale,
-                      height: 54 * scale,
-                      margin: EdgeInsets.only(right: 1 * scale),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/ui_assets/btn_quickchat.png',
-                            width: 54 * scale,
-                            height: 54 * scale,
-                            fit: BoxFit.contain,
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ChatScreen(
+                                  characterName:
+                                      lastChattedObjectName.isNotEmpty
+                                          ? lastChattedObjectName
+                                          : '모멘티',
+                                  personalityTags: ['친근함', '유머'],
+                                  greeting: '안녕하세요! 무엇이 궁금하신가요?',
+                                  initialUserMessage: '',
+                                ),
                           ),
-                          Icon(
-                            Icons.north_east,
-                            color: Colors.black,
-                            size: 20 * scale,
-                          ),
-                        ],
+                        );
+                      },
+                      child: Container(
+                        width: 54 * scale,
+                        height: 54 * scale,
+                        margin: EdgeInsets.only(right: 1 * scale),
+                        child:
+                            _notificationIconRotation != null
+                                ? AnimatedBuilder(
+                                  animation: _notificationIconRotation!,
+                                  builder: (context, child) {
+                                    return Transform.rotate(
+                                      angle: _notificationIconRotation!.value,
+                                      child: Stack(
+                                        alignment: Alignment.center,
+                                        children: [
+                                          Image.asset(
+                                            'assets/ui_assets/btn_quickchat.png',
+                                            width: 54 * scale,
+                                            height: 54 * scale,
+                                            fit: BoxFit.contain,
+                                          ),
+                                          Icon(
+                                            Icons.north_east,
+                                            color: Colors.black,
+                                            size: 20 * scale,
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                )
+                                : Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/ui_assets/btn_quickchat.png',
+                                      width: 54 * scale,
+                                      height: 54 * scale,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    Icon(
+                                      Icons.north_east,
+                                      color: Colors.black,
+                                      size: 20 * scale,
+                                    ),
+                                  ],
+                                ),
                       ),
                     ),
                   ],
@@ -684,6 +775,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String _getTodayString() {
     final now = DateTime.now();
     return '${now.year}년 ${now.month.toString().padLeft(2, '0')}월 ${now.day.toString().padLeft(2, '0')}일';
+  }
+
+  // 가장 마지막으로 대화한 사물카드의 이름을 반환
+  String get lastChattedObjectName {
+    if (objectData.isEmpty) return '';
+    // duration이 '숫자 min' 또는 '숫자 h' 형식이라고 가정
+    ObjectData? lastObject = objectData.reduce((a, b) {
+      int aMinutes = _parseDurationToMinutes(a.duration);
+      int bMinutes = _parseDurationToMinutes(b.duration);
+      return aMinutes < bMinutes ? a : b;
+    });
+    return lastObject.title;
+  }
+
+  int _parseDurationToMinutes(String duration) {
+    // 예: '42 min', '5 min', '2 h', '1 h', '139 min'
+    if (duration.contains('min')) {
+      return int.tryParse(duration.split(' ')[0]) ?? 99999;
+    } else if (duration.contains('h')) {
+      return (int.tryParse(duration.split(' ')[0]) ?? 99999) * 60;
+    }
+    return 99999;
   }
 }
 
@@ -706,29 +819,29 @@ class FilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 32 * scale,
-        margin: EdgeInsets.symmetric(horizontal: 2 * scale),
+        height: 28 * scale,
+        margin: EdgeInsets.symmetric(horizontal: 1.5 * scale),
         padding: EdgeInsets.symmetric(
-          horizontal: 16 * scale,
-          vertical: 6 * scale,
+          horizontal: 13 * scale,
+          vertical: 4 * scale,
         ),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.transparent,
           border: Border.all(color: Colors.white),
-          borderRadius: BorderRadius.circular(40 * scale),
+          borderRadius: BorderRadius.circular(24 * scale),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (selected) ...[
-              Icon(Icons.check, size: 12 * scale, color: Colors.black),
-              SizedBox(width: 8 * scale),
+              Icon(Icons.check, size: 11 * scale, color: Colors.black),
+              SizedBox(width: 6 * scale),
             ],
             Text(
               label,
               style: TextStyle(
                 color: selected ? Colors.black : Colors.white,
-                fontSize: 14 * scale,
+                fontSize: 12 * scale,
                 fontWeight: FontWeight.w500,
               ),
             ),
