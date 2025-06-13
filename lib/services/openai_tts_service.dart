@@ -19,8 +19,6 @@ class OpenAiTtsService {
     debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text"');
     if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
       debugPrint('[TTS Service] 🚨 API 키가 없거나 텍스트가 비어있어 실행 중단.');
-    if (_apiKey == null || _apiKey.isEmpty || text.trim().isEmpty) {
-      return;
     }
 
     if (_audioPlayer.state == PlayerState.playing) {
@@ -66,7 +64,6 @@ class OpenAiTtsService {
     
     return completer.future;
   }
-}
 
   Future<void> stop() async {
     // audioplayers 패키지의 stop() 메서드를 호출합니다.
