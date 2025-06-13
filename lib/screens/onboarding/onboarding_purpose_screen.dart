@@ -5,7 +5,7 @@ import '../../providers/onboarding_provider.dart';
 /// 온보딩 용도 설정 화면
 /// 첨부 이미지 디자인과 onboarding_input_screen.dart 규정을 따라 새롭게 구현
 class OnboardingPurposeScreen extends StatefulWidget {
-  const OnboardingPurposeScreen({Key? key}) : super(key: key);
+  const OnboardingPurposeScreen({super.key});
 
   @override
   State<OnboardingPurposeScreen> createState() =>
@@ -140,54 +140,40 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
           ),
           body: Stack(
             children: [
-              // 스크롤 가능한 메인 콘텐츠
-              SingleChildScrollView(
-                child: Column(
-                  children: [
-                    // 아이보리 섹션 (제목)
-                    Container(
-                      width: double.infinity,
-                      color: const Color(0xFFFDF7E9),
-                      padding: EdgeInsets.fromLTRB(
-                        screenWidth * 0.1,
-                        32,
-                        screenWidth * 0.05,
-                        32,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              // 하얀색 플레이스홀더로 사용자 이름 감싸기
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: Colors.transparent,
-                                    width: 0,
-                                  ),
-                                ),
-                                child: Text(
-                                  objectName,
-                                  style: const TextStyle(
-                                    fontFamily: 'Pretendard',
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                    height: 1.5,
-                                  ),
+              Column(
+                children: [
+                  // 아이보리 섹션 (제목)
+                  Container(
+                    width: double.infinity,
+                    color: const Color(0xFFFDF7E9),
+                    padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.1,
+                      32,
+                      screenWidth * 0.05,
+                      32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            // 하얀색 플레이스홀더로 사용자 이름 감싸기
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.transparent,
+                                  width: 0,
                                 ),
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                '라니..! 😂',
-                                style: TextStyle(
+                              child: Text(
+                                objectName,
+                                style: const TextStyle(
                                   fontFamily: 'Pretendard',
                                   fontSize: 24,
                                   fontWeight: FontWeight.w600,
@@ -195,55 +181,69 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                   height: 1.5,
                                 ),
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            '너에게 나는 어떤 존재야?',
-                            style: TextStyle(
-                              fontFamily: 'Pretendard',
-                              fontSize: 24,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                              height: 1.4,
                             ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              '라니..! 😂',
+                              style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          '너에게 나는 어떤 존재야?',
+                          style: TextStyle(
+                            fontFamily: 'Pretendard',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                            height: 1.4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // 초록색 섹션 (말풍선)
+                  Expanded(
+                    flex: 7,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3FCB80),
+                        border: Border.all(color: Colors.black, width: 1),
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(25),
+                          bottomRight: Radius.circular(25),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 0,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-
-                    // 초록색 섹션 (말풍선)
-                    Stack(
-                      children: [
-                        Container(
-                          width: double.infinity,
-                          height: greenHeight,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3FCB80),
-                            border: Border.all(color: Colors.black, width: 1),
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(25),
-                              bottomRight: Radius.circular(25),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                spreadRadius: 0,
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.1,
                           ),
-                        ),
-                        // 말풍선 floating 카드
-                        Positioned(
-                          top: (greenHeight - 150) / 2 - 10,
-                          left: screenWidth * 0.1,
-                          right: screenWidth * 0.1,
                           child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Container(
-                                height: 150,
+                                constraints: const BoxConstraints(
+                                  minHeight: 120,
+                                  maxHeight: 180,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(28),
@@ -273,26 +273,26 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                                       Expanded(
                                         child: GestureDetector(
                                           onTap: () => _showPurposeDialog(),
-                                          child: Text(
-                                            _purposeController.text.isNotEmpty
-                                                ? _purposeController.text
-                                                : '구체적인 역할을 입력해주세요',
-                                            style: TextStyle(
-                                              fontFamily: 'Pretendard',
-                                              color:
-                                                  _hasPurposeInput &&
-                                                          _purposeController
-                                                              .text
-                                                              .isNotEmpty
-                                                      ? Colors.black87
-                                                      : Colors.grey.shade500,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
-                                              height: 1.4,
+                                          child: SingleChildScrollView(
+                                            child: Text(
+                                              _purposeController.text.isNotEmpty
+                                                  ? _purposeController.text
+                                                  : '구체적인 역할을 입력해주세요.\n예: 운동 루틴 관리, 일정 알림, 감정 상담 등\n어떤 도움이 필요한지 자세히 적어주세요.',
+                                              style: TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                color:
+                                                    _hasPurposeInput &&
+                                                            _purposeController
+                                                                .text
+                                                                .isNotEmpty
+                                                        ? Colors.black87
+                                                        : Colors.grey.shade500,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                height: 1.4,
+                                              ),
+                                              textAlign: TextAlign.left,
                                             ),
-                                            textAlign: TextAlign.left,
-                                            maxLines: 4,
-                                            overflow: TextOverflow.ellipsis,
                                           ),
                                         ),
                                       ),
@@ -303,97 +303,115 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                               const SizedBox(height: 8),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: Text(
-                                  _showValidationErrors &&
-                                          (!_hasPurposeInput ||
-                                              _purposeController.text.isEmpty)
-                                      ? '구체적인 역할을 입력해주세요'
-                                      : '200자 내외로 상세히 입력해주세요',
-                                  style: TextStyle(
-                                    fontFamily: 'Pretendard',
-                                    color:
-                                        _showValidationErrors &&
-                                                (!_hasPurposeInput ||
-                                                    _purposeController
-                                                        .text
-                                                        .isEmpty)
-                                            ? Colors.red.shade400
-                                            : Colors.grey.shade600,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w400,
-                                  ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (_showValidationErrors &&
+                                        (!_hasPurposeInput ||
+                                            _purposeController.text.isEmpty))
+                                      Text(
+                                        '구체적인 역할을 입력해주세요',
+                                        style: TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          color: Colors.red.shade400,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    const Text(
+                                      '200자 내외로 상세히 입력해주세요',
+                                      style: TextStyle(
+                                        fontFamily: 'Pretendard',
+                                        color: Colors.grey,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
-
-                    // 분홍색 섹션 (유머 스타일)
-                    Transform.translate(
-                      offset: const Offset(0, -1),
-                      child: Stack(
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            height: pinkHeight,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFD8F1),
-                              border: Border.all(color: Colors.black, width: 1),
-                              borderRadius: BorderRadius.circular(25),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.1),
-                                  spreadRadius: 0,
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // 유머 스타일 floating 카드
-                          Positioned(
-                            top: 48,
-                            left: screenWidth * 0.1,
-                            right: screenWidth * 0.1,
-                            child: _buildHumorStyleCard(),
+                  ),
+                  // 분홍색 섹션 (유머 스타일)
+                  Expanded(
+                    flex: 6,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFD8F1),
+                        border: Border.all(color: Colors.black, width: 1),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            spreadRadius: 0,
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-
-                    // 오류 메시지
-                    if (_validationError != null)
-                      Container(
-                        width: double.infinity,
-                        color: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        child: Text(
-                          _validationError!,
-                          style: const TextStyle(
-                            fontFamily: 'Pretendard',
-                            color: Colors.red,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                      child: Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.1,
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _buildHumorStyleCard(),
+                              const SizedBox(height: 8),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    if (_showValidationErrors &&
+                                        (!_hasHumorStyleInput ||
+                                            _selectedHumorStyle == null))
+                                      Text(
+                                        '유머 스타일을 선택해주세요!',
+                                        style: TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          color: Colors.red.shade400,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                      ),
+                                    const Text(
+                                      '유머스타일을 선택해 주세요',
+                                      style: TextStyle(
+                                        fontFamily: 'Pretendard',
+                                        color: Colors.grey,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-
-                    // 플로팅 버튼 공간 확보
-                    SizedBox(height: buttonBottomPosition + 56 + 16),
-                  ],
-                ),
+                    ),
+                  ),
+                  // 섹션과 버튼 사이 간격
+                  Container(height: 15, color: Colors.transparent),
+                  SizedBox(
+                    height: MediaQuery.of(context).padding.bottom + 24 + 56,
+                  ),
+                ],
               ),
-
               // 플로팅 다음 버튼
               Positioned(
                 left: screenWidth * 0.06,
                 right: screenWidth * 0.06,
-                bottom: buttonBottomPosition,
+                bottom: MediaQuery.of(context).padding.bottom + 24,
                 child: _buildNextButton(),
               ),
             ],
@@ -707,47 +725,61 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
   }
 
   Widget _buildHumorStyleCard() {
-    return GestureDetector(
-      onTap: () => _showHumorStyleDropdown(context),
-      child: Container(
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.transparent, width: 0),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Center(
-                  child: Text(
-                    _selectedHumorStyle ?? '위트있는',
-                    style: TextStyle(
-                      fontFamily: 'Pretendard',
-                      color:
-                          _hasHumorStyleInput && _selectedHumorStyle != null
-                              ? Colors.black
-                              : Colors.grey.shade500,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.8,
-                      height: 1.2,
+    return Row(
+      children: [
+        // 드롭다운 선택값 (왼쪽)
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showHumorStyleDropdown(context),
+            child: Container(
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.transparent, width: 0),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _selectedHumorStyle ?? '위트있는',
+                      style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        color:
+                            _hasHumorStyleInput && _selectedHumorStyle != null
+                                ? Colors.black
+                                : Colors.grey.shade500,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.8,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: Colors.grey,
+                      size: 24,
+                    ),
+                  ],
                 ),
               ),
-              const Icon(
-                Icons.keyboard_arrow_down,
-                color: Colors.grey,
-                size: 24,
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        const SizedBox(width: 8),
+        // 오른쪽 라벨
+        Text(
+          '유머스타일',
+          style: const TextStyle(
+            fontFamily: 'Pretendard',
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ],
     );
   }
 }

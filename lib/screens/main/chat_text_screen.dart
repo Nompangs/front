@@ -5,7 +5,7 @@ import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 
 class ChatTextScreen extends StatelessWidget {
-  const ChatTextScreen({Key? key}) : super(key: key);
+  const ChatTextScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -118,17 +118,16 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   }
 }
 
-// _ChatBubble 위젯 수정
 class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
-  final bool isLoading; // isLoading 플래그 추가
+  final bool isLoading;
 
   const _ChatBubble({
     Key? key,
     required this.text,
     required this.isUser,
-    this.isLoading = false, // 기본값 false
+    this.isLoading = false,
   }) : super(key: key);
 
   @override
@@ -176,7 +175,6 @@ class _ChatBubble extends StatelessWidget {
   }
 }
 
-// _ChatInputBar 위젯 수정
 class _ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
@@ -301,17 +299,14 @@ class _ChatInputBarState extends State<_ChatInputBar> {
   }
 }
 
-
-// _TopNavigationBar와 _ProfileCard는 수정할 필요가 없습니다.
 class _TopNavigationBar extends StatelessWidget {
   final String characterName;
   final String characterHandle;
 
   const _TopNavigationBar({
-    Key? key,
     required this.characterName,
     required this.characterHandle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -407,11 +402,10 @@ class _ProfileCard extends StatelessWidget {
   final List<String> personalityTags;
 
   const _ProfileCard({
-    Key? key,
     required this.characterName,
     required this.characterHandle,
     required this.personalityTags,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -537,3 +531,171 @@ class _ProfileCard extends StatelessWidget {
     );
   }
 }
+
+class _ChatBubble extends StatelessWidget {
+  final String text;
+  final bool isUser;
+
+  const _ChatBubble({
+    required this.text,
+    required this.isUser,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const userBgColor = Color(0xFF7C3AED);
+    const userTextColor = Colors.white;
+    const otherBgColor = Colors.white;
+    const otherTextColor = Color(0xFF222222);
+
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isUser ? userBgColor : otherBgColor,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(
+          vertical: 12,
+          horizontal: 16,
+        ),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: isUser ? userTextColor : otherTextColor,
+            height: 1.4,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatInputBar extends StatefulWidget {
+  final TextEditingController controller;
+  final VoidCallback onSend;
+  final VoidCallback onSpeakerModePressed;
+
+  const _ChatInputBar({
+    required this.controller,
+    required this.onSend,
+    required this.onSpeakerModePressed,
+  });
+
+  @override
+  State<_ChatInputBar> createState() => _ChatInputBarState();
+}
+
+class _ChatInputBarState extends State<_ChatInputBar> {
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_textListener);
+  }
+
+  void _textListener() {
+    final hasContent = widget.controller.text.trim().isNotEmpty;
+    if (hasContent != _hasText) {
+      setState(() => _hasText = hasContent);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_textListener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 하단 안전 영역 높이
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+        child: Row(
+          children: [
+            IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: const Icon(
+                Icons.image,
+                size: 28,
+                color: Color(0xFF777777),
+              ),
+              onPressed: () {},
+            ),
+            const SizedBox(width: 12),
+
+            Expanded(
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: TextField(
+                  controller: widget.controller,
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.only(top: 10),
+                    hintText: 'Send message...',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFFAAAAAA),
+                    ),
+                    border: InputBorder.none,
+                    isCollapsed: true,
+                  ),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF222222),
+                  ),
+                  textAlignVertical: TextAlignVertical.center,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // ⑦ 전화기 버튼: 텍스트 입력 없으면 ChatSpeakerScreen으로 이동
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _hasText ? Colors.white : const Color(0xFF6A5ACD),
+                shape: BoxShape.circle,
+              ),
+              child: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Icon(
+                  _hasText ? Icons.send : Icons.call,
+                  size: 20,
+                  color: _hasText ? Colors.black : Colors.white,
+                ),
+                onPressed: () {
+                  if (_hasText) {
+                    widget.onSend();
+                  } else {
+                    widget.onSpeakerModePressed();
+                  }
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+

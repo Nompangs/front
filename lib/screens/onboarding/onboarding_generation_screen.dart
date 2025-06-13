@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
-import 'package:nompangs/models/onboarding_state.dart';
 import 'dart:math' as math;
 import 'dart:io';
 import 'dart:async';
 
 class OnboardingGenerationScreen extends StatefulWidget {
-  const OnboardingGenerationScreen({Key? key}) : super(key: key);
+  const OnboardingGenerationScreen({super.key});
 
   @override
   State<OnboardingGenerationScreen> createState() =>
@@ -418,7 +417,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
-                            '잠시만 기다려주세요... (${_remainingSeconds}초)',
+                            '잠시만 기다려주세요... ($_remainingSeconds초)',
                             style: TextStyle(
                               fontFamily: 'Pretendard',
                               fontSize: 12,

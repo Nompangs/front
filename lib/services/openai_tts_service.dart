@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -11,7 +10,7 @@ class OpenAiTtsService {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   OpenAiTtsService() {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       debugPrint('[TTS 서비스] 🚨 OPENAI_API_KEY가 설정되지 않았습니다.');
     }
   }
@@ -20,6 +19,7 @@ class OpenAiTtsService {
     debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text"');
     if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
       debugPrint('[TTS Service] 🚨 API 키가 없거나 텍스트가 비어있어 실행 중단.');
+    if (_apiKey == null || _apiKey.isEmpty || text.trim().isEmpty) {
       return;
     }
 
@@ -49,19 +49,16 @@ class OpenAiTtsService {
 
       if (response.statusCode == 200) {
         final Uint8List audioBytes = response.bodyBytes;
-        // --- 추가된 로그 4 ---
         debugPrint('[TTS Service] 오디오 데이터 수신 완료 (${audioBytes.length} bytes). 재생 시도...');
         await _audioPlayer.play(BytesSource(audioBytes, mimeType: 'audio/mpeg'));
       } else {
-        // --- 추가된 로그 5 ---
         debugPrint('[TTS Service] 🚨 API 에러: ${response.body}');
         throw Exception('API Error: ${response.statusCode}');
       }
     } catch (e) {
-      // --- 추가된 로그 6 ---
       debugPrint('[TTS Service] 🚨 speak 함수 실행 중 예외 발생: $e');
       if (!completer.isCompleted) {
-        subscription?.cancel();
+        subscription.cancel();
         completer.complete();
       }
       rethrow;
@@ -75,7 +72,6 @@ class OpenAiTtsService {
     await _audioPlayer.stop();
     debugPrint('[TTS Service] 재생이 중단되었습니다.');
   }
-  /// --- 추가된 부분 끝 ---
 
   void dispose() {
     _audioPlayer.dispose();

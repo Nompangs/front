@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
-import 'package:nompangs/widgets/common/primary_button.dart';
-import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
 import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
@@ -20,7 +17,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/character_manager.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
-  const OnboardingCompletionScreen({Key? key}) : super(key: key);
+  const OnboardingCompletionScreen({super.key});
 
   @override
   State<OnboardingCompletionScreen> createState() =>
@@ -38,7 +35,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   bool _isScrolledToBottom = false;
   String? _qrUuid;
   bool _creatingQr = false;
-
 
   @override
   void initState() {
@@ -126,18 +122,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         'contradictions': profile.contradictions,
         'communicationStyle': profile.communicationStyle,
         'structuredPrompt': profile.structuredPrompt,
-      }
+      },
     };
     try {
       final result = await CharacterManager.instance.saveCharacterForQR(data);
       final uuid = result['uuid'] as String;
       final message = result['message'] as String?;
-      
+
       // 🎯 간소화 정보 로깅
       if (message != null) {
         print('✅ $message');
       }
-      
+
       if (mounted) {
         setState(() {
           _qrUuid = uuid;
@@ -233,7 +229,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 child: Center(
                                   // 전체를 중앙 정렬
                                   child: Column(
-                                    mainAxisSize: MainAxisSize.min, // 최소 크기로 설정
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -242,14 +239,16 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
                                         style: TextStyle(
                                           fontFamily: 'Pretendard',
-                                          fontSize: 16, // 16에서 18로 증가
+                                          fontSize: 18, // 16에서 18로 증가
                                           fontWeight: FontWeight.w600,
                                           color: Colors.black,
                                         ),
                                         maxLines: 2,
                                       ),
 
-                                      const SizedBox(height: 2), // 8에서 4로 더 줄임
+                                      const SizedBox(
+                                        height: 4,
+                                      ), // 텍스트와 버튼 사이 아주 살짝 띄움
                                       // 저장하기, 공유하기 버튼
                                       Row(
                                         children: [

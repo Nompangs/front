@@ -3,8 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import '../models/onboarding_state.dart';
 import '../models/personality_profile.dart';
-import '../advanced/advanced_personality_profile.dart';
-import '../advanced/humor_matrix.dart';
 
 class PersonalityService {
   const PersonalityService();
@@ -206,15 +204,18 @@ class PersonalityService {
   List<String> _generateDefaultTraits(int warmth, int introversion, int competence) {
     final traits = <String>[];
     
-    if (warmth >= 7) traits.addAll(['친근한', '따뜻한', '배려심 많은']);
-    else if (warmth >= 4) traits.addAll(['차분한', '신중한']);
+    if (warmth >= 7) {
+      traits.addAll(['친근한', '따뜻한', '배려심 많은']);
+    } else if (warmth >= 4) traits.addAll(['차분한', '신중한']);
     else traits.addAll(['솔직한', '직설적인']);
     
-    if (introversion >= 7) traits.addAll(['내성적인', '신중한']);
-    else if (introversion <= 3) traits.addAll(['활발한', '사교적인']);
+    if (introversion >= 7) {
+      traits.addAll(['내성적인', '신중한']);
+    } else if (introversion <= 3) traits.addAll(['활발한', '사교적인']);
     
-    if (competence >= 7) traits.addAll(['능숙한', '전문적인']);
-    else if (competence >= 4) traits.addAll(['성실한', '꼼꼼한']);
+    if (competence >= 7) {
+      traits.addAll(['능숙한', '전문적인']);
+    } else if (competence >= 4) traits.addAll(['성실한', '꼼꼼한']);
     
     return traits.take(4).toList(); // 최대 4개
   }
@@ -225,7 +226,7 @@ class PersonalityService {
 
   List<String> _generateCoreValues(String? purpose, int competence) {
     final values = <String>[];
-    if (purpose != null) values.add('${purpose}에 대한 책임감');
+    if (purpose != null) values.add('$purpose에 대한 책임감');
     if (competence >= 6) values.add('완벽함 추구');
     values.addAll(['신뢰성', '도움이 되기']);
     return values;
@@ -243,7 +244,7 @@ class PersonalityService {
     if (warmth >= 6) desc.add('따뜻한');
     if (introversion >= 6) desc.add('신중한');
     if (competence >= 6) desc.add('능숙한');
-    return desc.join(', ') + ' 성격';
+    return '${desc.join(', ')} 성격';
   }
 
   List<String> _generateDefaultFlaws(int warmth, int introversion) {

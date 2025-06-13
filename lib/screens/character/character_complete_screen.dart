@@ -4,9 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/services/character_manager.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:flutter/rendering.dart';
 
 class CharacterCompleteScreen extends StatefulWidget {
@@ -15,11 +13,11 @@ class CharacterCompleteScreen extends StatefulWidget {
   final String greeting;
 
   const CharacterCompleteScreen({
-    Key? key,
+    super.key,
     required this.characterName,
     required this.personalityTags,
     required this.greeting,
-  }) : super(key: key);
+  });
 
   @override
   State<CharacterCompleteScreen> createState() => _CharacterCompleteScreenState();

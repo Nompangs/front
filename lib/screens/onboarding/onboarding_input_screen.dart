@@ -5,7 +5,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 
 /// 온보딩 사물 정보 입력 화면
 class OnboardingInputScreen extends StatefulWidget {
-  const OnboardingInputScreen({Key? key}) : super(key: key);
+  const OnboardingInputScreen({super.key});
 
   @override
   State<OnboardingInputScreen> createState() => _OnboardingInputScreenState();
@@ -235,14 +235,18 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     border: Border.all(color: Colors.black, width: 1),
                     borderRadius: BorderRadius.circular(25),
                   ),
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.fromLTRB(
-                      screenWidth * 0.1,
-                      48,
-                      screenWidth * 0.1,
-                      20, // 하단 여백
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        screenWidth * 0.1,
+                        0,
+                        screenWidth * 0.1,
+                        0,
+                      ),
+                      child: SingleChildScrollView(
+                        child: _buildInputFormCard(),
+                      ),
                     ),
-                    child: _buildInputFormCard(),
                   ),
                 ),
               ),
