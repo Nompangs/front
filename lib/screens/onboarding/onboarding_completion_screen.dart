@@ -8,6 +8,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/widgets/common/primary_button.dart';
 import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
+import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -85,19 +86,36 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     setState(() {
       _creatingQr = true;
     });
+    final providerState = context.read<OnboardingProvider>();
+    var profile = providerState.personalityProfile;
+    if (profile.structuredPrompt.isEmpty) {
+      final service = const PersonalityService();
+      profile = await service.generateProfile(providerState.state);
+      providerState.setPersonalityProfile(profile);
+    }
+    final userInput = providerState.state.userInput;
     final data = {
-      'name': character.name,
-      'tags': character.traits,
-      'greeting': character.greeting,
-      'objectType': character.objectType,
-      'personality': {
-        'warmth': character.personality.warmth,
-        'competence': character.personality.competence,
-        'extroversion': character.personality.extroversion,
+      'personalityProfile': {
+        'aiPersonalityProfile': profile.aiPersonalityProfile,
+        'photoAnalysis': profile.photoAnalysis,
+        'lifeStory': profile.lifeStory,
+        'humorMatrix': profile.humorMatrix,
+        'attractiveFlaws': profile.attractiveFlaws,
+        'contradictions': profile.contradictions,
+        'communicationStyle': profile.communicationStyle,
+        'structuredPrompt': profile.structuredPrompt,
       }
     };
     try {
-      final uuid = await CharacterManager.instance.saveCharacterForQR(data);
+      final result = await CharacterManager.instance.saveCharacterForQR(data);
+      final uuid = result['uuid'] as String;
+      final message = result['message'] as String?;
+      
+      // 🎯 간소화 정보 로깅
+      if (message != null) {
+        print('✅ $message');
+      }
+      
       if (mounted) {
         setState(() {
           _qrUuid = uuid;
@@ -105,6 +123,20 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       }
     } catch (e) {
       print('QR 생성 실패: $e');
+      if (mounted) {
+        String message = 'QR 생성 실패';
+        final match = RegExp(r'(\d{3})').firstMatch(e.toString());
+        if (match != null) {
+          message = 'QR 생성 실패 (HTTP ${match.group(1)})';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
