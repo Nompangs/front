@@ -40,12 +40,31 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     if (_loading) return;
     setState(() => _loading = true);
     final data = {
-      'name': widget.characterName,
-      'tags': widget.personalityTags,
-      'greeting': widget.greeting,
+      'personalityProfile': {
+        'aiPersonalityProfile': {
+          'name': widget.characterName,
+          'personalityTraits': widget.personalityTags,
+          'summary': widget.greeting,
+        },
+        'photoAnalysis': {},
+        'lifeStory': {},
+        'humorMatrix': {},
+        'attractiveFlaws': [],
+        'contradictions': [],
+        'communicationStyle': {},
+        'structuredPrompt': widget.greeting,
+      }
     };
     try {
-      final uuid = await CharacterManager.instance.saveCharacterForQR(data);
+      final result = await CharacterManager.instance.saveCharacterForQR(data);
+      final uuid = result['uuid'] as String;
+      final message = result['message'] as String?;
+      
+      // 🎯 간소화 정보 로깅
+      if (message != null) {
+        print('✅ $message');
+      }
+      
       if (mounted) setState(() => _qrUuid = uuid);
     } catch (e) {
       print('QR 생성 실패: $e');

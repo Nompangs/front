@@ -95,31 +95,27 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     }
     final userInput = providerState.state.userInput;
     final data = {
-      'name': character.name,
-      'tags': character.traits,
-      'greeting': character.greeting,
-      'objectType': character.objectType,
-      'personality': {
-        'warmth': character.personality.warmth,
-        'competence': character.personality.competence,
-        'extroversion': character.personality.extroversion,
-      },
-      'aiPersonalityProfile': profile.aiPersonalityProfile,
-      'photoAnalysis': profile.photoAnalysis,
-      'lifeStory': profile.lifeStory,
-      'humorMatrix': profile.humorMatrix,
-      'attractiveFlaws': profile.attractiveFlaws,
-      'contradictions': profile.contradictions,
-      'communicationStyle': profile.communicationStyle,
-      'structuredPrompt': profile.structuredPrompt,
-      'location': userInput?.location ?? '',
-      'duration': userInput?.duration ?? '',
-      'purpose': providerState.state.purpose,
-      'humorStyle': providerState.state.humorStyle,
-      'photoUrl': providerState.state.photoPath ?? '',
+      'personalityProfile': {
+        'aiPersonalityProfile': profile.aiPersonalityProfile,
+        'photoAnalysis': profile.photoAnalysis,
+        'lifeStory': profile.lifeStory,
+        'humorMatrix': profile.humorMatrix,
+        'attractiveFlaws': profile.attractiveFlaws,
+        'contradictions': profile.contradictions,
+        'communicationStyle': profile.communicationStyle,
+        'structuredPrompt': profile.structuredPrompt,
+      }
     };
     try {
-      final uuid = await CharacterManager.instance.saveCharacterForQR(data);
+      final result = await CharacterManager.instance.saveCharacterForQR(data);
+      final uuid = result['uuid'] as String;
+      final message = result['message'] as String?;
+      
+      // 🎯 간소화 정보 로깅
+      if (message != null) {
+        print('✅ $message');
+      }
+      
       if (mounted) {
         setState(() {
           _qrUuid = uuid;
