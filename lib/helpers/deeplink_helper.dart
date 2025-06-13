@@ -34,12 +34,60 @@ class DeepLinkHelper {
       await CharacterManager.instance.handleCharacterFromQR(personaId);
       print('[DeepLinkHelper][$platform] 사용자-캐릭터 관계 생성 완료');
 
-      return {
+      final result = {
         'characterName': characterData['name'] as String,
         'personalityTags': List<String>.from(characterData['tags'] as List),
         'greeting': characterData['greeting'] as String?,
         'personaId': personaId,
       };
+
+      if (characterData.containsKey('personalityProfile')) {
+        final personalityProfile = characterData['personalityProfile'] as Map<String, dynamic>?;
+        if (personalityProfile != null) {
+          result['fullPersonalityProfile'] = personalityProfile;
+          
+          if (personalityProfile.containsKey('aiPersonalityProfile')) {
+            final aiProfile = personalityProfile['aiPersonalityProfile'] as Map<String, dynamic>?;
+            if (aiProfile != null) {
+              result['personalityTraits'] = aiProfile['personalityTraits'] ?? result['personalityTags'];
+              result['emotionalRange'] = aiProfile['emotionalRange'];
+              result['communicationStyle'] = aiProfile['communicationStyle'];
+              result['humorStyle'] = aiProfile['humorStyle'];
+              result['lifeStory'] = aiProfile['lifeStory'];
+              result['attractiveFlaws'] = aiProfile['attractiveFlaws'];
+              result['contradictions'] = aiProfile['contradictions'];
+              result['secretWishes'] = aiProfile['secretWishes'];
+              result['innerComplaints'] = aiProfile['innerComplaints'];
+            }
+          }
+          
+          if (personalityProfile.containsKey('lifeStory')) {
+            final lifeStory = personalityProfile['lifeStory'] as Map<String, dynamic>?;
+            if (lifeStory != null) {
+              result['background'] = lifeStory['background'];
+              result['secretWishes'] = lifeStory['secretWishes'] ?? result['secretWishes'];
+              result['innerComplaints'] = lifeStory['innerComplaints'] ?? result['innerComplaints'];
+            }
+          }
+          
+          if (personalityProfile.containsKey('humorMatrix')) {
+            final humorMatrix = personalityProfile['humorMatrix'] as Map<String, dynamic>?;
+            if (humorMatrix != null) {
+              result['humorStyle'] = humorMatrix['style'] ?? result['humorStyle'];
+            }
+          }
+          
+          if (personalityProfile.containsKey('communicationStyle')) {
+            final commStyle = personalityProfile['communicationStyle'] as Map<String, dynamic>?;
+            if (commStyle != null) {
+              result['communicationStyle'] = commStyle['tone'] ?? result['communicationStyle'];
+            }
+          }
+        }
+      }
+
+      print('[DeepLinkHelper][$platform] 전체 성격 데이터 포함 완료: ${result.keys.toList()}');
+      return result;
     } catch (e, s) {
       print('[DeepLinkHelper][$platform] 데이터 처리 중 오류: $e');
       print('[DeepLinkHelper][$platform] Stacktrace: $s');

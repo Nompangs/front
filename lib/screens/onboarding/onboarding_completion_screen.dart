@@ -14,7 +14,8 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:nompangs/services/character_manager.dart';
+import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/models/personality_profile.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -35,6 +36,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   bool _isScrolledToBottom = false;
   String? _qrUuid;
   bool _creatingQr = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -68,10 +70,20 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<OnboardingProvider>();
-      final character = provider.state.generatedCharacter;
-      if (character != null) {
-        _createQrProfile(character);
+      // 이제 OnboardingProvider에서 이미 생성 완료된 프로필을 가져옵니다.
+      final profile = context.read<OnboardingProvider>().personalityProfile;
+      
+      if (profile != null) {
+        // 프로필이 있으면 QR 생성을 바로 시작합니다.
+        _createQrProfile(profile);
+      } else {
+        // 만약 프로필이 없다면 오류 상황입니다.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('오류: 페르소나 정보를 불러올 수 없습니다. 이전 화면으로 돌아가 다시 시도해주세요.'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     });
   }
@@ -99,59 +111,37 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     super.dispose();
   }
 
-  Future<void> _createQrProfile(Character character) async {
-    if (_creatingQr) return;
+  Future<void> _createQrProfile(PersonalityProfile profile) async {
+    if (_creatingQr || !mounted) return;
     setState(() {
       _creatingQr = true;
     });
-    final providerState = context.read<OnboardingProvider>();
-    var profile = providerState.personalityProfile;
-    if (profile.structuredPrompt.isEmpty) {
-      final service = const PersonalityService();
-      profile = await service.generateProfile(providerState.state);
-      providerState.setPersonalityProfile(profile);
-    }
-    final userInput = providerState.state.userInput;
-    final data = {
-      'personalityProfile': {
-        'aiPersonalityProfile': profile.aiPersonalityProfile,
-        'photoAnalysis': profile.photoAnalysis,
-        'lifeStory': profile.lifeStory,
-        'humorMatrix': profile.humorMatrix,
-        'attractiveFlaws': profile.attractiveFlaws,
-        'contradictions': profile.contradictions,
-        'communicationStyle': profile.communicationStyle,
-        'structuredPrompt': profile.structuredPrompt,
-      },
-    };
+
     try {
-      final result = await CharacterManager.instance.saveCharacterForQR(data);
-      final uuid = result['uuid'] as String;
-      final message = result['message'] as String?;
+      // ApiService를 사용하여 서버에 프로필을 전송하고 결과를 받습니다.
+      final result = await _apiService.createProfileAndGetQr(profile);
+      final uuid = result['uuid'] as String?;
+      final qrUrl = result['qrUrl'] as String?;
 
-      // 🎯 간소화 정보 로깅
-      if (message != null) {
-        print('✅ $message');
-      }
-
-      if (mounted) {
-        setState(() {
-          _qrUuid = uuid;
-        });
+      if (uuid != null && qrUrl != null) {
+        debugPrint('✅ QR 프로필 생성 성공!');
+        debugPrint('   - UUID: $uuid');
+        debugPrint('   - QR Data URL: ${qrUrl.substring(0, 50)}...');
+        if (mounted) {
+          setState(() {
+            _qrUuid = uuid;
+          });
+        }
+      } else {
+        throw Exception('Server did not return a valid UUID or QR URL.');
       }
     } catch (e) {
-      print('QR 생성 실패: $e');
+      debugPrint('🚨 QR 생성 실패: $e');
       if (mounted) {
-        String message = 'QR 생성 실패';
-        final match = RegExp(r'(\d{3})').firstMatch(e.toString());
-        if (match != null) {
-          message = 'QR 생성 실패 (HTTP ${match.group(1)})';
-        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(message),
+            content: Text('QR 코드 생성에 실패했습니다: ${e.toString()}'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
           ),
         );
       }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
+import 'package:nompangs/services/personality_service.dart';
+import 'package:nompangs/models/personality_profile.dart';
 import 'dart:math' as math;
 import 'dart:io';
 import 'dart:async';
@@ -25,6 +27,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   bool _isTimedOut = false;
   int _remainingSeconds = 6;
   Timer? _countdownTimer;
+  Timer? _longRunningTimer;
 
   final List<GenerationStep> steps = [
     GenerationStep(0.25, '캐릭터 깨우는 중...', '사물의 기본 특성을 분석하고 있어요'),
@@ -32,6 +35,8 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     GenerationStep(0.75, '마음을 열고 있어요', '당신만의 특별한 친구가 탄생하고 있어요'),
     GenerationStep(1.0, '거의 완성되었어요', '마지막 손질을 하고 있어요'),
   ];
+
+  final PersonalityService _personalityService = const PersonalityService();
 
   @override
   void initState() {
@@ -67,6 +72,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     _circleController.dispose();
     _timeoutTimer?.cancel();
     _countdownTimer?.cancel();
+    _longRunningTimer?.cancel();
     super.dispose();
   }
 
@@ -220,15 +226,69 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     _startTimeoutTimer();
   }
 
-  void _startGeneration() async {
-    final provider = Provider.of<OnboardingProvider>(context, listen: false);
-    await provider.generateCharacter();
+  Future<void> _startGeneration() async {
+    final provider = context.read<OnboardingProvider>();
+    if (provider.isGenerating) return;
 
-    if (mounted && provider.state.generatedCharacter != null && !_isTimedOut) {
-      _timeoutTimer?.cancel(); // 성공 시 타이머 취소
-      _countdownTimer?.cancel();
-      Navigator.pushReplacementNamed(context, '/onboarding/personality');
+    provider.setGenerating(true, "페르소나 분석을 시작합니다...");
+
+    // 15초 후에 메시지를 변경하는 타이머를 설정합니다.
+    _longRunningTimer = Timer(const Duration(seconds: 15), () {
+      if (provider.isGenerating && mounted) {
+        provider.setGenerating(true, "꼼꼼하게 분석 중이에요.\n시간이 조금 더 걸릴 수 있어요...");
+      }
+    });
+
+    try {
+      final PersonalityProfile generatedProfile =
+          await _personalityService.generateProfile(provider.state);
+      
+      _longRunningTimer?.cancel(); // 성공 시 타이머 취소
+
+      if (generatedProfile.aiPersonalityProfile == null ||
+          generatedProfile.aiPersonalityProfile!.summary.isEmpty ||
+          generatedProfile.structuredPrompt.isEmpty) {
+        throw Exception("생성된 프로필의 핵심 데이터가 비어있습니다.");
+      }
+
+      debugPrint("✅ 페르소나 생성 성공! 요약: ${generatedProfile.aiPersonalityProfile!.summary}");
+
+      // 3. Provider에 최종 결과 저장
+      provider.setFinalPersonality(generatedProfile);
+      provider.setGenerating(false, "생성 완료!");
+
+      // 4. 완료 화면으로 이동
+      Navigator.pushNamed(context, '/onboarding/completion');
+
+    } catch (e, s) {
+      _longRunningTimer?.cancel(); // 실패 시에도 타이머 취소
+      debugPrint("🚨 페르소나 생성 실패: $e");
+      debugPrint("   - StackTrace: $s");
+      provider.setErrorMessage("페르소나 생성에 실패했습니다. 다시 시도해주세요.");
+      provider.setGenerating(false, "오류 발생");
+      // 필요하다면 에러 팝업 후 이전 화면으로 이동
+      _showErrorDialog(e.toString());
     }
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('오류'),
+        content: Text('페르소나 생성 중 오류가 발생했습니다.\n\n$message'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop(); // 다이얼로그 닫기
+              Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+            },
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
