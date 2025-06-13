@@ -26,6 +26,8 @@ import 'package:nompangs/services/firebase_manager.dart';
 import 'package:nompangs/helpers/deeplink_helper.dart';
 import 'package:nompangs/screens/chat/chat_history_screen.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
+import 'package:nompangs/screens/main/new_home_screen.dart';
+import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 
 String? pendingRoomId;
 
@@ -107,6 +109,20 @@ class TestScreen extends StatelessWidget {
                 Navigator.pushNamed(context, '/chat-history');
               },
               child: Text('채팅 히스토리'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/new-home');
+              },
+              child: Text('뉴홈 화면 UI'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/flutter-mobile-clone');
+              },
+              child: Text('Flutter 모바일 클론'),
             ),
           ],
         ),
@@ -209,6 +225,8 @@ class _NompangsAppState extends State<NompangsApp> {
               (context) => const OnboardingPersonalityScreen(),
           '/onboarding/completion':
               (context) => const OnboardingCompletionScreen(),
+          '/new-home': (context) => const NewHomeScreen(),
+          '/flutter-mobile-clone': (context) => MainScreen(),
         },
         onGenerateRoute: (settings) {
           final Uri uri = Uri.parse(settings.name ?? '');
