@@ -34,8 +34,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   late Animation<double> _celebrationAnimation;
   late Animation<double> _bounceAnimation;
   final GlobalKey _qrKey = GlobalKey();
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolledToBottom = false;
   String? _qrUuid;
   bool _creatingQr = false;
+
 
   @override
   void initState() {
@@ -59,6 +62,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       CurvedAnimation(parent: _bounceController, curve: Curves.bounceOut),
     );
 
+    // 스크롤 리스너 추가
+    _scrollController.addListener(_onScroll);
+
     // 축하 애니메이션 시작
     _celebrationController.forward();
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -74,10 +80,26 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
   }
 
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      final threshold = maxScroll * 0.9; // 90% 스크롤 시 하단으로 간주
+
+      final isAtBottom = currentScroll >= threshold;
+      if (isAtBottom != _isScrolledToBottom) {
+        setState(() {
+          _isScrolledToBottom = isAtBottom;
+        });
+      }
+    }
+  }
+
   @override
   void dispose() {
     _celebrationController.dispose();
     _bounceController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -167,204 +189,186 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         }
 
         return Scaffold(
+          backgroundColor: Colors.white, // 전체 배경은 흰색으로 유지
           resizeToAvoidBottomInset: false,
-          // AppBar with rounded corners and notification emoji
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(56),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFC5FF35),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-                border: Border(
-                  left: BorderSide(color: Colors.black, width: 1),
-                  right: BorderSide(color: Colors.black, width: 1),
-                  bottom: BorderSide(color: Colors.black, width: 1),
-                ),
-              ),
-              child: AppBar(
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.black),
-                  onPressed: () => Navigator.pop(context),
-                ),
-                title: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.notifications,
-                      size: 16,
-                      color: Colors.black,
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                centerTitle: true,
-              ),
-            ),
-          ),
           body: Stack(
             children: [
-              // 전체 스크롤 가능한 컨테이너
+              // 전체 스크롤 가능한 컨테이너 (앱바 아래부터 시작)
               SingleChildScrollView(
-                padding: const EdgeInsets.only(bottom: 80), // 플로팅 버튼 공간
+                padding: EdgeInsets.only(
+                  top:
+                      MediaQuery.of(context).padding.top +
+                      56, // 시스템 상태바 + 앱바 높이만
+                  bottom: 150, // 80에서 150으로 증가하여 버튼과 겹치지 않게
+                ),
+                controller: _scrollController,
                 child: Column(
                   children: [
-                    // 분홍색 섹션 (QR 코드)
+                    // 분홍+연보라 섹션 (QR 코드) - 가로로 나눔
                     Container(
                       width: double.infinity,
-                      height: 140, // 160에서 140으로 줄임 (20px 감소)
+                      height: 140,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFD8F1),
                         border: Border.all(color: Colors.black, width: 1),
                         borderRadius: BorderRadius.circular(25),
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.05,
-                          vertical: 15, // 20에서 15로 줄임 (5px 감소)
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            // 왼쪽: 텍스트와 버튼들
-                            Expanded(
-                              flex: 2,
-                              child: SizedBox(
-                                height: 110, // 120에서 110으로 줄임 (QR과 맞춤)
-                                child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // QR 텍스트 (줄바꿈 추가)
-                                    const Text(
-                                      'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.black,
+                      child: Row(
+                        children: [
+                          // 왼쪽 분홍 섹션 (65%) - 70%에서 65%로 줄임
+                          Expanded(
+                            flex: 65, // 70에서 65로 변경
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFFD8F1), // 분홍색
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(24),
+                                  bottomLeft: Radius.circular(24),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth * 0.05,
+                                  vertical: 15,
+                                ),
+                                child: Center(
+                                  // 전체를 중앙 정렬
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min, // 최소 크기로 설정
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // QR 텍스트
+                                      const Text(
+                                        'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
+                                        style: TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          fontSize: 16, // 16에서 18로 증가
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
+                                        maxLines: 2,
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
 
-                                    // 저장하기, 공유하기 버튼 (색상 통일)
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            onPressed: () => _saveQRCode(),
-                                            icon: const Icon(
-                                              Icons.download,
-                                              size: 16,
-                                            ),
-                                            label: const Text(
-                                              '저장하기',
-                                              style: TextStyle(fontSize: 12),
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFF6750A4, // 통일된 색상
+                                      const SizedBox(height: 2), // 8에서 4로 더 줄임
+                                      // 저장하기, 공유하기 버튼
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            // 다시 Expanded로 변경
+                                            child: ElevatedButton.icon(
+                                              onPressed: () => _saveQRCode(),
+                                              icon: const Icon(
+                                                Icons.download,
+                                                size: 16,
+                                                color: Colors.white,
                                               ),
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
+                                              label: const Text(
+                                                '저장하기',
+                                                style: TextStyle(
+                                                  fontFamily: 'Pretendard',
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                ),
                                               ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 6,
-                                                  ),
-                                              minimumSize: const Size(0, 36),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(
+                                                  0xFF6750A4,
+                                                ),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(18),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                minimumSize: const Size(0, 36),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: ElevatedButton.icon(
-                                            onPressed:
-                                                () => _shareQRCode(character),
-                                            icon: const Icon(
-                                              Icons.share,
-                                              size: 16,
-                                            ),
-                                            label: const Text(
-                                              '공유하기',
-                                              style: TextStyle(fontSize: 12),
-                                            ),
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: const Color(
-                                                0xFF6750A4, // 통일된 색상
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            // 다시 Expanded로 변경
+                                            child: ElevatedButton.icon(
+                                              onPressed:
+                                                  () => _shareQRCode(character),
+                                              icon: const Icon(
+                                                Icons.share,
+                                                size: 16,
+                                                color: Colors.white,
                                               ),
-                                              foregroundColor: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(18),
+                                              label: const Text(
+                                                '공유하기',
+                                                style: TextStyle(
+                                                  fontFamily: 'Pretendard',
+                                                  fontSize: 12,
+                                                  color: Colors.white,
+                                                ),
                                               ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 6,
-                                                  ),
-                                              minimumSize: const Size(0, 36),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: const Color(
+                                                  0xFF6750A4,
+                                                ),
+                                                foregroundColor: Colors.white,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(18),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                    ),
+                                                minimumSize: const Size(0, 36),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
+                          ),
 
-                            const SizedBox(width: 20),
-
-                            // 오른쪽: QR 코드 (연보라색 배경)
-                            Container(
-                              width: 110,
-                              height: 110,
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xC8A6FF,
-                                ).withOpacity(0.66), // 연보라색 66% 투명도
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Center(
-                                child: RepaintBoundary(
-                                  key: _qrKey,
+                          // 오른쪽 연보라 섹션 (35%) - QR 코드 - 30%에서 35%로 증가
+                          Expanded(
+                            flex: 35, // 30에서 35로 변경
+                            child: GestureDetector(
+                              onTap: () => _showQRPopup(character),
+                              child: Container(
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFC8A6FF), // 연보라색
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(24),
+                                    bottomRight: Radius.circular(24),
+                                  ),
+                                ),
+                                child: Center(
                                   child: Container(
-                                    width: 108, // 110에서 108로 더 줄임
-                                    height: 108, // 110에서 108로 더 줄임
+                                    width: 90, // 80에서 90으로 증가
+                                    height: 90, // 80에서 90으로 증가
                                     padding: const EdgeInsets.all(
-                                      0.5,
-                                    ), // 1에서 0.5로 더 줄임
+                                      4,
+                                    ), // 8에서 4로 줄임 (여백 축소)
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
                                     ),
-                                    child: QrImageView(
-                                      data: _generateQRData(character),
-                                      version: QrVersions.auto,
-                                      backgroundColor: Colors.white,
+                                    child: RepaintBoundary(
+                                      key: _qrKey,
+                                      child: QrImageView(
+                                        data: _generateQRData(character),
+                                        version: QrVersions.auto,
+                                        backgroundColor: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -398,6 +402,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     Text(
                                       '털찐말랑이',
                                       style: const TextStyle(
+                                        fontFamily: 'Pretendard',
                                         fontSize: 24,
                                         fontWeight: FontWeight.bold,
                                         color: Colors.black,
@@ -406,6 +411,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     Text(
                                       '${DateTime.now().year}년 ${DateTime.now().month}월생',
                                       style: TextStyle(
+                                        fontFamily: 'Pretendard',
                                         fontSize: 14,
                                         color: Colors.grey.shade700,
                                       ),
@@ -421,7 +427,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         SizedBox(width: 4),
                                         Text(
                                           '멘탈지기',
-                                          style: TextStyle(fontSize: 12),
+                                          style: TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -433,7 +442,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         Text(
                                           provider.state.userInput?.location ??
                                               '우리집 거실',
-                                          style: const TextStyle(fontSize: 12),
+                                          style: const TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -563,6 +575,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                                 Text(
                                                   '가끔 털이 엉킬까봐 걱정돼 :(',
                                                   style: TextStyle(
+                                                    fontFamily: 'Pretendard',
                                                     fontSize: 18,
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.w500,
@@ -573,6 +586,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                                 Text(
                                                   '가끔 털이 엉킬까봐 걱정돼 :(',
                                                   style: TextStyle(
+                                                    fontFamily: 'Pretendard',
                                                     fontSize: 18,
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.w500,
@@ -590,6 +604,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                               ),
                             ),
 
+                            // 사진/말풍선과 성격차트 사이 간격 (두 배로 증가)
+                            const SizedBox(height: 80), // 기존 40에서 80으로 두 배 증가
+
+                            const SizedBox(height: 40), // 성격차트 위 간격
                             // 성격 차트 추가
                             Builder(
                               builder: (context) {
@@ -655,12 +673,165 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     child: const Text(
                       '지금 바로 대화해요',
                       style: TextStyle(
+                        fontFamily: 'Pretendard',
                         color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
+                ),
+              ),
+
+              // 플로팅 스크롤 힌트 화살표 (말풍선 아래 오른쪽 고정 위치)
+              Positioned(
+                right: 30,
+                bottom:
+                    MediaQuery.of(context).padding.bottom +
+                    24 +
+                    56 +
+                    15, // 버튼 아래 여백 + 버튼 높이 + 15px 위
+                child: GestureDetector(
+                  onTap: () {
+                    if (_scrollController.hasClients) {
+                      if (_isScrolledToBottom) {
+                        // 하단에서 클릭 시 하늘색 영역 상단으로 이동 (앱바 바로 아래)
+                        _scrollController.animateTo(
+                          140.0, // QR 섹션 높이만큼 스크롤하여 하늘색 섹션이 앱바 바로 아래 오도록
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        // 상단에서 클릭 시 하늘색 섹션 끝으로 이동
+                        _scrollController.animateTo(
+                          _scrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      }
+                    }
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.black.withOpacity(0.1),
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isScrolledToBottom
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: Colors.black.withOpacity(0.6),
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+
+              // 상단 고정 앱바 (라운딩 처리)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Column(
+                  children: [
+                    // 시스템 상태바 영역만 연두색
+                    Container(
+                      height: MediaQuery.of(context).padding.top,
+                      width: double.infinity,
+                      color: const Color(0xFFC5FF35), // 시스템 상태바만 연두색
+                    ),
+
+                    // 앱바 영역 (라운딩된 부분 밖은 투명)
+                    Container(
+                      height: 56,
+                      width: double.infinity,
+                      color: Colors.transparent, // 라운딩 밖 영역은 투명
+                      child: Stack(
+                        children: [
+                          // 라운딩된 앱바 배경
+                          Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFC5FF35), // 앱바만 연두색
+                              borderRadius: BorderRadius.only(
+                                bottomLeft: Radius.circular(20),
+                                bottomRight: Radius.circular(20),
+                              ),
+                              border: Border(
+                                left: BorderSide(color: Colors.black, width: 1),
+                                right: BorderSide(
+                                  color: Colors.black,
+                                  width: 1,
+                                ),
+                                bottom: BorderSide(
+                                  color: Colors.black,
+                                  width: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // 앱바 콘텐츠
+                          Row(
+                            children: [
+                              // 뒤로가기 버튼
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.black,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+
+                              // 중앙 타이틀
+                              Expanded(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.notifications,
+                                      size: 16,
+                                      color: Colors.black,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Flexible(
+                                      child: Text(
+                                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
+                                        style: const TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          color: Colors.black,
+                                          fontSize: 16,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // 오른쪽 여백 (뒤로가기 버튼과 대칭)
+                              const SizedBox(width: 48),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -681,6 +852,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       child: Text(
         tag,
         style: const TextStyle(
+          fontFamily: 'Pretendard',
           fontSize: 12,
           fontWeight: FontWeight.w500,
           color: Colors.black,
@@ -710,31 +882,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   Future<void> _saveQRCode() async {
     if (_qrUuid == null) return;
     try {
-      // 권한 확인 및 요청
-      if (Platform.isAndroid) {
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('저장소 권한이 필요합니다.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      } else if (Platform.isIOS) {
-        final status = await Permission.photosAddOnly.request();
-        if (!status.isGranted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('사진 접근 권한이 필요합니다.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return;
-        }
-      }
-
       // QR 코드 위젯을 이미지로 캡처
       final RenderRepaintBoundary boundary =
           _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
@@ -752,21 +899,68 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       final File file = File('${tempDir.path}/$fileName');
       await file.writeAsBytes(pngBytes);
 
-      // 갤러리에 저장
-      await Gal.putImage(file.path);
+      // 갤러리에 저장 - 권한 확인 없이 바로 시도
+      try {
+        await Gal.putImage(file.path, album: 'Nompangs');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ QR 코드가 갤러리에 저장되었습니다!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      } catch (galError) {
+        // Gal 저장 실패 시 권한 요청 후 재시도
+        print('Gal 저장 실패, 권한 확인 중: $galError');
+
+        bool hasPermission = false;
+
+        if (Platform.isAndroid) {
+          // Android 권한 요청
+          var photosStatus = await Permission.photos.request();
+          var storageStatus = await Permission.storage.request();
+          hasPermission = photosStatus.isGranted || storageStatus.isGranted;
+
+          if (!hasPermission) {
+            var manageStatus = await Permission.manageExternalStorage.request();
+            hasPermission = manageStatus.isGranted;
+          }
+        } else if (Platform.isIOS) {
+          final status = await Permission.photosAddOnly.request();
+          hasPermission = status.isGranted;
+        }
+
+        if (hasPermission) {
+          // 권한 획득 후 재시도
+          await Gal.putImage(file.path, album: 'Nompangs');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ QR 코드가 갤러리에 저장되었습니다!'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('저장소 권한이 필요합니다. 설정에서 권한을 허용해주세요.'),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
 
       // 임시 파일 삭제
       await file.delete();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ QR 코드가 갤러리에 저장되었습니다!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
     } catch (e) {
       print('QR 저장 오류: $e');
       if (mounted) {
@@ -774,7 +968,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           SnackBar(
             content: Text('저장 실패: ${e.toString()}'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -815,15 +1009,82 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           file.delete();
         }
       });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ QR 코드가 공유되었습니다!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2), // 2초로 단축
+          ),
+        );
+      }
     } catch (e) {
       print('QR 공유 오류: $e');
-      // 실패 시 기본 텍스트 공유
-      final qrData = _generateQRData(character);
-      await Share.share(
-        '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
-        subject: '놈팽쓰 친구 공유',
-      );
+      if (mounted) {
+        // 실패 시 기본 텍스트 공유
+        final qrData = _generateQRData(character);
+        await Share.share(
+          '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
+          subject: '놈팽쓰 친구 공유',
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ 이미지 공유 실패, 텍스트로 공유되었습니다'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 2), // 2초로 단축
+          ),
+        );
+      }
     }
+  }
+
+  // QR 코드 팝업 표시
+  void _showQRPopup(Character character) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pop(), // 밖 부분 누르면 사라짐
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {}, // QR 영역 클릭 시 팝업이 닫히지 않도록
+                onLongPress: () {
+                  Navigator.of(context).pop();
+                  _saveQRCode(); // 길게 누르면 저장
+                },
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC8A6FF), // 연보라색
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: const BoxDecoration(color: Colors.white),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: QrImageView(
+                          data: _generateQRData(character),
+                          version: QrVersions.auto,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   String _getPersonalityTag1(OnboardingState state) {

@@ -66,13 +66,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       _showValidationErrors = true; // 검증 시도했음을 표시
     });
 
-    // 닉네임 검증 - 실제 입력이 있거나 기본값 사용
-    final nickname =
-        _hasNicknameInput && _nicknameController.text.isNotEmpty
-            ? _nicknameController.text.trim()
-            : '털찐 말랑이';
-
-    if (nickname.isEmpty) {
+    // 닉네임 검증 - 반드시 사용자가 입력해야 함
+    if (!_hasNicknameInput || _nicknameController.text.trim().isEmpty) {
       setState(() {
         _validationError = '이름을 입력해주세요!';
       });
@@ -93,13 +88,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       return false;
     }
 
-    // 사물 종류 검증 - 실제 입력이 있거나 기본값 사용
-    final objectType =
-        _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
-            ? _objectTypeController.text.trim()
-            : '이 빠진 머그컵';
-
-    if (objectType.isEmpty) {
+    // 사물 종류 검증 - 반드시 사용자가 입력해야 함
+    if (!_hasObjectTypeInput || _objectTypeController.text.trim().isEmpty) {
       setState(() {
         _validationError = '사물의 종류를 입력해주세요!';
       });
@@ -112,16 +102,9 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
   /// 다음 단계로 이동
   void _proceedToNext() {
     if (_validateInputs()) {
-      // 실제 입력값 또는 기본값 사용
-      final nickname =
-          _hasNicknameInput && _nicknameController.text.isNotEmpty
-              ? _nicknameController.text.trim()
-              : '털찐 말랑이';
-
-      final objectType =
-          _hasObjectTypeInput && _objectTypeController.text.isNotEmpty
-              ? _objectTypeController.text.trim()
-              : '이 빠진 머그컵';
+      // 사용자가 실제로 입력한 값들만 사용
+      final nickname = _nicknameController.text.trim();
+      final objectType = _objectTypeController.text.trim();
 
       final userInput = UserInput(
         nickname: nickname,
@@ -142,13 +125,8 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 화면 크기에 따른 반응형 높이 계산
-    final blueHeight = screenHeight * 0.16; // 화면 높이의 16% (최소 120, 최대 150)
-    final pinkHeight = screenHeight * 0.35; // 화면 높이의 35% (최소 280, 최대 320)
-
     return Scaffold(
-      resizeToAvoidBottomInset: true, // 키보드 오버플로우 방지
-      // 일반적인 AppBar 사용
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: const Color(0xFFFDF7E9),
         elevation: 0,
@@ -161,162 +139,157 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        // 스크롤 가능하도록 수정
-        child: Column(
-          children: [
-            // 아이보리 섹션 (100% 폭) - Material 3 여백 최적화
-            Container(
-              width: double.infinity,
-              color: const Color(0xFFFDF7E9),
-              padding: EdgeInsets.fromLTRB(
-                screenWidth * 0.1,
-                32,
-                screenWidth * 0.05,
-                32,
-              ), // 상하 패딩 증가 (24 → 32)
-              child: Text(
-                '궁금해!\n나는 어떤 사물이야?',
-                style: TextStyle(
-                  fontSize: screenWidth * 0.06, // 폰트 크기 줄임 (0.07 → 0.06)
-                  fontWeight: FontWeight.w600, // Material 3 표준 (bold → w600)
-                  color: Colors.black,
-                  height: 1.5, // 줄 간격 넓게 (1.3 → 1.5)
-                ),
-              ),
-            ),
-
-            // 하늘색 섹션 (100% 폭) - 반응형 높이
-            Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: blueHeight.clamp(120.0, 150.0), // 최소 120, 최대 150
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF57B3E6), // 단색으로 변경
-                    border: Border.all(color: Colors.black, width: 1),
-                    borderRadius: const BorderRadius.only(
-                      bottomLeft: Radius.circular(25),
-                      bottomRight: Radius.circular(25),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        spreadRadius: 0,
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // 이름 입력 floating 카드
-                Positioned(
-                  top:
-                      (blueHeight.clamp(120.0, 150.0) - 56) / 2 -
-                      10, // 중앙 배치 (카드 높이 56 고려)
-                  left: screenWidth * 0.1, // 반응형 좌우 여백
-                  right: screenWidth * 0.1,
-                  child: Column(
-                    children: [
-                      _buildNameInputCard(),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          _showValidationErrors &&
-                                  (!_hasNicknameInput ||
-                                      _nicknameController.text.isEmpty)
-                              ? '이름을 입력해주세요'
-                              : '',
-                          style: TextStyle(
-                            color: Colors.red.shade400,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // 분홍색 섹션 (100% 폭 + 테두리 겹치기) - 반응형 높이
-            Transform.translate(
-              offset: const Offset(0, -1), // 테두리 겹치기
-              child: Stack(
-                children: [
-                  Container(
-                    width: double.infinity,
-                    height: pinkHeight.clamp(
-                      320.0,
-                      380.0,
-                    ), // 400→320, 460→380으로 줄임 (상하 균일하게)
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFD8F1), // 색상 변경
-                      border: Border.all(color: Colors.black, width: 1),
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          spreadRadius: 0,
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 입력 폼 floating 카드 - 상하 중앙 배치
-                  Positioned(
-                    top: 48, // 56→48로 조정 (상하 여백 균일하게)
-                    left: screenWidth * 0.1, // 반응형 좌우 여백
-                    right: screenWidth * 0.1,
-                    child: _buildInputFormCard(),
-                  ),
-                ],
-              ),
-            ),
-
-            // 오류 메시지
-            if (_validationError != null)
+      body: Stack(
+        children: [
+          // 메인 레이아웃 (intro_screen과 동일한 구조)
+          Column(
+            children: [
+              // 아이보리 섹션 (고정 높이)
               Container(
                 width: double.infinity,
                 color: const Color(0xFFFDF7E9),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ), // 16은 8배수로 유지
-                child: Text(
-                  _validationError!,
-                  style: const TextStyle(
-                    color: Colors.red,
-                    fontSize: 14, // Material 3 Body Small
+                padding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.1, // purpose_screen과 동일
+                  16,
+                  screenWidth * 0.05, // purpose_screen과 동일
+                  32,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
+                  children: [
+                    Text(
+                      '궁금해!\n나는 어떤 사물이야?',
+                      style: TextStyle(
+                        fontFamily: 'Pretendard',
+                        fontSize: screenWidth * 0.06,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 파란 섹션 (고정 높이)
+              Container(
+                width: double.infinity,
+                height: 140, // 고정 높이
+                decoration: BoxDecoration(
+                  color: const Color(0xFF57B3E6),
+                  border: Border.all(color: Colors.black, width: 1),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(25),
+                    bottomRight: Radius.circular(25),
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    // 이름 입력 floating 카드
+                    Positioned(
+                      top: (140 - 56) / 2 - 10,
+                      left: screenWidth * 0.1,
+                      right: screenWidth * 0.1,
+                      child: Column(
+                        children: [
+                          _buildNameInputCard(),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              _showValidationErrors &&
+                                      (!_hasNicknameInput ||
+                                          _nicknameController.text.isEmpty)
+                                  ? '이름을 입력해주세요'
+                                  : '',
+                              style: TextStyle(
+                                fontFamily: 'Pretendard',
+                                color: Colors.red.shade400,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // 분홍 섹션 (Expanded로 남은 공간 활용)
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFD8F1),
+                    border: Border.all(color: Colors.black, width: 1),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.fromLTRB(
+                      screenWidth * 0.1,
+                      48,
+                      screenWidth * 0.1,
+                      20, // 하단 여백
+                    ),
+                    child: _buildInputFormCard(),
+                  ),
+                ),
+              ),
+
+              // 투명한 스페이서 박스 (아이보리와 버튼 사이 간격 유지)
+              Container(height: 15, color: Colors.transparent),
+
+              // 하단 흰색 여백 (버튼 공간 확보)
+              SizedBox(height: MediaQuery.of(context).padding.bottom + 24 + 56),
+            ],
+          ),
+
+          // 플로팅 다음 버튼 (intro_screen과 동일한 위치)
+          Positioned(
+            left: screenWidth * 0.06,
+            right: screenWidth * 0.06,
+            bottom: MediaQuery.of(context).padding.bottom + 24,
+            child: Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                border: Border.all(color: Colors.grey.shade400, width: 1),
+              ),
+              child: ElevatedButton(
+                onPressed: _proceedToNext,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: const Text(
+                  '다음',
+                  style: TextStyle(
+                    fontFamily: 'Pretendard',
+                    color: Colors.black,
+                    fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ),
-
-            // 하단 흰색 배경 - Material 3 최적화
-            Container(
-              width: double.infinity,
-              color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
-              padding: EdgeInsets.fromLTRB(
-                screenWidth * 0.06,
-                24,
-                screenWidth * 0.06,
-                48,
-              ), // 반응형 패딩
-              child: _buildNextButton(),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -337,6 +310,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             Text(
               '애칭',
               style: TextStyle(
+                fontFamily: 'Pretendard',
                 color: Colors.grey.shade600,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -349,6 +323,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                       ? _nicknameController.text
                       : '털찐 말랑이',
                   style: TextStyle(
+                    fontFamily: 'Pretendard',
                     color:
                         _hasNicknameInput && _nicknameController.text.isNotEmpty
                             ? Colors.black
@@ -395,6 +370,26 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
         const SizedBox(height: 8),
         // 사물 종류 입력
         _buildObjectTypeCard(),
+
+        // 오류 메시지 (입력 필드들과 함께 움직임)
+        if (_validationError != null) ...[
+          const SizedBox(height: 2),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Text(
+                _validationError!,
+                style: const TextStyle(
+                  fontFamily: 'Pretendard',
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -424,6 +419,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                             ? _objectTypeController.text
                             : '이 빠진 머그컵',
                         style: TextStyle(
+                          fontFamily: 'Pretendard',
                           color:
                               _hasObjectTypeInput &&
                                       _objectTypeController.text.isNotEmpty
@@ -442,6 +438,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             const Text(
               '(이)에요.',
               style: TextStyle(
+                fontFamily: 'Pretendard',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
@@ -449,7 +446,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
@@ -458,6 +455,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                 ? '입력해주세요'
                 : '',
             style: TextStyle(
+              fontFamily: 'Pretendard',
               color: Colors.red.shade400,
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -508,6 +506,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           Text(
                             selectedValue ?? preview,
                             style: TextStyle(
+                              fontFamily: 'Pretendard',
                               color:
                                   selectedValue != null
                                       ? Colors.black
@@ -532,6 +531,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             Text(
               suffix,
               style: const TextStyle(
+                fontFamily: 'Pretendard',
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 color: Colors.black,
@@ -539,12 +539,13 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerRight,
           child: Text(
             _showValidationErrors && selectedValue == null ? '선택해주세요' : '',
             style: TextStyle(
+              fontFamily: 'Pretendard',
               color: Colors.red.shade400,
               fontSize: 10,
               fontWeight: FontWeight.w400,
@@ -657,6 +658,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           child: Text(
                             option,
                             style: const TextStyle(
+                              fontFamily: 'Pretendard',
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                               color: Colors.black,
@@ -672,39 +674,6 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
           ],
         );
       },
-    );
-  }
-
-  Widget _buildNextButton() {
-    return Container(
-      width: double.infinity,
-      height: 56, // Material 3 표준 높이로 통일
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28), // 높이에 맞는 라운딩
-        border: Border.all(
-          color: Colors.grey.shade400,
-          width: 1,
-        ), // 회색 외곽선으로 변경
-      ),
-      child: ElevatedButton(
-        onPressed: _proceedToNext,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-        ),
-        child: const Text(
-          '다음',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 16, // Material 3 body large로 통일
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
     );
   }
 
@@ -768,6 +737,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                     Text(
                       title,
                       style: TextStyle(
+                        fontFamily: 'Pretendard',
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.grey.shade700,
@@ -792,6 +762,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                         decoration: InputDecoration(
                           hintText: hintText,
                           hintStyle: TextStyle(
+                            fontFamily: 'Pretendard',
                             color: Colors.grey.shade500,
                             fontSize: 18,
                             fontWeight: FontWeight.w400,
@@ -817,6 +788,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                           isDense: true,
                         ),
                         style: const TextStyle(
+                          fontFamily: 'Pretendard',
                           color: Colors.black87,
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -847,6 +819,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                 child: Text(
                                   '취소',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade600,
@@ -882,6 +855,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                                 child: Text(
                                   '확인',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade700,

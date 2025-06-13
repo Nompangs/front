@@ -24,9 +24,9 @@ class _OnboardingPersonalityScreenState
     final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5DC), // 베이지 배경
+      backgroundColor: Colors.white, // 기본 배경만 흰색으로 변경
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5DC),
+        backgroundColor: const Color(0xFFF5F5DC), // 앱바 색상 유지
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -38,7 +38,11 @@ class _OnboardingPersonalityScreenState
                 () => Navigator.pushNamed(context, '/onboarding/completion'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -48,10 +52,10 @@ class _OnboardingPersonalityScreenState
           return SingleChildScrollView(
             child: Column(
               children: [
-                // 상단 베이지 섹션 (이미지만)
+                // 상단 베이지 섹션 (이미지만) - 색상 유지
                 Container(
                   width: double.infinity,
-                  color: const Color(0xFFF5F5DC),
+                  color: const Color(0xFFF5F5DC), // 베이지 섹션 색상 유지
                   padding: const EdgeInsets.only(top: 0, bottom: 10),
                   child: Column(
                     children: [
@@ -92,6 +96,7 @@ class _OnboardingPersonalityScreenState
                                     const Text(
                                       '이미지 로드 실패',
                                       style: TextStyle(
+                                        fontFamily: 'Pretendard',
                                         color: Colors.red,
                                         fontWeight: FontWeight.bold,
                                       ),
@@ -131,13 +136,13 @@ class _OnboardingPersonalityScreenState
                   ),
                 ),
 
-                // 성격 섹션들을 연속적으로 배치
+                // 성격 섹션들을 연속적으로 배치 - 각 섹션 색상 유지
                 Column(
                   children: [
-                    // 내향성 슬라이더 섹션 (노란색)
+                    // 내향성 슬라이더 섹션 (노란색) - 색상 유지
                     _buildPersonalitySection(
                       screenWidth: screenWidth,
-                      color: const Color(0xFFFFD700),
+                      color: const Color(0xFFFFD700), // 노란색 섹션 색상 유지
                       title: '내향성',
                       value: introversionValue,
                       leftLabel: '수줍음',
@@ -151,10 +156,10 @@ class _OnboardingPersonalityScreenState
                       },
                     ),
 
-                    // 감정표현 슬라이더 섹션 (주황색)
+                    // 감정표현 슬라이더 섹션 (주황색) - 색상 유지
                     _buildPersonalitySection(
                       screenWidth: screenWidth,
-                      color: const Color(0xFFFF8C42),
+                      color: const Color(0xFFFF8C42), // 주황색 섹션 색상 유지
                       title: '감정표현',
                       value: emotionalValue,
                       leftLabel: '차가운',
@@ -168,10 +173,10 @@ class _OnboardingPersonalityScreenState
                       },
                     ),
 
-                    // 유능함 슬라이더 섹션 (초록색)
+                    // 유능함 슬라이더 섹션 (초록색) - 색상 유지
                     _buildPersonalitySection(
                       screenWidth: screenWidth,
-                      color: const Color(0xFF90EE90),
+                      color: const Color(0xFF90EE90), // 초록색 섹션 색상 유지
                       title: '유능함',
                       value: competenceValue,
                       leftLabel: '서툰',
@@ -187,10 +192,10 @@ class _OnboardingPersonalityScreenState
                   ],
                 ),
 
-                // 하단 흰색 섹션 (저장 버튼)
+                // 하단 흰색 섹션 (저장 버튼) - 색상 유지
                 Container(
                   width: double.infinity,
-                  color: Colors.white,
+                  color: Colors.white, // 하단 섹션 색상 유지
                   padding: EdgeInsets.fromLTRB(
                     screenWidth * 0.06,
                     24,
@@ -226,6 +231,7 @@ class _OnboardingPersonalityScreenState
                       child: const Text(
                         '성격 저장하기',
                         style: TextStyle(
+                          fontFamily: 'Pretendard',
                           color: Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
@@ -255,7 +261,7 @@ class _OnboardingPersonalityScreenState
       width: double.infinity,
       height: 110,
       decoration: BoxDecoration(
-        color: color,
+        color: color, // 각 섹션의 고유 색상 유지
         border: Border.all(color: Colors.black, width: 1),
         borderRadius: BorderRadius.circular(25),
       ),
@@ -268,6 +274,7 @@ class _OnboardingPersonalityScreenState
               child: Text(
                 title,
                 style: const TextStyle(
+                  fontFamily: 'Pretendard',
                   fontSize: 16,
                   fontWeight: FontWeight.w300,
                   color: Colors.black,
@@ -309,6 +316,7 @@ class _OnboardingPersonalityScreenState
                   Text(
                     leftLabel,
                     style: const TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 11,
                       fontWeight: FontWeight.w200,
                       color: Colors.black87,
@@ -317,6 +325,7 @@ class _OnboardingPersonalityScreenState
                   Text(
                     rightLabel,
                     style: const TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 11,
                       fontWeight: FontWeight.w200,
                       color: Colors.black87,

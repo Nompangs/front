@@ -110,6 +110,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                   Text(
                     '카메라 권한 허용',
                     style: TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                       color: Colors.grey.shade700,
@@ -119,6 +120,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                   const Text(
                     'A dialog is a type of modal window that appears in front of app content to provide critical information, or prompt for a decision to be made.',
                     style: TextStyle(
+                      fontFamily: 'Pretendard',
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
                       color: Colors.black87,
@@ -153,6 +155,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                                 child: Text(
                                   '허용하지 않음',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade600,
@@ -192,6 +195,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                                 child: Text(
                                   '허용',
                                   style: TextStyle(
+                                    fontFamily: 'Pretendard',
                                     fontSize: 14,
                                     fontWeight: FontWeight.w200,
                                     color: Colors.grey.shade700,
@@ -257,10 +261,11 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
     final yellowHeight = screenHeight * 0.5; // 노란색 섹션 높이 더 크게
 
     return Scaffold(
+      backgroundColor: Colors.white, // 기본 배경만 흰색으로 변경
       resizeToAvoidBottomInset: true,
-      // AppBar - onboarding_purpose_screen.dart와 동일
+      // AppBar - onboarding_purpose_screen.dart와 동일 (색상 유지)
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFDF7E9),
+        backgroundColor: const Color(0xFFFDF7E9), // 앱바 색상 유지
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black),
@@ -271,7 +276,11 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
             onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
             child: const Text(
               '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+              style: TextStyle(
+                fontFamily: 'Pretendard',
+                color: Colors.grey,
+                fontSize: 16,
+              ),
             ),
           ),
         ],
@@ -279,10 +288,10 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 아이보리 섹션 (제목)
+            // 아이보리 섹션 (제목) - 색상 유지
             Container(
               width: double.infinity,
-              color: const Color(0xFFFDF7E9),
+              color: const Color(0xFFFDF7E9), // 섹션 색상 유지
               padding: EdgeInsets.fromLTRB(
                 screenWidth * 0.1,
                 32,
@@ -292,6 +301,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
               child: const Text(
                 '사진을 찍으면\n내가 깨어날 수 있어.',
                 style: TextStyle(
+                  fontFamily: 'Pretendard',
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
@@ -300,12 +310,12 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
               ),
             ),
 
-            // 노란색 섹션 (이미지 영역)
+            // 노란색 섹션 (이미지 영역) - 색상 유지
             Container(
               width: double.infinity,
               height: yellowHeight.clamp(350.0, 450.0), // 높이 더 크게
               decoration: BoxDecoration(
-                color: const Color(0xFFFFD54F), // 노란색
+                color: const Color(0xFFFFD54F), // 노란색 섹션 색상 유지
                 border: Border.all(color: Colors.black, width: 1),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(25),
@@ -336,6 +346,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                       child: Text(
                         '탄생일 ${DateTime.now().year} - ${DateTime.now().month.toString().padLeft(2, '0')} - ${DateTime.now().day.toString().padLeft(2, '0')}',
                         style: const TextStyle(
+                          fontFamily: 'Pretendard',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: Colors.black87,
@@ -465,6 +476,8 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                                                     Text(
                                                       '카메라 활성화',
                                                       style: TextStyle(
+                                                        fontFamily:
+                                                            'Pretendard',
                                                         fontSize: 12,
                                                         fontWeight:
                                                             FontWeight.w500,
@@ -497,7 +510,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
             if (_validationError != null)
               Container(
                 width: double.infinity,
-                color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
+                color: Colors.white, // 하단 배경은 흰색
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 16,
@@ -505,6 +518,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                 child: Text(
                   _validationError!,
                   style: const TextStyle(
+                    fontFamily: 'Pretendard',
                     color: Colors.red,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -515,7 +529,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
             // 하단 흰색 배경
             Container(
               width: double.infinity,
-              color: Colors.white, // Color(0xFFFDF7E9)에서 Colors.white로 변경
+              color: Colors.white, // 하단 배경은 흰색
               padding: EdgeInsets.fromLTRB(
                 screenWidth * 0.06,
                 32, // 상단 패딩 늘리기
@@ -560,6 +574,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                               child: const Text(
                                 '이미지 업로드',
                                 style: TextStyle(
+                                  fontFamily: 'Pretendard',
                                   color: Colors.black,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -602,6 +617,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                               child: const Text(
                                 '카메라 촬영',
                                 style: TextStyle(
+                                  fontFamily: 'Pretendard',
                                   color: Colors.black,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
@@ -641,6 +657,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                         child: const Text(
                           '흔들어 깨우기',
                           style: TextStyle(
+                            fontFamily: 'Pretendard',
                             color: Colors.black,
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
