@@ -36,7 +36,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   String? _qrUuid;
   bool _creatingQr = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -123,18 +122,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         'contradictions': profile.contradictions,
         'communicationStyle': profile.communicationStyle,
         'structuredPrompt': profile.structuredPrompt,
-      }
+      },
     };
     try {
       final result = await CharacterManager.instance.saveCharacterForQR(data);
       final uuid = result['uuid'] as String;
       final message = result['message'] as String?;
-      
+
       // 🎯 간소화 정보 로깅
       if (message != null) {
         print('✅ $message');
       }
-      
+
       if (mounted) {
         setState(() {
           _qrUuid = uuid;
@@ -230,7 +229,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 child: Center(
                                   // 전체를 중앙 정렬
                                   child: Column(
-                                    mainAxisSize: MainAxisSize.min, // 최소 크기로 설정
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
@@ -239,14 +239,16 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
                                         style: TextStyle(
                                           fontFamily: 'Pretendard',
-                                          fontSize: 16, // 16에서 18로 증가
+                                          fontSize: 18, // 16에서 18로 증가
                                           fontWeight: FontWeight.w600,
                                           color: Colors.black,
                                         ),
                                         maxLines: 2,
                                       ),
 
-                                      const SizedBox(height: 2), // 8에서 4로 더 줄임
+                                      const SizedBox(
+                                        height: 4,
+                                      ), // 텍스트와 버튼 사이 아주 살짝 띄움
                                       // 저장하기, 공유하기 버튼
                                       Row(
                                         children: [
