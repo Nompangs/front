@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class ChatSettingScreen extends StatelessWidget {
-  const ChatSettingScreen({Key? key}) : super(key: key);
+  const ChatSettingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

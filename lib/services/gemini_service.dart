@@ -108,6 +108,6 @@ class GeminiService {
       오늘 날짜는 $todayDate 이야.
       """;
     }
-    return personaPrompt + "\n\n[대화 시작]\n사용자: $inputText\n너:";
+    return "$personaPrompt\n\n[대화 시작]\n사용자: $inputText\n너:";
   }
 }

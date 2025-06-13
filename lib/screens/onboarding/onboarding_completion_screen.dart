@@ -2,11 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:cross_file/cross_file.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
-import 'package:nompangs/widgets/common/primary_button.dart';
-import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
 import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
@@ -20,7 +17,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/character_manager.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
-  const OnboardingCompletionScreen({Key? key}) : super(key: key);
+  const OnboardingCompletionScreen({super.key});
 
   @override
   State<OnboardingCompletionScreen> createState() =>

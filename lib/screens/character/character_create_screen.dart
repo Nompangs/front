@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:nompangs/screens/character/character_complete_screen.dart';
 
 class CharacterCreateScreen extends StatefulWidget {
+  const CharacterCreateScreen({super.key});
+
   @override
   _CharacterCreateScreenState createState() => _CharacterCreateScreenState();
 }
@@ -10,7 +12,7 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _tagController = TextEditingController();
-  List<String> _personalityTags = [];
+  final List<String> _personalityTags = [];
 
   @override
   void dispose() {

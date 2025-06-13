@@ -5,7 +5,7 @@ import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 
 class ChatTextScreen extends StatelessWidget {
-  const ChatTextScreen({Key? key}) : super(key: key);
+  const ChatTextScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -121,10 +121,9 @@ class _TopNavigationBar extends StatelessWidget {
   final String characterHandle;
 
   const _TopNavigationBar({
-    Key? key,
     required this.characterName,
     required this.characterHandle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -221,11 +220,10 @@ class _ProfileCard extends StatelessWidget {
   final List<String> personalityTags;
 
   const _ProfileCard({
-    Key? key,
     required this.characterName,
     required this.characterHandle,
     required this.personalityTags,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -357,10 +355,9 @@ class _ChatBubble extends StatelessWidget {
   final bool isUser;
 
   const _ChatBubble({
-    Key? key,
     required this.text,
     required this.isUser,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -403,11 +400,10 @@ class _ChatInputBar extends StatefulWidget {
   final VoidCallback onSpeakerModePressed;
 
   const _ChatInputBar({
-    Key? key,
     required this.controller,
     required this.onSend,
     required this.onSpeakerModePressed,
-  }) : super(key: key);
+  });
 
   @override
   State<_ChatInputBar> createState() => _ChatInputBarState();
