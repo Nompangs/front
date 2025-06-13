@@ -10,14 +10,14 @@ class PersonalityChart extends StatefulWidget {
   final double reliability;
 
   const PersonalityChart({
-    Key? key,
+    super.key,
     required this.warmth,
     required this.competence,
     required this.extroversion,
     this.creativity = 50,
     this.humour = 75,
     this.reliability = 50,
-  }) : super(key: key);
+  });
 
   @override
   State<PersonalityChart> createState() => _PersonalityChartState();
@@ -64,7 +64,7 @@ class _PersonalityChartState extends State<PersonalityChart> {
               onTapDown: (details) {
                 _handleChartTap(details.localPosition, values, labels);
               },
-              child: Container(
+              child: SizedBox(
                 height: 280,
                 width: 280,
                 child: CustomPaint(

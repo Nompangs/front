@@ -5,7 +5,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 
 /// 온보딩 사물 정보 입력 화면
 class OnboardingInputScreen extends StatefulWidget {
-  const OnboardingInputScreen({Key? key}) : super(key: key);
+  const OnboardingInputScreen({super.key});
 
   @override
   State<OnboardingInputScreen> createState() => _OnboardingInputScreenState();

@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'package:permission_handler/permission_handler.dart';
 
 class ChatSpeakerScreen extends StatefulWidget {
-  const ChatSpeakerScreen({Key? key}) : super(key: key);
+  const ChatSpeakerScreen({super.key});
 
   @override
   State<ChatSpeakerScreen> createState() => _ChatSpeakerScreenState();
@@ -156,7 +155,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
 
 class WhiteEqualizerBars extends StatefulWidget {
   final double soundLevel;
-  const WhiteEqualizerBars({Key? key, required this.soundLevel}) : super(key: key);
+  const WhiteEqualizerBars({super.key, required this.soundLevel});
 
   @override
   _WhiteEqualizerBarsState createState() => _WhiteEqualizerBarsState();

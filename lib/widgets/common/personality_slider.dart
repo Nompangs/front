@@ -9,14 +9,14 @@ class PersonalitySlider extends StatelessWidget {
   final String rightLabel;
 
   const PersonalitySlider({
-    Key? key,
+    super.key,
     required this.label,
     required this.color,
     required this.value,
     required this.onChanged,
     required this.leftLabel,
     required this.rightLabel,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -5,7 +5,7 @@ import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/helpers/deeplink_helper.dart';
 
 class QRScannerScreen extends StatefulWidget {
-  const QRScannerScreen({Key? key}) : super(key: key);
+  const QRScannerScreen({super.key});
 
   @override
   _QRScannerScreenState createState() => _QRScannerScreenState();

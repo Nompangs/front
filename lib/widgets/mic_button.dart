@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:nompangs/services/speech_service.dart';
 import 'package:nompangs/services/gemini_service.dart';
-import 'dart:convert';
 
 class MicButton extends StatefulWidget {
   final Function(String) onSpeechResult;
   final Function(Map<String, dynamic>) onEventDetected; // 일정 감지 시 콜백 추가
 
-  MicButton({required this.onSpeechResult, required this.onEventDetected});
+  const MicButton({super.key, required this.onSpeechResult, required this.onEventDetected});
 
   @override
   _MicButtonState createState() => _MicButtonState();

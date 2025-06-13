@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
+import 'dart:async';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Momenti App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Pretendard',
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Pretendard'),
       home: MainScreen(),
       debugShowCheckedModeBanner: false,
     );
@@ -21,6 +21,8 @@ class MyApp extends StatelessWidget {
 }
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -29,7 +31,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String selectedFilter = "전체";
   final List<String> filterOptions = ["전체", "내 방", "우리집 안방", "사무실", "단골 카페"];
   int? selectedCardIndex;
-  
+
   AnimationController? _morphController1;
   AnimationController? _morphController2;
   AnimationController? _morphController3;
@@ -46,19 +48,35 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       location: "내 방",
       duration: "42 min",
       isNew: true,
-      imageUrl: "https://images.pexels.com/photos/343871/pexels-photo-343871.jpeg",
+      imageUrl: "assets/testImg_1.png",
     ),
     ObjectData(
       title: "제임쓰 카페인쓰",
       location: "사무실",
       duration: "5 min",
-      imageUrl: "https://images.pexels.com/photos/17486823/pexels-photo-17486823.jpeg",
+      imageUrl: "assets/testImg_2.png",
     ),
     ObjectData(
       title: "빈백",
       location: "우리집 안방",
       duration: "139 min",
-      imageUrl: "https://images.pexels.com/photos/32372040/pexels-photo-32372040.png",
+      imageUrl: "assets/testImg_3.png",
+    ),
+    // 테스트 카드 1
+    ObjectData(
+      title: "테스트 소파",
+      location: "단골 카페",
+      duration: "12 min",
+      isNew: false,
+      imageUrl: "assets/testImg_4.png",
+    ),
+    // 테스트 카드 2
+    ObjectData(
+      title: "테스트 램프",
+      location: "내 방",
+      duration: "88 min",
+      isNew: true,
+      imageUrl: "assets/testImg_5.png",
     ),
   ];
 
@@ -66,14 +84,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     if (selectedFilter == "전체") {
       return objectData;
     } else {
-      return objectData.where((data) => data.location == selectedFilter).toList();
+      return objectData
+          .where((data) => data.location == selectedFilter)
+          .toList();
     }
   }
 
   @override
   void initState() {
     super.initState();
-    
+
     // 각 버튼별 애니메이션 컨트롤러 초기화
     _morphController1 = AnimationController(
       duration: Duration(milliseconds: 2000),
@@ -87,32 +107,32 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       duration: Duration(milliseconds: 2100),
       vsync: this,
     );
-    
+
     // 스케일 애니메이션 (크기 변화)
     if (_morphController1 != null) {
       _scaleAnimation1 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
       );
       _shapeAnimation1 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
       );
     }
-    
+
     if (_morphController2 != null) {
       _scaleAnimation2 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
       );
       _shapeAnimation2 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
       );
     }
-    
+
     if (_morphController3 != null) {
       _scaleAnimation3 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
       );
       _shapeAnimation3 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut)
+        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
       );
     }
   }
@@ -160,98 +180,117 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         child: Stack(
           children: [
             Column(
-            children: [
-              // Header with cream background (높이 240)
-              Container(
-                width: double.infinity,
-                height: 230 * scale,
-                color: const Color.fromRGBO(253, 247, 233, 1),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child:                       Padding(
-                        padding: EdgeInsets.only(left: 24 * scale, top: 105 * scale, bottom: 32 * scale, right: 8 * scale),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                                                      Text(
-                            '오늘, ' + _getTodayString(),
-                            style: TextStyle(
-                              color: Color(0xFF666666),
-                              fontSize: 12 * scale,
-                              fontWeight: FontWeight.w400,
-                            ),
+              children: [
+                // Header with cream background (높이 240)
+                Container(
+                  width: double.infinity,
+                  height: 230 * scale,
+                  color: const Color.fromRGBO(253, 247, 233, 1),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Padding(
+                          padding: EdgeInsets.only(
+                            left: 24 * scale,
+                            top: 105 * scale,
+                            bottom: 32 * scale,
+                            right: 8 * scale,
                           ),
-                          SizedBox(height: 12 * scale),
-                          Text(
-                            '안녕하세요, 씅님',
-                            style: TextStyle(
-                              color: Color(0xFF222222),
-                              fontSize: 30 * scale,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                '오늘, ${_getTodayString()}',
+                                style: TextStyle(
+                                  color: Color(0xFF666666),
+                                  fontSize: 12 * scale,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                              SizedBox(height: 12 * scale),
+                              Text(
+                                '안녕하세요, 씅님',
+                                style: TextStyle(
+                                  color: Color(0xFF222222),
+                                  fontSize: 30 * scale,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              SizedBox(height: 2 * scale),
+                              Text(
+                                '오늘은 누구랑 대화할까요?',
+                                style: TextStyle(
+                                  color: Color(0xFF666666),
+                                  fontSize: 20 * scale,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(height: 2 * scale),
-                          Text(
-                            '오늘은 누구랑 대화할까요?',
-                            style: TextStyle(
-                              color: Color(0xFF666666),
-                              fontSize: 20 * scale,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                          ],
                         ),
                       ),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.only(top: 60 * scale, right: 32 * scale),
-                                              child: Container(
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: 60 * scale,
+                          right: 32 * scale,
+                        ),
+                        child: Container(
                           width: 48 * scale,
                           height: 48 * scale,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(24 * scale),
-                            border: Border.all(color: Colors.white, width: 2 * scale),
+                            border: Border.all(
+                              color: Colors.white,
+                              width: 2 * scale,
+                            ),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22 * scale),
                             child: Image.asset(
-                              'assets/images/profile_placeholder.png',
+                              'assets/profile.png',
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [Colors.blue[400]!, Colors.green[400]!, const Color(0xFFFFEE58)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
+                              errorBuilder:
+                                  (context, error, stackTrace) => Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Colors.blue[400]!,
+                                          Colors.green[400]!,
+                                          const Color(0xFFFFEE58),
+                                        ],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                    ),
+                                    child: Center(
+                                      child: Icon(
+                                        Icons.person,
+                                        color: Colors.white,
+                                        size: 24 * scale,
+                                      ),
+                                    ),
                                   ),
-                                ),
-                                child: Center(
-                                  child: Icon(Icons.person, color: Colors.white, size: 24 * scale),
-                                ),
-                              ),
                             ),
                           ),
                         ),
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-                
+
                 // 파랑/핑크/초록 타원 버튼 영역 - 화면 정중앙에 배치
                 Container(
                   width: double.infinity,
                   height: 215 * scale,
                   //margin: EdgeInsets.only(bottom: 10 * scale),
                   color: const Color.fromARGB(255, 0, 0, 0),
-                    child: Transform.translate(
-                      offset: Offset(10 * scale, 15 * scale),
-                      child: Center(
-                        child: Builder(
-                          builder: (context) {
+                  child: Transform.translate(
+                    offset: Offset(10 * scale, 15 * scale),
+                    child: Center(
+                      child: Builder(
+                        builder: (context) {
                           final overlap = 15 * scale;
                           final buttonWidth = 125 * scale;
                           final buttonHeight = 190 * scale;
@@ -261,7 +300,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             children: [
                               // 첫 번째 버튼 (파랑)
                               AnimatedBuilder(
-                                animation: Listenable.merge([_scaleAnimation1, _shapeAnimation1].whereType<Listenable>().toList()),
+                                animation: Listenable.merge(
+                                  [
+                                    _scaleAnimation1,
+                                    _shapeAnimation1,
+                                  ].whereType<Listenable>().toList(),
+                                ),
                                 builder: (context, child) {
                                   return GestureDetector(
                                     onTap: _playAnimation1,
@@ -270,14 +314,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                       child: Transform.rotate(
                                         angle: 40 * 3.141592 / 180,
                                         child: ClipPath(
-                                          clipper: MorphingEllipseClipper(_shapeAnimation1?.value ?? 1.0),
+                                          clipper: MorphingEllipseClipper(
+                                            _shapeAnimation1?.value ?? 1.0,
+                                          ),
                                           child: Material(
-                                            color: Color.fromRGBO(87, 179, 230, 1),
+                                            color: Color.fromRGBO(
+                                              87,
+                                              179,
+                                              230,
+                                              1,
+                                            ),
                                             child: InkWell(
                                               onTap: _playAnimation1,
-                                              splashColor: Colors.white.withOpacity(0.3),
-                                              highlightColor: Colors.white.withOpacity(0.1),
-                                              child: Container(
+                                              splashColor: Colors.white
+                                                  .withOpacity(0.3),
+                                              highlightColor: Colors.white
+                                                  .withOpacity(0.1),
+                                              child: SizedBox(
                                                 width: buttonWidth,
                                                 height: buttonHeight,
                                                 child: Align(
@@ -289,7 +342,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                       style: TextStyle(
                                                         color: Colors.black,
                                                         fontSize: 16 * scale,
-                                                        fontWeight: FontWeight.bold,
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                       ),
                                                       textAlign: TextAlign.left,
                                                     ),
@@ -308,7 +362,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               Transform.translate(
                                 offset: Offset(-overlap, 0),
                                 child: AnimatedBuilder(
-                                  animation: Listenable.merge([_scaleAnimation2, _shapeAnimation2].whereType<Listenable>().toList()),
+                                  animation: Listenable.merge(
+                                    [
+                                      _scaleAnimation2,
+                                      _shapeAnimation2,
+                                    ].whereType<Listenable>().toList(),
+                                  ),
                                   builder: (context, child) {
                                     return GestureDetector(
                                       onTap: _playAnimation2,
@@ -317,28 +376,43 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         child: Transform.rotate(
                                           angle: 40 * 3.141592 / 180,
                                           child: ClipPath(
-                                            clipper: MorphingEllipseClipper(_shapeAnimation2?.value ?? 1.0),
+                                            clipper: MorphingEllipseClipper(
+                                              _shapeAnimation2?.value ?? 1.0,
+                                            ),
                                             child: Material(
-                                              color: Color.fromRGBO(255, 216, 241, 1),
+                                              color: Color.fromRGBO(
+                                                255,
+                                                216,
+                                                241,
+                                                1,
+                                              ),
                                               child: InkWell(
                                                 onTap: _playAnimation2,
-                                                splashColor: Colors.white.withOpacity(0.3),
-                                                highlightColor: Colors.white.withOpacity(0.1),
-                                                child: Container(
+                                                splashColor: Colors.white
+                                                    .withOpacity(0.3),
+                                                highlightColor: Colors.white
+                                                    .withOpacity(0.1),
+                                                child: SizedBox(
                                                   width: buttonWidth,
                                                   height: buttonHeight,
                                                   child: Align(
-                                                    alignment: Alignment(0, 0.8),
+                                                    alignment: Alignment(
+                                                      0,
+                                                      0.8,
+                                                    ),
                                                     child: Transform.rotate(
-                                                      angle: -40 * 3.141592 / 180,
+                                                      angle:
+                                                          -40 * 3.141592 / 180,
                                                       child: Text(
                                                         '새로운\n모멘티\n깨우기\n',
                                                         style: TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16 * scale,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                        textAlign: TextAlign.left,
+                                                        textAlign:
+                                                            TextAlign.left,
                                                       ),
                                                     ),
                                                   ),
@@ -356,7 +430,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               Transform.translate(
                                 offset: Offset(-overlap, 0),
                                 child: AnimatedBuilder(
-                                  animation: Listenable.merge([_scaleAnimation3, _shapeAnimation3].whereType<Listenable>().toList()),
+                                  animation: Listenable.merge(
+                                    [
+                                      _scaleAnimation3,
+                                      _shapeAnimation3,
+                                    ].whereType<Listenable>().toList(),
+                                  ),
                                   builder: (context, child) {
                                     return GestureDetector(
                                       onTap: _playAnimation3,
@@ -365,28 +444,43 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                         child: Transform.rotate(
                                           angle: 40 * 3.141592 / 180,
                                           child: ClipPath(
-                                            clipper: MorphingEllipseClipper(_shapeAnimation3?.value ?? 1.0),
+                                            clipper: MorphingEllipseClipper(
+                                              _shapeAnimation3?.value ?? 1.0,
+                                            ),
                                             child: Material(
-                                              color: Color.fromRGBO(63, 203, 128, 1),
+                                              color: Color.fromRGBO(
+                                                63,
+                                                203,
+                                                128,
+                                                1,
+                                              ),
                                               child: InkWell(
                                                 onTap: _playAnimation3,
-                                                splashColor: Colors.white.withOpacity(0.3),
-                                                highlightColor: Colors.white.withOpacity(0.1),
-                                                child: Container(
+                                                splashColor: Colors.white
+                                                    .withOpacity(0.3),
+                                                highlightColor: Colors.white
+                                                    .withOpacity(0.1),
+                                                child: SizedBox(
                                                   width: buttonWidth,
                                                   height: buttonHeight,
                                                   child: Align(
-                                                    alignment: Alignment(0, 0.8),
+                                                    alignment: Alignment(
+                                                      0,
+                                                      0.8,
+                                                    ),
                                                     child: Transform.rotate(
-                                                      angle: -40 * 3.141592 / 180,
+                                                      angle:
+                                                          -40 * 3.141592 / 180,
                                                       child: Text(
                                                         '내주변\n모멘티\n탐색\n',
                                                         style: TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16 * scale,
-                                                          fontWeight: FontWeight.bold,
+                                                          fontWeight:
+                                                              FontWeight.bold,
                                                         ),
-                                                        textAlign: TextAlign.left,
+                                                        textAlign:
+                                                            TextAlign.left,
                                                       ),
                                                     ),
                                                   ),
@@ -403,11 +497,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             ],
                           );
                         },
-                        ),
                       ),
                     ),
+                  ),
                 ),
-                
+
                 // Black section with filters (타원 영역과 바로 붙임)
                 Container(
                   width: double.infinity,
@@ -417,23 +511,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     scrollDirection: Axis.horizontal,
                     padding: EdgeInsets.symmetric(horizontal: 5 * scale),
                     child: Row(
-                      children: filterOptions.map((filter) => 
-                        FilterChip(
-                          label: filter,
-                          selected: selectedFilter == filter,
-                          onTap: () => setState(() => selectedFilter = filter),
-                          scale: scale,
-                        )
-                      ).toList(),
+                      children:
+                          filterOptions
+                              .map(
+                                (filter) => FilterChip(
+                                  label: filter,
+                                  selected: selectedFilter == filter,
+                                  onTap:
+                                      () => setState(
+                                        () => selectedFilter = filter,
+                                      ),
+                                  scale: scale,
+                                ),
+                              )
+                              .toList(),
                     ),
                   ),
                 ),
-                
+
                 // Cards section - 남은 공간을 모두 차지
                 Expanded(
                   child: Container(
                     color: Colors.white,
-                    padding: EdgeInsets.fromLTRB(16 * scale, 21 * scale, 16 * scale, 8 * scale),
+                    padding: EdgeInsets.fromLTRB(
+                      16 * scale,
+                      21 * scale,
+                      16 * scale,
+                      8 * scale,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -476,19 +581,25 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: filteredObjectData.length,
-                            separatorBuilder: (context, index) => SizedBox(width: 12 * scale),
-                            itemBuilder: (context, index) => GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  selectedCardIndex = selectedCardIndex == index ? null : index;
-                                });
-                              },
-                              child: ObjectCard(
-                                data: filteredObjectData[index],
-                                scale: scale,
-                                isSelected: selectedCardIndex == index,
-                              ),
-                            ),
+                            separatorBuilder:
+                                (context, index) => SizedBox(width: 12 * scale),
+                            itemBuilder:
+                                (context, index) => GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedCardIndex =
+                                          selectedCardIndex == index
+                                              ? null
+                                              : index;
+                                    });
+                                  },
+                                  child: ObjectCard(
+                                    data: filteredObjectData[index],
+                                    scale: scale,
+                                    isSelected: selectedCardIndex == index,
+                                    index: index,
+                                  ),
+                                ),
                           ),
                         ),
                       ],
@@ -497,18 +608,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 ),
               ],
             ),
-            
+
             // Float된 노란색 알림바 (최상단 레이어)
             Positioned(
               top: 210 * scale,
               left: 20 * scale,
               right: 20 * scale,
-                child: Container(
-                  height: 44 * scale,
-                  decoration: BoxDecoration(
-                    color: Color.fromRGBO(255, 207, 0, 1),
-                    borderRadius: BorderRadius.circular(40 * scale),
-                    border: Border.all(color: Colors.black),
+              child: Container(
+                height: 44 * scale,
+                decoration: BoxDecoration(
+                  color: Color.fromRGBO(255, 207, 0, 1),
+                  borderRadius: BorderRadius.circular(40 * scale),
+                  border: Border.all(color: Colors.black),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -516,12 +627,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       offset: Offset(0, 2),
                     ),
                   ],
-                  ),
-                  child: Row(
-                    children: [
-                      SizedBox(width: 40 * scale),
-                      Expanded(
-                        child:                       RichText(
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(width: 40 * scale),
+                    Expanded(
+                      child: RichText(
                         text: TextSpan(
                           style: TextStyle(
                             color: Colors.black,
@@ -539,26 +650,22 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
+                    ),
+                    Container(
+                      width: 54 * scale,
+                      height: 54 * scale,
+                      margin: EdgeInsets.only(right: 1 * scale),
+                      child: Image.asset(
+                        'assets/ui_assets/btn_quickchat.png',
+                        width: 54 * scale,
+                        height: 54 * scale,
+                        fit: BoxFit.contain,
                       ),
-                      Container(
-                        width: 45 * scale,
-                        height: 44 * scale,
-                        margin: EdgeInsets.only(right: 1 * scale),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22 * scale),
-                        ),
-                        child: Center(
-                          child: Transform.rotate(
-                            angle: -0.785398, // -45 degrees
-                            child: Icon(Icons.arrow_upward, size: 16 * scale, color: Colors.black),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
           ],
         ),
       ),
@@ -578,12 +685,12 @@ class FilterChip extends StatelessWidget {
   final double scale;
 
   const FilterChip({
-    Key? key,
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
     this.scale = 1.0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -592,7 +699,10 @@ class FilterChip extends StatelessWidget {
       child: Container(
         height: 32 * scale,
         margin: EdgeInsets.symmetric(horizontal: 2 * scale),
-        padding: EdgeInsets.symmetric(horizontal: 16 * scale, vertical: 6 * scale),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16 * scale,
+          vertical: 6 * scale,
+        ),
         decoration: BoxDecoration(
           color: selected ? Colors.white : Colors.transparent,
           border: Border.all(color: Colors.white),
@@ -624,41 +734,40 @@ class ObjectCard extends StatelessWidget {
   final ObjectData data;
   final double scale;
   final bool isSelected;
+  final int index;
 
-  const ObjectCard({Key? key, required this.data, this.scale = 1.0, this.isSelected = false}) : super(key: key);
+  const ObjectCard({
+    super.key,
+    required this.data,
+    this.scale = 1.0,
+    this.isSelected = false,
+    required this.index,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final maskPath = 'assets/ui_assets/cardShape_${(index % 3) + 1}.png';
+
+    return SizedBox(
       width: 130 * scale,
       height: 220 * scale,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Custom shaped image container
-          Container(
+          SizedBox(
             width: 130 * scale,
             height: 130 * scale,
-            decoration: BoxDecoration(
-              border: isSelected ? Border.all(color: Colors.black, width: 1) : null,
-            ),
-            child: ClipPath(
-              clipper: CustomShapeClipper(),
-              child: data.imageUrl != null
-                  ? Image.network(
-                      data.imageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Color(0xFFF7F7F7),
-                      ),
-                    )
-                  : Container(color: Color(0xFFF7F7F7)),
+            child: MaskedImage(
+              image: AssetImage(data.imageUrl!),
+              mask: AssetImage(maskPath),
+              width: 130 * scale,
+              height: 130 * scale,
             ),
           ),
-          
+
           SizedBox(height: 12 * scale),
-          
+
           // Location
           Text(
             data.location,
@@ -669,9 +778,9 @@ class ObjectCard extends StatelessWidget {
             ),
             overflow: TextOverflow.ellipsis,
           ),
-          
+
           SizedBox(height: 2 * scale),
-          
+
           // Title and NEW badge
           Row(
             children: [
@@ -689,11 +798,17 @@ class ObjectCard extends StatelessWidget {
               if (data.isNew) ...[
                 SizedBox(width: 8 * scale),
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 3 * scale, vertical: 2 * scale),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 3 * scale,
+                    vertical: 2 * scale,
+                  ),
                   decoration: BoxDecoration(
                     color: Color.fromRGBO(255, 207, 0, 1),
                     borderRadius: BorderRadius.circular(2 * scale),
-                    border: Border.all(color: Color(0xFFE0E0E0), width: 0.4 * scale),
+                    border: Border.all(
+                      color: Color(0xFFE0E0E0),
+                      width: 0.4 * scale,
+                    ),
                   ),
                   child: Text(
                     'NEW',
@@ -707,15 +822,15 @@ class ObjectCard extends StatelessWidget {
               ],
             ],
           ),
-          
+
           SizedBox(height: 2 * scale),
-          
+
           // Duration
           RichText(
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: data.duration.split(' ')[0] + ' ',
+                  text: '${data.duration.split(' ')[0]} ',
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 16 * scale,
@@ -724,10 +839,7 @@ class ObjectCard extends StatelessWidget {
                 ),
                 TextSpan(
                   text: data.duration.split(' ')[1],
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 12 * scale,
-                  ),
+                  style: TextStyle(color: Colors.black, fontSize: 12 * scale),
                 ),
               ],
             ),
@@ -739,15 +851,95 @@ class ObjectCard extends StatelessWidget {
   }
 }
 
+class MaskedImage extends StatefulWidget {
+  final ImageProvider image;
+  final ImageProvider mask;
+  final double width;
+  final double height;
+
+  const MaskedImage({
+    super.key,
+    required this.image,
+    required this.mask,
+    this.width = 130,
+    this.height = 130,
+  });
+
+  @override
+  State<MaskedImage> createState() => _MaskedImageState();
+}
+
+class _MaskedImageState extends State<MaskedImage> {
+  ui.Image? maskImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMask();
+  }
+
+  Future<void> _loadMask() async {
+    final completer = Completer<ui.Image>();
+    final stream = widget.mask.resolve(const ImageConfiguration());
+    final listener = ImageStreamListener((info, _) {
+      completer.complete(info.image);
+    });
+    stream.addListener(listener);
+    final image = await completer.future;
+    stream.removeListener(listener);
+
+    setState(() {
+      maskImage = image;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (maskImage == null) {
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: Container(color: Colors.grey[200]),
+      );
+    }
+    // 마스크 이미지를 카드 크기에 맞게 스케일링
+    final double scaleX = widget.width / maskImage!.width;
+    final double scaleY = widget.height / maskImage!.height;
+    final Matrix4 matrix = Matrix4.identity()..scale(scaleX, scaleY);
+
+    return SizedBox(
+      width: widget.width,
+      height: widget.height,
+      child: ShaderMask(
+        shaderCallback: (Rect bounds) {
+          return ImageShader(
+            maskImage!,
+            TileMode.clamp,
+            TileMode.clamp,
+            matrix.storage,
+          );
+        },
+        blendMode: BlendMode.dstIn,
+        child: Image(
+          image: widget.image,
+          width: widget.width,
+          height: widget.height,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+}
+
 class CustomShapeClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
     Path path = Path();
-    
+
     // Create a rounded diamond-like shape
     double width = size.width;
     double height = size.height;
-    
+
     path.moveTo(width * 0.5, 0);
     path.quadraticBezierTo(width * 0.85, height * 0.15, width, height * 0.3);
     path.quadraticBezierTo(width * 0.85, height * 0.5, width, height * 0.7);
@@ -755,7 +947,7 @@ class CustomShapeClipper extends CustomClipper<Path> {
     path.quadraticBezierTo(width * 0.15, height * 0.85, 0, height * 0.7);
     path.quadraticBezierTo(width * 0.15, height * 0.5, 0, height * 0.3);
     path.quadraticBezierTo(width * 0.15, height * 0.15, width * 0.5, 0);
-    
+
     return path;
   }
 
@@ -765,29 +957,31 @@ class CustomShapeClipper extends CustomClipper<Path> {
 
 class MorphingEllipseClipper extends CustomClipper<Path> {
   final double morphValue;
-  
+
   MorphingEllipseClipper(this.morphValue);
-  
+
   @override
   Path getClip(Size size) {
     Path path = Path();
-    
+
     double width = size.width;
     double height = size.height;
     double centerX = width / 2;
     double centerY = height / 2;
-    
+
     // morphValue에 따라 타원의 비율 변경
     double radiusX = (width / 2) * morphValue;
     double radiusY = height / 2;
-    
+
     // 타원 경로 생성
-    path.addOval(Rect.fromCenter(
-      center: Offset(centerX, centerY),
-      width: radiusX * 2,
-      height: radiusY * 2,
-    ));
-    
+    path.addOval(
+      Rect.fromCenter(
+        center: Offset(centerX, centerY),
+        width: radiusX * 2,
+        height: radiusY * 2,
+      ),
+    );
+
     return path;
   }
 

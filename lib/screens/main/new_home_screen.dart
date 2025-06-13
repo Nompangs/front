@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NewHomeScreen extends StatefulWidget {
-  const NewHomeScreen({Key? key}) : super(key: key);
+  const NewHomeScreen({super.key});
 
   @override
   State<NewHomeScreen> createState() => _NewHomeScreenState();
@@ -32,7 +32,10 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                     left: BorderSide(color: Colors.black, width: 1),
                   ),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 33, vertical: 15),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 33,
+                  vertical: 15,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -47,10 +50,14 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.only(left: 60, top: 1, bottom: 1),
+                      padding: const EdgeInsets.only(
+                        left: 60,
+                        top: 1,
+                        bottom: 1,
+                      ),
                       child: Row(
                         children: [
-                          Container(
+                          SizedBox(
                             width: 17,
                             height: 10,
                             child: Image.network(
@@ -59,7 +66,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                             ),
                           ),
                           const SizedBox(width: 5),
-                          Container(
+                          SizedBox(
                             width: 15,
                             height: 11,
                             child: Image.network(
@@ -73,7 +80,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   ],
                 ),
               ),
-              
+
               // Header with navigation and profile
               Container(
                 color: const Color(0xFFFDF7E9),
@@ -81,11 +88,11 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   children: [
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 18),
-                        child: Container(
-                          width: 156,
-                          height: 24,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 15,
+                          vertical: 18,
                         ),
+                        child: SizedBox(width: 156, height: 24),
                       ),
                     ),
                     Padding(
@@ -100,9 +107,9 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   ],
                 ),
               ),
-              
+
               // Main image section
-              Container(
+              SizedBox(
                 width: double.infinity,
                 height: MediaQuery.of(context).size.width / 1.078,
                 child: Stack(
@@ -125,7 +132,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   ],
                 ),
               ),
-              
+
               // Filter chips section
               Container(
                 color: Colors.black,
@@ -167,7 +174,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 5),
-                      
+
                       // Inactive filter chips
                       _buildFilterChip('내 방'),
                       const SizedBox(width: 5),
@@ -180,7 +187,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   ),
                 ),
               ),
-              
+
               // Section title with count
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 15, 16, 0),
@@ -221,7 +228,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   ],
                 ),
               ),
-              
+
               // Carousel section
               Container(
                 padding: const EdgeInsets.fromLTRB(16, 16, 0, 8),
@@ -229,11 +236,26 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _buildCard('https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/c6928886c4f0b44052a2256cf7668f5e116f8bda?placeholderIfAbsent=true', '내 방', '디자인 체어', '42'),
+                      _buildCard(
+                        'https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/c6928886c4f0b44052a2256cf7668f5e116f8bda?placeholderIfAbsent=true',
+                        '내 방',
+                        '디자인 체어',
+                        '42',
+                      ),
                       const SizedBox(width: 12),
-                      _buildCard('https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/6fe8836c7fb536ba754ec565ff60d7be5e264bb8?placeholderIfAbsent=true', '사무실', '제임쓰 카페인쓰', '5'),
+                      _buildCard(
+                        'https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/6fe8836c7fb536ba754ec565ff60d7be5e264bb8?placeholderIfAbsent=true',
+                        '사무실',
+                        '제임쓰 카페인쓰',
+                        '5',
+                      ),
                       const SizedBox(width: 12),
-                      _buildCard('https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/9a27d7152e1f50931592c370d31f9cdff632a77c?placeholderIfAbsent=true', '우리집 안방', '빈백', '139'),
+                      _buildCard(
+                        'https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/9a27d7152e1f50931592c370d31f9cdff632a77c?placeholderIfAbsent=true',
+                        '우리집 안방',
+                        '빈백',
+                        '139',
+                      ),
                     ],
                   ),
                 ),
@@ -244,7 +266,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
       ),
     );
   }
-  
+
   Widget _buildFilterChip(String label) {
     return Container(
       decoration: BoxDecoration(
@@ -266,8 +288,13 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
       ),
     );
   }
-  
-  Widget _buildCard(String imageUrl, String location, String name, String time) {
+
+  Widget _buildCard(
+    String imageUrl,
+    String location,
+    String name,
+    String time,
+  ) {
     return SizedBox(
       width: 148,
       child: Column(
@@ -284,14 +311,18 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                   fit: BoxFit.cover,
                 ),
               ),
-              if (imageUrl == 'https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/c6928886c4f0b44052a2256cf7668f5e116f8bda?placeholderIfAbsent=true') // Show NEW badge only on first card
+              if (imageUrl ==
+                  'https://cdn.builder.io/api/v1/image/assets/10c3629ee50f4bb7b8873d2a0797b2af/c6928886c4f0b44052a2256cf7668f5e116f8bda?placeholderIfAbsent=true') // Show NEW badge only on first card
                 Positioned(
                   top: 8,
                   right: 8,
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(2.476),
-                      border: Border.all(color: const Color(0xFFE0E0E0), width: 0.413),
+                      border: Border.all(
+                        color: const Color(0xFFE0E0E0),
+                        width: 0.413,
+                      ),
                       color: const Color(0xFFFFCF00),
                     ),
                     padding: const EdgeInsets.fromLTRB(4, 2, 3, 2),

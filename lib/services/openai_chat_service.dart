@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -14,7 +13,7 @@ class OpenAiChatService {
     String userInput, {
     Map<String, dynamic>? characterProfile,
   }) {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       // API 키가 없는 경우 에러를 포함한 스트림을 반환합니다.
       return Stream.error(Exception("❌ OpenAI API 키가 .env 파일에 설정되지 않았습니다."));
     }
