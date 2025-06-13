@@ -303,33 +303,31 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                               const SizedBox(height: 8),
                               Align(
                                 alignment: Alignment.centerRight,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (_showValidationErrors &&
-                                        (!_hasPurposeInput ||
-                                            _purposeController.text.isEmpty))
-                                      Text(
-                                        '구체적인 역할을 입력해주세요',
-                                        style: TextStyle(
-                                          fontFamily: 'Pretendard',
-                                          color: Colors.red.shade400,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    const Text(
-                                      '200자 내외로 상세히 입력해주세요',
-                                      style: TextStyle(
-                                        fontFamily: 'Pretendard',
-                                        color: Colors.grey,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  '200자 내외로 상세히 입력해주세요',
+                                  style: TextStyle(
+                                    fontFamily: 'Pretendard',
+                                    color: Colors.red.shade400,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
                                 ),
                               ),
+                              if (_showValidationErrors &&
+                                  (!_hasPurposeInput ||
+                                      _purposeController.text.isEmpty))
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '구체적인 역할을 입력해주세요',
+                                    style: TextStyle(
+                                      fontFamily: 'Pretendard',
+                                      color: Colors.red.shade400,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),
@@ -365,35 +363,21 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
                             children: [
                               _buildHumorStyleCard(),
                               const SizedBox(height: 8),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    if (_showValidationErrors &&
-                                        (!_hasHumorStyleInput ||
-                                            _selectedHumorStyle == null))
-                                      Text(
-                                        '유머 스타일을 선택해주세요!',
-                                        style: TextStyle(
-                                          fontFamily: 'Pretendard',
-                                          color: Colors.red.shade400,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w400,
-                                        ),
-                                      ),
-                                    const Text(
-                                      '유머스타일을 선택해 주세요',
-                                      style: TextStyle(
-                                        fontFamily: 'Pretendard',
-                                        color: Colors.grey,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w400,
-                                      ),
+                              if (_showValidationErrors &&
+                                  (!_hasHumorStyleInput ||
+                                      _selectedHumorStyle == null))
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text(
+                                    '유머 스타일을 선택해주세요!',
+                                    style: TextStyle(
+                                      fontFamily: 'Pretendard',
+                                      color: Colors.red.shade400,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w400,
                                     ),
-                                  ],
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
