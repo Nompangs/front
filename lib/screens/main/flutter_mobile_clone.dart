@@ -164,7 +164,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               // Header with cream background (높이 240)
               Container(
                 width: double.infinity,
-                height: 240 * scale,
+                height: 230 * scale,
                 color: const Color.fromRGBO(253, 247, 233, 1),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,14 +177,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                                                       Text(
-                            '오늘, 2025년 06월 04일',
+                            '오늘, ' + _getTodayString(),
                             style: TextStyle(
                               color: Color(0xFF666666),
-                              fontSize: 14 * scale,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 12 * scale,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
-                          SizedBox(height: 8 * scale),
+                          SizedBox(height: 12 * scale),
                           Text(
                             '안녕하세요, 씅님',
                             style: TextStyle(
@@ -193,7 +193,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 4 * scale),
+                          SizedBox(height: 2 * scale),
                           Text(
                             '오늘은 누구랑 대화할까요?',
                             style: TextStyle(
@@ -500,11 +500,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             
             // Float된 노란색 알림바 (최상단 레이어)
             Positioned(
-              top: 220 * scale,
-              left: 24 * scale,
-              right: 24 * scale,
+              top: 210 * scale,
+              left: 20 * scale,
+              right: 20 * scale,
                 child: Container(
-                  height: 48 * scale,
+                  height: 44 * scale,
                   decoration: BoxDecoration(
                     color: Color.fromRGBO(255, 207, 0, 1),
                     borderRadius: BorderRadius.circular(40 * scale),
@@ -519,7 +519,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   ),
                   child: Row(
                     children: [
-                      SizedBox(width: 45 * scale),
+                      SizedBox(width: 40 * scale),
                       Expanded(
                         child:                       RichText(
                         text: TextSpan(
@@ -563,6 +563,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         ),
       ),
     );
+  }
+
+  String _getTodayString() {
+    final now = DateTime.now();
+    return '${now.year}년 ${now.month.toString().padLeft(2, '0')}월 ${now.day.toString().padLeft(2, '0')}일';
   }
 }
 
