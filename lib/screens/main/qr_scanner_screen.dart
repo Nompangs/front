@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:nompangs/screens/main/chat_screen.dart';
-import 'package:nompangs/helpers/deeplink_helper.dart';
+import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/services/api_service.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -14,7 +15,7 @@ class QRScannerScreen extends StatefulWidget {
 class _QRScannerScreenState extends State<QRScannerScreen> {
   late MobileScannerController controller;
   bool _isProcessing = false;
-  bool _scanCompletedAndNavigating = false;
+  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -31,60 +32,38 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   Future<void> _handleQRCode(String code) async {
-    if (!mounted) return;
-    // 이 함수가 호출되면 무조건 처리 중 상태로 변경
-    // onDetect에서 이미 중복 호출을 방지하고 있으므로, 여기서의 _isProcessing 체크는 UI 업데이트용
+    if (!mounted || _isProcessing) return;
+    
     setState(() { _isProcessing = true; });
 
-
-    Map<String, dynamic>? chatData;
-    String? uuidFromQR;
-
     try {
-      final uri = Uri.tryParse(code);
-      if (uri != null) {
-        uuidFromQR = uri.queryParameters['id'];
-      }
+      // QR 코드로 읽은 문자열(code)이 바로 uuid라고 가정합니다.
+      // 만약 URL 형태라면 파싱이 필요합니다. 
+      // 예: final uuid = Uri.parse(code).queryParameters['id'];
+      final String uuid = code; 
 
-      if (uuidFromQR != null) {
-        chatData = await DeepLinkHelper.processCharacterData(uuidFromQR)
-            .timeout(const Duration(seconds: 20), onTimeout: () {
-          print('[QRScanner][${defaultTargetPlatform.name}] _handleQRCode: DeepLinkHelper.processCharacterData 타임아웃.');
-          if (mounted) _showError('캐릭터 정보 처리 시간이 초과되었습니다.');
-          return null;
-        });
-      } else {
-        // uuidFromQR이 null이면 사용자에게 알림
-        if (mounted) _showError('QR 코드에서 UUID를 읽을 수 없습니다.');
-      }
+      final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
-      if (chatData != null && mounted) {
-        _scanCompletedAndNavigating = true; // 내비게이션 시작 플래그
+      if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatScreen(
-              characterName: chatData!['characterName'] as String,
-              personalityTags: chatData['personalityTags'] as List<String>,
-              greeting: chatData['greeting'] as String?,
-            ),
+            // ChatScreen에 profile 객체 하나만 전달합니다.
+            builder: (context) => ChatScreen(profile: profile),
           ),
         );
-        return; 
-      } else {
-          if (mounted && uuidFromQR != null && chatData == null) {
-        }
       }
-    } catch (e, s) {
-      print('[QRScanner][${defaultTargetPlatform.name}] _handleQRCode: 처리 중 오류: $e, Stack: $s');
-      if (mounted) _showError('QR 코드 처리 중 오류가 발생했습니다.');
-    } finally {
-      // 내비게이션이 발생하지 않았고, 위젯이 여전히 마운트된 경우에만 _isProcessing 상태를 해제
-      if (mounted && !_scanCompletedAndNavigating) {
-        setState(() { _isProcessing = false; });
+    } catch (e) {
+      print('🚨 QR 스캔 처리 실패: $e');
+      if (mounted) {
+        _showError('프로필을 불러오는데 실패했습니다.');
+        setState(() {
+          _isProcessing = false; // 에러 발생 시 스캔 재개를 위해 상태 복원
+        });
       }
-    }
-  } 
+    } 
+    // 성공적으로 네비게이션하면 이 화면은 dispose되므로 finally 블록은 불필요.
+  }
 
   void _showError(String message) {
     if (!mounted) return;
@@ -123,12 +102,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 MobileScanner(
                   controller: controller,
                   onDetect: (capture) {
-                    if (!mounted || _isProcessing || _scanCompletedAndNavigating) {
+                    if (!mounted || _isProcessing) {
                       return;
                     }
                     final List<Barcode> barcodes = capture.barcodes;
                     if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
                       final String scannedCode = barcodes.first.rawValue!;
+                      // 스캔이 완료되면 즉시 처리 상태로 변경하여 중복 스캔 방지
+                      setState(() {
+                        _isProcessing = true;
+                      });
                       _handleQRCode(scannedCode.trim());
                     }
                   },

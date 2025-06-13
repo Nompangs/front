@@ -12,6 +12,16 @@ class OnboardingProvider extends ChangeNotifier {
 
   OnboardingState get state => _state;
 
+  // 페르소나 생성 과정을 위한 상태 변수들
+  bool _isGenerating = false;
+  bool get isGenerating => _isGenerating;
+
+  String _generationMessage = '';
+  String get generationMessage => _generationMessage;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
   void _logStatus(String action) {
     debugPrint('=== Onboarding Status [$action] ===');
     debugPrint(jsonEncode(_state.toJson()));
@@ -263,7 +273,31 @@ class OnboardingProvider extends ChangeNotifier {
   void reset() {
     _state = const OnboardingState();
     _profile = PersonalityProfile.empty();
+    _isGenerating = false;
+    _generationMessage = '';
+    _errorMessage = null;
     notifyListeners();
     _logStatus('reset');
+  }
+
+  // 생성 과정 상태를 업데이트하는 메서드
+  void setGenerating(bool generating, String message) {
+    _isGenerating = generating;
+    _generationMessage = message;
+    if (generating) {
+      _errorMessage = null; // 생성을 시작하면 이전 에러 메시지는 초기화
+    }
+    notifyListeners();
+  }
+
+  void setErrorMessage(String error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  // 최종 생성된 페르소나 프로필을 저장하는 메서드
+  void setFinalPersonality(PersonalityProfile profile) {
+    _profile = profile;
+    notifyListeners();
   }
 }
