@@ -96,64 +96,63 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     // 각 버튼별 애니메이션 컨트롤러 초기화
     _morphController1 = AnimationController(
-      duration: Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
     _morphController2 = AnimationController(
-      duration: Duration(milliseconds: 2300),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
     _morphController3 = AnimationController(
-      duration: Duration(milliseconds: 2100),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
     // 스케일 애니메이션 (크기 변화)
-    if (_morphController1 != null) {
-      _scaleAnimation1 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
-      );
-      _shapeAnimation1 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
-      );
-    }
+    _scaleAnimation1 = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
+    );
+    _shapeAnimation1 = Tween<double>(begin: 1.0, end: 0.65).animate(
+      CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut),
+    );
 
-    if (_morphController2 != null) {
-      _scaleAnimation2 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
-      );
-      _shapeAnimation2 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
-      );
-    }
+    _scaleAnimation2 = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
+    );
+    _shapeAnimation2 = Tween<double>(begin: 1.0, end: 0.65).animate(
+      CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut),
+    );
 
-    if (_morphController3 != null) {
-      _scaleAnimation3 = Tween<double>(begin: 1.0, end: 1.2).animate(
-        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
-      );
-      _shapeAnimation3 = Tween<double>(begin: 1.0, end: 0.7).animate(
-        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
-      );
-    }
+    _scaleAnimation3 = Tween<double>(begin: 1.0, end: 1.15).animate(
+      CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
+    );
+    _shapeAnimation3 = Tween<double>(begin: 1.0, end: 0.65).animate(
+      CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut),
+    );
+
+    // 파란색과 초록색 버튼 애니메이션 시작
+    _morphController1?.repeat(reverse: true);
+    _morphController3?.repeat(reverse: true);
+
+    // 분홍색 버튼 애니메이션 딜레이 시작
+    Future.delayed(const Duration(milliseconds: 750), () {
+      _morphController2?.repeat(reverse: true);
+    });
   }
 
-  // 버튼 클릭 애니메이션 함수들
+  // 버튼 클릭 애니메이션 함수들 - 이제 즉시 화면 전환
   void _playAnimation1() {
-    _morphController1?.forward().then((_) {
-      _morphController1?.reverse();
-    });
+    Navigator.pushNamed(context, '/chat-history');
   }
 
   void _playAnimation2() {
-    _morphController2?.forward().then((_) {
-      _morphController2?.reverse();
-    });
+    // 두 번째 버튼 클릭 동작
   }
 
   void _playAnimation3() {
-    _morphController3?.forward().then((_) {
-      _morphController3?.reverse();
-    });
+    // 세 번째 버튼 클릭 동작
   }
 
   @override
@@ -249,7 +248,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(22 * scale),
                             child: Image.asset(
-                              'assets/profile.png',
+                              'assets/profile_1.png',
                               fit: BoxFit.cover,
                               errorBuilder:
                                   (context, error, stackTrace) => Container(
@@ -655,11 +654,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       width: 54 * scale,
                       height: 54 * scale,
                       margin: EdgeInsets.only(right: 1 * scale),
-                      child: Image.asset(
-                        'assets/ui_assets/btn_quickchat.png',
-                        width: 54 * scale,
-                        height: 54 * scale,
-                        fit: BoxFit.contain,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Image.asset(
+                            'assets/ui_assets/btn_quickchat.png',
+                            width: 54 * scale,
+                            height: 54 * scale,
+                            fit: BoxFit.contain,
+                          ),
+                          Icon(
+                            Icons.north_east,
+                            color: Colors.black,
+                            size: 20 * scale,
+                          ),
+                        ],
                       ),
                     ),
                   ],
