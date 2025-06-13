@@ -66,6 +66,7 @@ class OpenAiTtsService {
     
     return completer.future;
   }
+}
 
   Future<void> stop() async {
     // audioplayers 패키지의 stop() 메서드를 호출합니다.

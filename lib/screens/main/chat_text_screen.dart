@@ -65,6 +65,8 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                           characterName: chatProvider.characterName,
                           characterHandle: chatProvider.characterHandle,
                           personalityTags: chatProvider.personalityTags),
+                    if (chatProvider.isProcessing)
+                      const LinearProgressIndicator(),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -76,11 +78,9 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                             final msg = messages[index];
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4.0),
-                              // _ChatBubble에 isLoading 상태를 전달합니다.
                               child: _ChatBubble(
                                 text: msg.text,
                                 isUser: msg.isUser,
-                                isLoading: msg.isLoading,
                               ),
                             );
                           },
@@ -89,8 +89,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                     ),
                     _ChatInputBar(
                       controller: _inputController,
-                      // AI가 응답 중일 때는 메시지 전송 버튼을 비활성화합니다.
-                      isProcessing: chatProvider.isProcessing,
                       onSend: () {
                         context.read<ChatProvider>().sendMessage(_inputController.text);
                         _inputController.clear();
@@ -109,187 +107,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                     ),                    
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatBubble extends StatelessWidget {
-  final String text;
-  final bool isUser;
-  final bool isLoading;
-
-  const _ChatBubble({
-    Key? key,
-    required this.text,
-    required this.isUser,
-    this.isLoading = false,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    const userBgColor = Color(0xFF7C3AED);
-    const userTextColor = Colors.white;
-    const otherBgColor = Colors.white;
-    const otherTextColor = Color(0xFF222222);
-
-    return Align(
-      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isUser ? userBgColor : otherBgColor,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 16,
-        ),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.8,
-        ),
-        // isLoading 상태에 따라 로딩 스피너 또는 텍스트를 표시
-        child: isLoading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black54),
-                ),
-              )
-            : Text(
-                text,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: isUser ? userTextColor : otherTextColor,
-                  height: 1.4,
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _ChatInputBar extends StatefulWidget {
-  final TextEditingController controller;
-  final VoidCallback onSend;
-  final VoidCallback onSpeakerModePressed;
-  final bool isProcessing; // AI 응답 처리 중 상태
-
-  const _ChatInputBar({
-    Key? key,
-    required this.controller,
-    required this.onSend,
-    required this.onSpeakerModePressed,
-    required this.isProcessing,
-  }) : super(key: key);
-
-  @override
-  State<_ChatInputBar> createState() => _ChatInputBarState();
-}
-
-class _ChatInputBarState extends State<_ChatInputBar> {
-  bool _hasText = false;
-
-  @override
-  void initState() {
-    super.initState();
-    widget.controller.addListener(_textListener);
-  }
-
-  void _textListener() {
-    final hasContent = widget.controller.text.trim().isNotEmpty;
-    if (hasContent != _hasText) {
-      setState(() => _hasText = hasContent);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_textListener);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).viewPadding.bottom;
-    final bool canSend = (_hasText && !widget.isProcessing);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: bottomInset),
-      child: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-        child: Row(
-          children: [
-            IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(
-                Icons.image,
-                size: 28,
-                color: Color(0xFF777777),
-              ),
-              onPressed: () {},
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: TextField(
-                  controller: widget.controller,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.only(top: 10),
-                    hintText: 'Send message...',
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: Color(0xFFAAAAAA),
-                    ),
-                    border: InputBorder.none,
-                    isCollapsed: true,
-                  ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF222222),
-                  ),
-                  textAlignVertical: TextAlignVertical.center,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: canSend ? Colors.black : Colors.white,
-                shape: BoxShape.circle,
-                border: canSend ? null : Border.all(color: const Color(0xFF6A5ACD))
-              ),
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: Icon(
-                  canSend ? Icons.send : Icons.call,
-                  size: 20,
-                  color: canSend ? Colors.white : const Color(0xFF6A5ACD),
-                ),
-                onPressed: () {
-                  if (canSend) {
-                    widget.onSend();
-                  } else if (!widget.isProcessing) {
-                    widget.onSpeakerModePressed();
-                  }
-                },
               ),
             ),
           ],
@@ -384,6 +201,7 @@ class _TopNavigationBar extends StatelessWidget {
               color: Color(0xFF333333),
             ),
             onPressed: () {
+              // ① 점 세 개 버튼을 누르면 ChatSettingScreen으로 이동
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ChatSettingScreen()),
@@ -698,4 +516,3 @@ class _ChatInputBarState extends State<_ChatInputBar> {
     );
   }
 }
-
