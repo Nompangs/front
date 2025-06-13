@@ -1,18 +1,27 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:nompangs/services/openai_chat_service.dart';
+import 'package:nompangs/services/realtime_chat_service.dart';
 import 'package:nompangs/services/openai_tts_service.dart';
 
+// ChatMessage 클래스에 isLoading 플래그 추가
 class ChatMessage {
   String text;
   final bool isUser;
-  ChatMessage({required this.text, required this.isUser});
+  bool isLoading;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    this.isLoading = false, // 기본값은 false
+  });
 }
 
 class ChatProvider extends ChangeNotifier {
-  final OpenAiChatService _openAiChatService = OpenAiChatService();
+  final RealtimeChatService _realtimeChatService = RealtimeChatService();
   final OpenAiTtsService _openAiTtsService = OpenAiTtsService();
-  StreamSubscription<String>? _apiStreamSubscription;
+  
+  // 스트림 구독 관리
+  StreamSubscription<String>? _completionSubscription;
 
   final List<ChatMessage> _messages = [];
   bool _isProcessing = false;
@@ -31,20 +40,47 @@ class ChatProvider extends ChangeNotifier {
     required this.personalityTags,
     this.greeting,
   }) {
+    _initializeChat();
     if (greeting != null && greeting!.isNotEmpty) {
-      // 초기 인사 메시지는 Provider 생성 시점에 추가합니다.
       _addMessage(greeting!, false, speak: true);
     }
   }
   
+  Future<void> _initializeChat() async {
+    final characterProfile = {
+      'name': characterName,
+      'tags': personalityTags,
+      'greeting': greeting,
+    };
+    await _realtimeChatService.connect(characterProfile);
+
+    // AI 응답이 완료되었을 때만 이벤트를 받도록 수정
+    _completionSubscription = _realtimeChatService.completionStream.listen((fullText) {
+        if (_messages.isNotEmpty && _messages.first.isLoading) {
+          // 로딩 중인 메시지를 최종 텍스트로 업데이트
+          _messages.first.text = fullText;
+          _messages.first.isLoading = false;
+
+          // 텍스트 업데이트와 동시에 음성 재생
+          if (fullText.trim().isNotEmpty) {
+            _openAiTtsService.speak(fullText.trim());
+          }
+        }
+        _isProcessing = false;
+        notifyListeners();
+    },
+    onError: (e) {
+      if (_messages.isNotEmpty && _messages.first.isLoading) {
+          _messages.first.text = "AI 응답 중 오류가 발생했습니다: $e";
+          _messages.first.isLoading = false;
+      }
+       _isProcessing = false;
+       notifyListeners();
+    });
+  }
+
   void _addMessage(String text, bool isUser, {bool speak = false}) {
-    if (!isUser && _messages.isNotEmpty && !_messages.first.isUser && _messages.first.text.isEmpty) {
-      // AI의 첫 스트리밍 데이터일 경우, 기존의 빈 메시지를 업데이트합니다.
-      _messages.first.text = text;
-    } else {
-      _messages.insert(0, ChatMessage(text: text, isUser: isUser));
-    }
-    
+    _messages.insert(0, ChatMessage(text: text, isUser: isUser));
     if (speak) {
       _openAiTtsService.speak(text);
     }
@@ -54,86 +90,21 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendMessage(String userInput) async {
     if (userInput.trim().isEmpty || _isProcessing) return;
 
+    _openAiTtsService.stop(); 
     _addMessage(userInput, true);
-    await _requestAiResponseStream(userInput);
-  }
 
-  Future<void> _requestAiResponseStream(String userInput) async {
     _isProcessing = true;
-    _messages.insert(0, ChatMessage(text: '', isUser: false)); // AI 응답을 위한 빈 placeholder 추가
+    // AI 응답을 기다리는 동안 로딩 버블을 추가
+    _messages.insert(0, ChatMessage(text: '', isUser: false, isLoading: true));
     notifyListeners();
     
-    String fullResponseText = '';
-    String sentenceBuffer = '';
-    Future<void>? firstSentencePlaybackFuture;
-
-    final characterProfile = {
-      'name': characterName,
-      'tags': personalityTags,
-      'greeting': greeting,
-    };
-
-    _apiStreamSubscription = _openAiChatService
-        .getChatCompletionStream(userInput, characterProfile: characterProfile)
-        .listen(
-      (textChunk) {
-        fullResponseText += textChunk;
-        if (_messages.isNotEmpty && !_messages.first.isUser) {
-          _messages.first.text = fullResponseText;
-          notifyListeners();
-        }
-
-        // 첫 문장이 완성되면 바로 TTS 재생 시작
-        if (firstSentencePlaybackFuture == null) {
-          sentenceBuffer += textChunk;
-          RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-          if (sentenceEnd.hasMatch(sentenceBuffer)) {
-            final match = sentenceEnd.firstMatch(sentenceBuffer)!;
-            final firstSentence = sentenceBuffer.substring(0, match.end).trim();
-            if (firstSentence.isNotEmpty) {
-              firstSentencePlaybackFuture = _openAiTtsService.speak(firstSentence);
-            }
-          }
-        }
-      },
-      onDone: () async {
-        // 첫 문장 재생이 끝날 때까지 대기
-        await firstSentencePlaybackFuture;
-        
-        String restOfText = '';
-        if (firstSentencePlaybackFuture != null) {
-            RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-            final firstMatch = sentenceEnd.firstMatch(fullResponseText);
-            if (firstMatch != null && fullResponseText.length > firstMatch.end) {
-              restOfText = fullResponseText.substring(firstMatch.end).trim();
-            }
-        } else if (fullResponseText.isNotEmpty) {
-            restOfText = fullResponseText;
-        }
-
-        if (restOfText.isNotEmpty) {
-          await _openAiTtsService.speak(restOfText);
-        }
-
-        _isProcessing = false;
-        notifyListeners();
-      },
-      onError: (e) {
-        print("ChatProvider Error: $e");
-        if (_messages.isNotEmpty && !_messages.first.isUser) {
-          _messages.first.text = "AI 응답 중 오류가 발생했습니다.";
-        }
-        _isProcessing = false;
-        notifyListeners();
-      },
-      cancelOnError: true,
-    );
+    await _realtimeChatService.sendMessage(userInput);
   }
 
   @override
   void dispose() {
-    _apiStreamSubscription?.cancel();
-    _openAiChatService.dispose();
+    _completionSubscription?.cancel();
+    _realtimeChatService.dispose(); 
     _openAiTtsService.dispose();
     super.dispose();
   }
