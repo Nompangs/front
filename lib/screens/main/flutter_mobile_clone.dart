@@ -25,10 +25,20 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   String selectedFilter = "전체";
   final List<String> filterOptions = ["전체", "내 방", "우리집 안방", "사무실", "단골 카페"];
   int? selectedCardIndex;
+  
+  AnimationController? _morphController1;
+  AnimationController? _morphController2;
+  AnimationController? _morphController3;
+  Animation<double>? _scaleAnimation1;
+  Animation<double>? _scaleAnimation2;
+  Animation<double>? _scaleAnimation3;
+  Animation<double>? _shapeAnimation1;
+  Animation<double>? _shapeAnimation2;
+  Animation<double>? _shapeAnimation3;
 
   final List<ObjectData> objectData = [
     ObjectData(
@@ -58,6 +68,80 @@ class _MainScreenState extends State<MainScreen> {
     } else {
       return objectData.where((data) => data.location == selectedFilter).toList();
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // 각 버튼별 애니메이션 컨트롤러 초기화
+    _morphController1 = AnimationController(
+      duration: Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _morphController2 = AnimationController(
+      duration: Duration(milliseconds: 2300),
+      vsync: this,
+    );
+    _morphController3 = AnimationController(
+      duration: Duration(milliseconds: 2100),
+      vsync: this,
+    );
+    
+    // 스케일 애니메이션 (크기 변화)
+    if (_morphController1 != null) {
+      _scaleAnimation1 = Tween<double>(begin: 1.0, end: 1.2).animate(
+        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut)
+      );
+      _shapeAnimation1 = Tween<double>(begin: 1.0, end: 0.7).animate(
+        CurvedAnimation(parent: _morphController1!, curve: Curves.elasticOut)
+      );
+    }
+    
+    if (_morphController2 != null) {
+      _scaleAnimation2 = Tween<double>(begin: 1.0, end: 1.2).animate(
+        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut)
+      );
+      _shapeAnimation2 = Tween<double>(begin: 1.0, end: 0.7).animate(
+        CurvedAnimation(parent: _morphController2!, curve: Curves.elasticOut)
+      );
+    }
+    
+    if (_morphController3 != null) {
+      _scaleAnimation3 = Tween<double>(begin: 1.0, end: 1.2).animate(
+        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut)
+      );
+      _shapeAnimation3 = Tween<double>(begin: 1.0, end: 0.7).animate(
+        CurvedAnimation(parent: _morphController3!, curve: Curves.elasticOut)
+      );
+    }
+  }
+
+  // 버튼 클릭 애니메이션 함수들
+  void _playAnimation1() {
+    _morphController1?.forward().then((_) {
+      _morphController1?.reverse();
+    });
+  }
+
+  void _playAnimation2() {
+    _morphController2?.forward().then((_) {
+      _morphController2?.reverse();
+    });
+  }
+
+  void _playAnimation3() {
+    _morphController3?.forward().then((_) {
+      _morphController3?.reverse();
+    });
+  }
+
+  @override
+  void dispose() {
+    _morphController1?.dispose();
+    _morphController2?.dispose();
+    _morphController3?.dispose();
+    super.dispose();
   }
 
   @override
@@ -176,87 +260,144 @@ class _MainScreenState extends State<MainScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // 첫 번째 버튼 (파랑)
-                              Transform.rotate(
-                                angle: 40 * 3.141592 / 180,
-                                child: ClipOval(
-                                  child: Container(
-                                    width: buttonWidth,
-                                    height: buttonHeight,
-                                    color: Color.fromRGBO(87, 179, 230, 1),
-                                    child: Align(
-                                      alignment: Alignment(0, 0.8),
+                              AnimatedBuilder(
+                                animation: Listenable.merge([_scaleAnimation1, _shapeAnimation1].whereType<Listenable>().toList()),
+                                builder: (context, child) {
+                                  return GestureDetector(
+                                    onTap: _playAnimation1,
+                                    child: Transform.scale(
+                                      scale: _scaleAnimation1?.value ?? 1.0,
                                       child: Transform.rotate(
-                                        angle: -40 * 3.141592 / 180,
-                                        child: Text(
-                                          '나와\n접촉한\n모멘티\n',
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 16 * scale,
-                                            fontWeight: FontWeight.bold,
+                                        angle: 40 * 3.141592 / 180,
+                                        child: ClipPath(
+                                          clipper: MorphingEllipseClipper(_shapeAnimation1?.value ?? 1.0),
+                                          child: Material(
+                                            color: Color.fromRGBO(87, 179, 230, 1),
+                                            child: InkWell(
+                                              onTap: _playAnimation1,
+                                              splashColor: Colors.white.withOpacity(0.3),
+                                              highlightColor: Colors.white.withOpacity(0.1),
+                                              child: Container(
+                                                width: buttonWidth,
+                                                height: buttonHeight,
+                                                child: Align(
+                                                  alignment: Alignment(0, 0.8),
+                                                  child: Transform.rotate(
+                                                    angle: -40 * 3.141592 / 180,
+                                                    child: Text(
+                                                      '나와\n접촉한\n모멘티\n',
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 16 * scale,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                      textAlign: TextAlign.left,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           ),
-                                          textAlign: TextAlign.left,
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
+                                  );
+                                },
                               ),
                               // 두 번째 버튼 (핑크)
                               Transform.translate(
                                 offset: Offset(-overlap, 0),
-                                child: Transform.rotate(
-                                  angle: 40 * 3.141592 / 180,
-                                  child: ClipOval(
-                                    child: Container(
-                                      width: buttonWidth,
-                                      height: buttonHeight,
-                                      color: Color.fromRGBO(255, 216, 241, 1),
-                                                                              child: Align(
-                                          alignment: Alignment(0, 0.8),
-                                          child: Transform.rotate(
-                                            angle: -40 * 3.141592 / 180,
-                                            child: Text(
-                                              '새로운\n모멘티\n깨우기\n',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16 * scale,
-                                                fontWeight: FontWeight.bold,
+                                child: AnimatedBuilder(
+                                  animation: Listenable.merge([_scaleAnimation2, _shapeAnimation2].whereType<Listenable>().toList()),
+                                  builder: (context, child) {
+                                    return GestureDetector(
+                                      onTap: _playAnimation2,
+                                      child: Transform.scale(
+                                        scale: _scaleAnimation2?.value ?? 1.0,
+                                        child: Transform.rotate(
+                                          angle: 40 * 3.141592 / 180,
+                                          child: ClipPath(
+                                            clipper: MorphingEllipseClipper(_shapeAnimation2?.value ?? 1.0),
+                                            child: Material(
+                                              color: Color.fromRGBO(255, 216, 241, 1),
+                                              child: InkWell(
+                                                onTap: _playAnimation2,
+                                                splashColor: Colors.white.withOpacity(0.3),
+                                                highlightColor: Colors.white.withOpacity(0.1),
+                                                child: Container(
+                                                  width: buttonWidth,
+                                                  height: buttonHeight,
+                                                  child: Align(
+                                                    alignment: Alignment(0, 0.8),
+                                                    child: Transform.rotate(
+                                                      angle: -40 * 3.141592 / 180,
+                                                      child: Text(
+                                                        '새로운\n모멘티\n깨우기\n',
+                                                        style: TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: 16 * scale,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                        textAlign: TextAlign.left,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                              textAlign: TextAlign.left,
                                             ),
                                           ),
                                         ),
-                                    ),
-                                  ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                               // 세 번째 버튼 (초록)
-              Transform.translate(
+                              Transform.translate(
                                 offset: Offset(-overlap, 0),
-                                child: Transform.rotate(
-                                  angle: 40 * 3.141592 / 180,
-                                  child: ClipOval(
-                                    child: Container(
-                                      width: buttonWidth,
-                                      height: buttonHeight,
-                                      color: Color.fromRGBO(63, 203, 128, 1),
-                                                                              child: Align(
-                                          alignment: Alignment(0, 0.8),
-                                          child: Transform.rotate(
-                                            angle: -40 * 3.141592 / 180,
-                                            child: Text(
-                                              '내주변\n모멘티\n탐색\n',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 16 * scale,
-                                                fontWeight: FontWeight.bold,
+                                child: AnimatedBuilder(
+                                  animation: Listenable.merge([_scaleAnimation3, _shapeAnimation3].whereType<Listenable>().toList()),
+                                  builder: (context, child) {
+                                    return GestureDetector(
+                                      onTap: _playAnimation3,
+                                      child: Transform.scale(
+                                        scale: _scaleAnimation3?.value ?? 1.0,
+                                        child: Transform.rotate(
+                                          angle: 40 * 3.141592 / 180,
+                                          child: ClipPath(
+                                            clipper: MorphingEllipseClipper(_shapeAnimation3?.value ?? 1.0),
+                                            child: Material(
+                                              color: Color.fromRGBO(63, 203, 128, 1),
+                                              child: InkWell(
+                                                onTap: _playAnimation3,
+                                                splashColor: Colors.white.withOpacity(0.3),
+                                                highlightColor: Colors.white.withOpacity(0.1),
+                                                child: Container(
+                                                  width: buttonWidth,
+                                                  height: buttonHeight,
+                                                  child: Align(
+                                                    alignment: Alignment(0, 0.8),
+                                                    child: Transform.rotate(
+                                                      angle: -40 * 3.141592 / 180,
+                                                      child: Text(
+                                                        '내주변\n모멘티\n탐색\n',
+                                                        style: TextStyle(
+                                                          color: Colors.black,
+                                                          fontSize: 16 * scale,
+                                                          fontWeight: FontWeight.bold,
+                                                        ),
+                                                        textAlign: TextAlign.left,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
                                               ),
-                                              textAlign: TextAlign.left,
                                             ),
                                           ),
                                         ),
-                                    ),
-                                  ),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -615,6 +756,38 @@ class CustomShapeClipper extends CustomClipper<Path> {
 
   @override
   bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+class MorphingEllipseClipper extends CustomClipper<Path> {
+  final double morphValue;
+  
+  MorphingEllipseClipper(this.morphValue);
+  
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    
+    double width = size.width;
+    double height = size.height;
+    double centerX = width / 2;
+    double centerY = height / 2;
+    
+    // morphValue에 따라 타원의 비율 변경
+    double radiusX = (width / 2) * morphValue;
+    double radiusY = height / 2;
+    
+    // 타원 경로 생성
+    path.addOval(Rect.fromCenter(
+      center: Offset(centerX, centerY),
+      width: radiusX * 2,
+      height: radiusY * 2,
+    ));
+    
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => true;
 }
 
 class ObjectData {
