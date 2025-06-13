@@ -3,14 +3,13 @@ import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
-import 'package:nompangs/widgets/common/primary_button.dart';
 import 'dart:io';
 import 'dart:async';
 
 /// 온보딩 사물 사진 촬영 화면
 /// onboarding_purpose_screen.dart의 디자인 패턴을 따라 재구현
 class OnboardingPhotoScreen extends StatefulWidget {
-  const OnboardingPhotoScreen({Key? key}) : super(key: key);
+  const OnboardingPhotoScreen({super.key});
 
   @override
   State<OnboardingPhotoScreen> createState() => _OnboardingPhotoScreenState();

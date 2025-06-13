@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:nompangs/screens/auth/intro_screen.dart';
 import 'package:nompangs/screens/auth/login_screen.dart';
 import 'package:nompangs/screens/main/home_screen.dart';
@@ -20,8 +19,6 @@ import 'package:nompangs/screens/onboarding/onboarding_generation_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_personality_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_completion_screen.dart';
 import 'package:nompangs/theme/app_theme.dart';
-import 'dart:convert';
-import 'dart:typed_data';
 import 'package:nompangs/services/firebase_manager.dart';
 import 'package:nompangs/helpers/deeplink_helper.dart';
 import 'package:nompangs/screens/chat/chat_history_screen.dart';
@@ -49,6 +46,8 @@ void main() async {
 
 // 간단한 테스트 화면
 class TestScreen extends StatelessWidget {
+  const TestScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -62,15 +61,17 @@ class TestScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ChangeNotifierProvider(
-                      create: (_) => ChatProvider(
-                        characterName: '정적 테스트 봇',
-                        characterHandle: '@static_bot', 
-                        personalityTags: ['테스트', '안정적'],
-                        greeting: '정적 캐릭터 테스트를 시작합니다. 무엇이 궁금하신가요?',
-                      ),
-                      child: const ChatTextScreen(),
-                    ),
+                    builder:
+                        (context) => ChangeNotifierProvider(
+                          create:
+                              (_) => ChatProvider(
+                                characterName: '정적 테스트 봇',
+                                characterHandle: '@static_bot',
+                                personalityTags: ['테스트', '안정적'],
+                                greeting: '정적 캐릭터 테스트를 시작합니다. 무엇이 궁금하신가요?',
+                              ),
+                          child: const ChatTextScreen(),
+                        ),
                   ),
                 );
               },
@@ -132,6 +133,8 @@ class TestScreen extends StatelessWidget {
 }
 
 class NompangsApp extends StatefulWidget {
+  const NompangsApp({super.key});
+
   @override
   State<NompangsApp> createState() => _NompangsAppState();
 }
@@ -231,22 +234,30 @@ class _NompangsAppState extends State<NompangsApp> {
         onGenerateRoute: (settings) {
           final Uri uri = Uri.parse(settings.name ?? '');
 
-          if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'chat') {
+          if (uri.pathSegments.length == 2 &&
+              uri.pathSegments.first == 'chat') {
             final characterId = uri.pathSegments.last;
             final args = settings.arguments as Map<String, dynamic>?;
 
             if (args == null) {
-              return MaterialPageRoute(builder: (_) => Scaffold(body: Center(child: Text('캐릭터 정보 없음'))));
+              return MaterialPageRoute(
+                builder:
+                    (_) => Scaffold(body: Center(child: Text('캐릭터 정보 없음'))),
+              );
             }
             return MaterialPageRoute(
               builder: (context) {
                 return ChangeNotifierProvider(
-                  create: (_) => ChatProvider(
-                    characterName: args['characterName'] ?? '이름 없음',
-                    characterHandle: args['characterHandle'] ?? '@unknown_handle',
-                    personalityTags: List<String>.from(args['personalityTags'] ?? []),
-                    greeting: args['greeting'],
-                  ),
+                  create:
+                      (_) => ChatProvider(
+                        characterName: args['characterName'] ?? '이름 없음',
+                        characterHandle:
+                            args['characterHandle'] ?? '@unknown_handle',
+                        personalityTags: List<String>.from(
+                          args['personalityTags'] ?? [],
+                        ),
+                        greeting: args['greeting'],
+                      ),
                   child: const ChatTextScreen(),
                 );
               },

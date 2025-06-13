@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,13 +15,13 @@ class ElevenLabsTtsService {
   static const String _defaultVoiceId = 'JBFqnCBsd6RMkjVDRZzb';
 
   ElevenLabsTtsService() {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       debugPrint('[ElevenLabs TTS 서비스] 🚨 ELEVENLABS_API_KEY가 설정되지 않았습니다.');
     }
   }
 
   Future<void> speak(String text, {String? voiceId}) async {
-    if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty || text.trim().isEmpty) {
       return;
     }
 
@@ -48,7 +47,7 @@ class ElevenLabsTtsService {
         'https://api.elevenlabs.io/v1/text-to-speech/$selectedVoiceId',
       );
       final headers = {
-        'xi-api-key': _apiKey!,
+        'xi-api-key': _apiKey,
         'Content-Type': 'application/json',
       };
       final body = jsonEncode({
@@ -69,7 +68,7 @@ class ElevenLabsTtsService {
       }
     } catch (e) {
       if (!completer.isCompleted) {
-        subscription?.cancel();
+        subscription.cancel();
         completer.complete();
       }
       rethrow;

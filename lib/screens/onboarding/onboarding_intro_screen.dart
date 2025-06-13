@@ -5,7 +5,7 @@ import 'dart:async';
 /// Figma 노드: 14:3266 - 온보딩 - 인트로
 /// "지금부터 당신의 애착 사물을 깨워볼께요." 메시지와 함께 서비스 소개
 class OnboardingIntroScreen extends StatefulWidget {
-  const OnboardingIntroScreen({Key? key}) : super(key: key);
+  const OnboardingIntroScreen({super.key});
 
   @override
   State<OnboardingIntroScreen> createState() => _OnboardingIntroScreenState();

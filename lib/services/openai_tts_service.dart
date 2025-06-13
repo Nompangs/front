@@ -2,7 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -13,13 +12,13 @@ class OpenAiTtsService {
   final AudioPlayer _audioPlayer = AudioPlayer();
 
   OpenAiTtsService() {
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty) {
       debugPrint('[TTS 서비스] 🚨 OPENAI_API_KEY가 설정되지 않았습니다.');
     }
   }
 
   Future<void> speak(String text) async {
-    if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
+    if (_apiKey == null || _apiKey.isEmpty || text.trim().isEmpty) {
       return;
     }
 
@@ -54,7 +53,7 @@ class OpenAiTtsService {
       }
     } catch (e) {
       if (!completer.isCompleted) {
-        subscription?.cancel();
+        subscription.cancel();
         completer.complete();
       }
       rethrow;

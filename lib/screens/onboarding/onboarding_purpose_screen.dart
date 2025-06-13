@@ -5,7 +5,7 @@ import '../../providers/onboarding_provider.dart';
 /// 온보딩 용도 설정 화면
 /// 첨부 이미지 디자인과 onboarding_input_screen.dart 규정을 따라 새롭게 구현
 class OnboardingPurposeScreen extends StatefulWidget {
-  const OnboardingPurposeScreen({Key? key}) : super(key: key);
+  const OnboardingPurposeScreen({super.key});
 
   @override
   State<OnboardingPurposeScreen> createState() =>

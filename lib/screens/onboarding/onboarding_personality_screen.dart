@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
-import 'package:nompangs/models/onboarding_state.dart';
+import 'package:nompangs/services/personality_service.dart';
 
 class OnboardingPersonalityScreen extends StatefulWidget {
-  const OnboardingPersonalityScreen({Key? key}) : super(key: key);
+  const OnboardingPersonalityScreen({super.key});
 
   @override
   State<OnboardingPersonalityScreen> createState() =>
@@ -42,14 +42,153 @@ class _OnboardingPersonalityScreenState
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // 상단 베이지 섹션 (이미지)
-              Expanded(
-                flex: 4,
-                child: Container(
+      body: Consumer<OnboardingProvider>(
+        builder: (context, provider, child) {
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                // 상단 베이지 섹션 (이미지만) - 색상 유지
+                Container(
+                  width: double.infinity,
+                  color: const Color(0xFFF5F5DC), // 베이지 섹션 색상 유지
+                  padding: const EdgeInsets.only(top: 0, bottom: 10),
+                  child: Column(
+                    children: [
+                      // 중앙 이미지만
+                      Center(
+                        child: SizedBox(
+                          width: screenWidth * 0.8,
+                          height: screenWidth * 0.8,
+                          child: Image.asset(
+                            'assets/ui_assets/placeHolder_1@2x.png',
+                            width: screenWidth * 0.8,
+                            height: screenWidth * 0.8,
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              print('=== 이미지 로딩 에러 ===');
+                              print('Error: $error');
+                              print('StackTrace: $stackTrace');
+                              print('===================');
+                              return Container(
+                                width: screenWidth * 0.8,
+                                height: screenWidth * 0.8,
+                                decoration: BoxDecoration(
+                                  color: Colors.red.shade100,
+                                  border: Border.all(
+                                    color: Colors.red,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error,
+                                      size: 40,
+                                      color: Colors.red,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      '이미지 로드 실패',
+                                      style: TextStyle(
+                                        fontFamily: 'Pretendard',
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            frameBuilder: (
+                              context,
+                              child,
+                              frame,
+                              wasSynchronouslyLoaded,
+                            ) {
+                              if (wasSynchronouslyLoaded) {
+                                print('=== 이미지 로딩 성공 (동기) ===');
+                                return child;
+                              }
+                              if (frame == null) {
+                                print('=== 이미지 로딩 중... ===');
+                                return Container(
+                                  width: screenWidth * 0.8,
+                                  height: screenWidth * 0.8,
+                                  color: Colors.grey.shade200,
+                                  child: const Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+                              print('=== 이미지 로딩 성공 (비동기) ===');
+                              return child;
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 성격 섹션들을 연속적으로 배치 - 각 섹션 색상 유지
+                Column(
+                  children: [
+                    // 내향성 슬라이더 섹션 (노란색) - 색상 유지
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFFFFD700), // 노란색 섹션 색상 유지
+                      title: '내향성',
+                      value: introversionValue,
+                      leftLabel: '수줍음',
+                      rightLabel: '활발함',
+                      onChanged: (value) {
+                        setState(() => introversionValue = value);
+                        provider.updatePersonalitySlider(
+                          'introversion',
+                          (value * 10).round(),
+                        );
+                      },
+                    ),
+
+                    // 감정표현 슬라이더 섹션 (주황색) - 색상 유지
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFFFF8C42), // 주황색 섹션 색상 유지
+                      title: '감정표현',
+                      value: emotionalValue,
+                      leftLabel: '차가운',
+                      rightLabel: '따뜻한',
+                      onChanged: (value) {
+                        setState(() => emotionalValue = value);
+                        provider.updatePersonalitySlider(
+                          'warmth',
+                          (value * 10).round(),
+                        );
+                      },
+                    ),
+
+                    // 유능함 슬라이더 섹션 (초록색) - 색상 유지
+                    _buildPersonalitySection(
+                      screenWidth: screenWidth,
+                      color: const Color(0xFF90EE90), // 초록색 섹션 색상 유지
+                      title: '유능함',
+                      value: competenceValue,
+                      leftLabel: '서툰',
+                      rightLabel: '능숙한',
+                      onChanged: (value) {
+                        setState(() => competenceValue = value);
+                        provider.updatePersonalitySlider(
+                          'competence',
+                          (value * 10).round(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+
+                // 하단 흰색 섹션 (저장 버튼) - 색상 유지
+                Container(
                   width: double.infinity,
                   color: const Color(0xFFF5F5DC),
                   padding: EdgeInsets.fromLTRB(
