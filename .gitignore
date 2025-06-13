@@ -87,3 +87,5 @@ android/app/google-services.json
 lib/firebase_options.dart
 macos/Runner/GoogleService-Info.plist
 ios/Flutter/env.debug.xcconfig
+# Node.js
+server/node_modules/

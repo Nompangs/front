@@ -8,6 +8,7 @@ import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/widgets/common/primary_button.dart';
 import 'package:nompangs/theme/app_theme.dart';
 import 'package:nompangs/widgets/personality_chart.dart';
+import 'package:nompangs/services/personality_service.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
@@ -16,6 +17,7 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/services/character_manager.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({Key? key}) : super(key: key);
@@ -34,6 +36,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   final GlobalKey _qrKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = false;
+  String? _qrUuid;
+  bool _creatingQr = false;
+
 
   @override
   void initState() {
@@ -65,6 +70,14 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     Future.delayed(const Duration(milliseconds: 500), () {
       _bounceController.forward();
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<OnboardingProvider>();
+      final character = provider.state.generatedCharacter;
+      if (character != null) {
+        _createQrProfile(character);
+      }
+    });
   }
 
   void _onScroll() {
@@ -88,6 +101,71 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     _bounceController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _createQrProfile(Character character) async {
+    if (_creatingQr) return;
+    setState(() {
+      _creatingQr = true;
+    });
+    final providerState = context.read<OnboardingProvider>();
+    var profile = providerState.personalityProfile;
+    if (profile.structuredPrompt.isEmpty) {
+      final service = const PersonalityService();
+      profile = await service.generateProfile(providerState.state);
+      providerState.setPersonalityProfile(profile);
+    }
+    final userInput = providerState.state.userInput;
+    final data = {
+      'personalityProfile': {
+        'aiPersonalityProfile': profile.aiPersonalityProfile,
+        'photoAnalysis': profile.photoAnalysis,
+        'lifeStory': profile.lifeStory,
+        'humorMatrix': profile.humorMatrix,
+        'attractiveFlaws': profile.attractiveFlaws,
+        'contradictions': profile.contradictions,
+        'communicationStyle': profile.communicationStyle,
+        'structuredPrompt': profile.structuredPrompt,
+      }
+    };
+    try {
+      final result = await CharacterManager.instance.saveCharacterForQR(data);
+      final uuid = result['uuid'] as String;
+      final message = result['message'] as String?;
+      
+      // 🎯 간소화 정보 로깅
+      if (message != null) {
+        print('✅ $message');
+      }
+      
+      if (mounted) {
+        setState(() {
+          _qrUuid = uuid;
+        });
+      }
+    } catch (e) {
+      print('QR 생성 실패: $e');
+      if (mounted) {
+        String message = 'QR 생성 실패';
+        final match = RegExp(r'(\d{3})').firstMatch(e.toString());
+        if (match != null) {
+          message = 'QR 생성 실패 (HTTP ${match.group(1)})';
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _creatingQr = false;
+        });
+      }
+    }
   }
 
   @override
@@ -798,10 +876,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       'createdAt': character.createdAt?.toIso8601String(),
     };
 
-    return 'nompangs://character?data=${base64Encode(utf8.encode(jsonEncode(data)))}';
+    return 'nompangs://character?data=${base64Url.encode(utf8.encode(jsonEncode(data)))}';
   }
 
   Future<void> _saveQRCode() async {
+    if (_qrUuid == null) return;
     try {
       // QR 코드 위젯을 이미지로 캡처
       final RenderRepaintBoundary boundary =
@@ -897,6 +976,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   }
 
   Future<void> _shareQRCode(Character character) async {
+    if (_qrUuid == null) return;
     try {
       // QR 코드 위젯을 이미지로 캡처
       final RenderRepaintBoundary boundary =

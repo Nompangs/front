@@ -1,11 +1,8 @@
-// lib/chat_speaker_screen.dart
-
-import 'dart:async';
-import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:nompangs/providers/chat_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'chat_setting.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatSpeakerScreen extends StatefulWidget {
   const ChatSpeakerScreen({Key? key}) : super(key: key);
@@ -14,115 +11,170 @@ class ChatSpeakerScreen extends StatefulWidget {
   State<ChatSpeakerScreen> createState() => _ChatSpeakerScreenState();
 }
 
-class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
-    with TickerProviderStateMixin {
-  late stt.SpeechToText _speech;
-  bool _speechInitialized = false;
+class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
+  final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-
-  /// 마지막으로 전달받은 sound level (0.0 ~ 1.0)
   double _lastSoundLevel = 0.0;
+  String _statusText = "준비 중...";
 
-  /// Equalizer Bars 컨트롤러 리스트
+  @override
+  void initState() {
+    super.initState();
+    _initSpeech();
+  }
+
+  @override
+  void dispose() {
+    _speech.stop();
+    super.dispose();
+  }
+
+  Future<void> _initSpeech() async {
+    bool available = await _speech.initialize(
+      onError: (error) => print('STT Error: $error'),
+      onStatus: (status) {
+        if (status == 'notListening' && mounted) {
+           _restartListeningLoop();
+        }
+      }
+    );
+    if (available && mounted) {
+      _startListening();
+    }
+  }
+  
+  void _restartListeningLoop() {
+    if (!mounted) return;
+    final chatProvider = context.read<ChatProvider>();
+    if (!chatProvider.isProcessing && !_isListening) {
+      Future.delayed(const Duration(milliseconds: 500), () => _startListening());
+    }
+  }
+
+  void _startListening() async {
+    if (!mounted || _isListening || context.read<ChatProvider>().isProcessing) return;
+    
+    setState(() => _isListening = true);
+    await _speech.listen(
+      onResult: (result) {
+        print('음성 인식 결과: ${result.recognizedWords}');
+        if (result.finalResult && result.recognizedWords.isNotEmpty) {
+          print('최종 인식 완료: ${result.recognizedWords}');
+          _stopListening();
+          context.read<ChatProvider>().sendMessage(result.recognizedWords);
+        }
+      },
+      listenFor: const Duration(seconds: 30),
+      pauseFor: const Duration(seconds: 3),
+      localeId: 'ko_KR',
+      onSoundLevelChange: (level) {
+        if (mounted) setState(() => _lastSoundLevel = level);
+      },
+    );
+  }
+  
+  void _stopListening() {
+    if (!_isListening) return;
+    _speech.stop();
+    if (mounted) setState(() => _isListening = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final chatProvider = context.watch<ChatProvider>();
+    _restartListeningLoop();
+    
+    if (chatProvider.isProcessing) {
+      _statusText = "생각하는 중...";
+    } else if (_isListening) {
+      _statusText = "귀 기울여 듣고 있어요.";
+    } else {
+      _statusText = "대화를 시작하려면 탭하세요.";
+    }
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 24),
+                    onPressed: () {
+                      _stopListening();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.settings, color: Colors.white, size: 24),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                    if (_isListening) {
+                      _stopListening();
+                    } else {
+                      _startListening();
+                    }
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      chatProvider.characterName,
+                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 40),
+                    WhiteEqualizerBars(soundLevel: _lastSoundLevel),
+                    const SizedBox(height: 32),
+                    Text(
+                      _statusText,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 120),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class WhiteEqualizerBars extends StatefulWidget {
+  final double soundLevel;
+  const WhiteEqualizerBars({Key? key, required this.soundLevel}) : super(key: key);
+
+  @override
+  _WhiteEqualizerBarsState createState() => _WhiteEqualizerBarsState();
+}
+
+class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars> with TickerProviderStateMixin {
   late List<AnimationController> _controllers;
   late List<Animation<double>> _animations;
 
   @override
   void initState() {
     super.initState();
-
-    _initSpeech();
-    _initEqualizerControllers();
-  }
-
-  @override
-  void dispose() {
-    // STT 중지
-    if (_isListening) {
-      _speech.stop();
-    }
-    // Equalizer AnimationController 해제
-    for (var controller in _controllers) {
-      controller.dispose();
-    }
-    super.dispose();
-  }
-
-  /// speech_to_text 초기화
-  Future<void> _initSpeech() async {
-    _speech = stt.SpeechToText();
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        // 상태 변화 로그 (선택)
-      },
-      onError: (errorNotification) {
-        debugPrint('STT initialize error: $errorNotification');
-      },
-    );
-
-    if (available) {
-      setState(() {
-        _speechInitialized = true;
-      });
-      _startListening();
-    } else {
-      debugPrint('STT not available');
-    }
-  }
-
-  /// STT 듣기 시작
-  void _startListening() {
-    if (!_speechInitialized) return;
-
-    _speech.listen(
-      onResult: (result) {
-        // 인식된 텍스트 결과는 여기서 처리 가능 (필요 시 사용)
-      },
-      listenFor: const Duration(seconds: 60),
-      pauseFor: const Duration(seconds: 5),
-      partialResults: true,
-      localeId: 'ko_KR',
-      onSoundLevelChange: (level) {
-        // sound level(0.0~1.0)이 변경될 때마다 업데이트
-        _processSoundLevel(level);
-      },
-      cancelOnError: true,
-      listenMode: stt.ListenMode.confirmation,
-    );
-
-    setState(() {
-      _isListening = true;
-    });
-  }
-
-  /// STT 듣기 중단
-  void _stopListening() {
-    if (!_isListening) return;
-    _speech.stop();
-    setState(() {
-      _isListening = false;
-      _lastSoundLevel = 0.0;
-    });
-  }
-
-  /// sound level → Equalizer 애니메이션에 전달
-  void _processSoundLevel(double level) {
-    // level: 0.0 ~ 1.0 (실제 STT에서 넘어오는 값은 보통 작으므로 증폭)
-    final amplified = (level * 3).clamp(0.0, 1.0);
-    setState(() {
-      _lastSoundLevel = amplified;
-    });
-  }
-
-  /// Equalizer AnimationController + Tween 초기화
-  void _initEqualizerControllers() {
-    _controllers = List.generate(24, (index) {
+    _controllers = List.generate(5, (index) {
       return AnimationController(
         duration: Duration(milliseconds: 800 + (index * 50)),
         vsync: this,
       )..repeat(reverse: true);
     });
-
     _animations = _controllers.map((controller) {
       return Tween<double>(begin: 0.3, end: 1.0).animate(
         CurvedAnimation(parent: controller, curve: Curves.easeInOut),
@@ -131,161 +183,16 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      // 뒤로가기 시 STT 중단
-      onWillPop: () async {
-        if (_isListening) _stopListening();
-        return true;
-      },
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // ─── 상단 바 ─────────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.more_horiz,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (_) => const ChatSettingScreen()),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
-              // ─── 중앙 콘텐츠 ────────────────────────────────────
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // ① Equalizer Bars 위젯
-                    WhiteEqualizerBars(),
-
-                    const SizedBox(height: 32),
-
-                    // ② 안내 문구
-                    const Text(
-                      '귀 기울여 듣고 있어요.',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // ③ 잠금 버튼 (빨간 원 + 자물쇠 아이콘)
-                    GestureDetector(
-                      onTap: () {
-                        if (_isListening) _stopListening();
-                        Navigator.of(context).maybePop();
-                      },
-                      child: Container(
-                        width: 72,
-                        height: 72,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE64545),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.lock,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// =============================================================
-/// WhiteEqualizerBars
-///
-/// • 24개의 바를 애니메이션으로 생성하고, 각 바의 높이를
-///   기본 애니메이션 값(animation.value)과 “soundLevel”을 곱해 진폭 조절.
-/// • [soundLevel]: 0.0 ~ 1.0 값(포화 시 amplitude가 최대가 됨)
-/// • [animations]: initState에서 생성된 24개의 Animation<double>
-/// =============================================================
-class WhiteEqualizerBars extends StatefulWidget {
-  @override
-  _WhiteEqualizerBarsState createState() => _WhiteEqualizerBarsState();
-}
-
-class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
-    with TickerProviderStateMixin {
-  late List<AnimationController> controllers;
-  late List<Animation<double>> animations;
-
-  @override
-  void initState() {
-    super.initState();
-
-    // 24개 바에 대한 애니메이션 컨트롤러 생성
-    controllers = List.generate(24, (index) {
-      return AnimationController(
-        duration: Duration(milliseconds: 800 + (index * 50)), // 각각 다른 속도
-        vsync: this,
-      );
-    });
-
-    animations = controllers.map((controller) {
-      return Tween<double>(begin: 0.3, end: 1.0).animate(
-        CurvedAnimation(parent: controller, curve: Curves.easeInOut),
-      );
-    }).toList();
-
-    // 모든 애니메이션 시작
-    for (var controller in controllers) {
-      controller.repeat(reverse: true);
-    }
-  }
-
-  @override
   void dispose() {
-    for (var controller in controllers) {
-      controller.dispose();
+    for (var c in _controllers) {
+      c.dispose();
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 300,
       height: 150,
       child: Row(
@@ -293,16 +200,18 @@ class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
         crossAxisAlignment: CrossAxisAlignment.center,
         children: List.generate(5, (index) {
           return AnimatedBuilder(
-            animation: animations[index],
+            animation: _animations[index],
             builder: (context, child) {
-              double baseHeight = _getBaseHeight(index);
-              double currentHeight = baseHeight * animations[index].value;
+              double baseHeight = 150 - ((index - 2).abs() * 40.0);
+              double scale = 0.5 + (widget.soundLevel * 1.5);
+              double height = baseHeight * _animations[index].value * scale;
+              height = height.clamp(10.0, baseHeight);
 
               return Container(
                 width: 20,
-                height: currentHeight,
+                height: height,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.3 + (animations[index].value * 0.4)),
+                  color: Colors.white.withOpacity(0.3 + (_animations[index].value * 0.4)),
                   borderRadius: BorderRadius.circular(20),
                 ),
               );
@@ -311,12 +220,5 @@ class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars>
         }),
       ),
     );
-  }
-
-  double _getBaseHeight(int index) {
-    // 중앙이 가장 높고 양쪽으로 갈수록 낮아지는 패턴
-    double center = 3;
-    double distance = (index - center).abs();
-    return 150 - (distance * 4); // 높이 조절
   }
 }
