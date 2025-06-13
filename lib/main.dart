@@ -92,13 +92,6 @@ class TestScreen extends StatelessWidget {
             SizedBox(height: 40),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/onboarding/intro');
-              },
-              child: Text('온보딩 시작'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
                 Navigator.pushNamed(context, '/home');
               },
               child: Text('홈으로 이동'),
@@ -106,16 +99,9 @@ class TestScreen extends StatelessWidget {
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, '/chat-history');
-              },
-              child: Text('채팅 히스토리'),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
                 Navigator.pushNamed(context, '/flutter-mobile-clone');
               },
-              child: Text('Flutter 모바일 클론'),
+              child: Text('뉴홈 화면 UI'),
             ),
           ],
         ),
