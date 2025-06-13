@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:nompangs/main/find_momenti_screen.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -697,7 +698,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushNamed(context, '/onboarding/intro');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => ChatScreen(
+                                  characterName:
+                                      lastChattedObjectName.isNotEmpty
+                                          ? lastChattedObjectName
+                                          : '모멘티',
+                                  personalityTags: ['친근함', '유머'],
+                                  greeting: '안녕하세요! 무엇이 궁금하신가요?',
+                                  initialUserMessage: '',
+                                ),
+                          ),
+                        );
                       },
                       child: Container(
                         width: 54 * scale,
