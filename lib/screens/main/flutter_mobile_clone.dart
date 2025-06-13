@@ -107,9 +107,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // 스케일 애니메이션 생성 헬퍼 메소드
   Animation<double> _createScaleAnimation(
     AnimationController controller,
-    double endValue,
+    double startValue,
   ) {
-    return Tween<double>(begin: 1.0, end: endValue).animate(
+    return Tween<double>(begin: startValue, end: 1.0).animate(
       CurvedAnimation(
         parent: controller,
         curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
