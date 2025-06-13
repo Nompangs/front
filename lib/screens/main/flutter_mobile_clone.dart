@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
+import 'package:nompangs/main/find_momenti_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -184,7 +185,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _playAnimation3() {
-    // 세 번째 버튼 클릭 동작
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FindMomentiScreen()),
+    );
   }
 
   @override
