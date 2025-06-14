@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,8 +15,10 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/services/character_manager.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/services/ai_personality_service.dart';
+import 'dart:math';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -36,7 +39,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   bool _isScrolledToBottom = false;
   String? _qrUuid;
   bool _creatingQr = false;
-  final ApiService _apiService = ApiService();
 
   @override
   void initState() {
@@ -70,14 +72,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 이제 OnboardingProvider에서 이미 생성 완료된 프로필을 가져옵니다.
-      final profile = context.read<OnboardingProvider>().personalityProfile;
-      
+      final provider = context.read<OnboardingProvider>();
+      final profile = provider.personalityProfile;
+
       if (profile != null) {
         // 프로필이 있으면 QR 생성을 바로 시작합니다.
         _createQrProfile(profile);
       } else {
         // 만약 프로필이 없다면 오류 상황입니다.
+        debugPrint('🚨 완료 화면 오류: PersonalityProfile이 null입니다');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('오류: 페르소나 정보를 불러올 수 없습니다. 이전 화면으로 돌아가 다시 시도해주세요.'),
@@ -113,35 +116,129 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
   Future<void> _createQrProfile(PersonalityProfile profile) async {
     if (_creatingQr || !mounted) return;
+
     setState(() {
       _creatingQr = true;
     });
 
-    try {
-      // ApiService를 사용하여 서버에 프로필을 전송하고 결과를 받습니다.
-      final result = await _apiService.createProfileAndGetQr(profile);
-      final uuid = result['uuid'] as String?;
-      final qrUrl = result['qrUrl'] as String?;
+    final qrStartTime = DateTime.now();
+    debugPrint('🚀 QR 프로필 생성 시작');
 
-      if (uuid != null && qrUrl != null) {
+    try {
+      debugPrint('🔍 QR 생성용 프로필 데이터 확인:');
+      debugPrint('   - AI 프로필 이름: ${profile.aiPersonalityProfile?.name}');
+      debugPrint('   - 객체 타입: ${profile.aiPersonalityProfile?.objectType}');
+      debugPrint('   - 매력적 결함: ${profile.attractiveFlaws.length}개');
+      debugPrint('   - 모순적 특성: ${profile.contradictions.length}개');
+      debugPrint('   - 성격 변수: ${profile.personalityVariables.length}개');
+
+      // 프로필 직렬화 시간 측정
+      final serializationStartTime = DateTime.now();
+      final profileMap = profile.toMap();
+      final serializationEndTime = DateTime.now();
+      final serializationDuration =
+          serializationEndTime
+              .difference(serializationStartTime)
+              .inMilliseconds;
+      debugPrint('📦 프로필 직렬화 완료 (${serializationDuration}ms)');
+
+      // 서버 요청 시간 측정
+      final requestStartTime = DateTime.now();
+      final result = await CharacterManager.saveCharacterForQR({
+        'personalityProfile': profileMap,
+      });
+      final requestEndTime = DateTime.now();
+      final requestDuration =
+          requestEndTime.difference(requestStartTime).inMilliseconds;
+      debugPrint('🌐 서버 요청 완료 (${requestDuration}ms)');
+
+      // 서버 응답 구조 검증
+      if (result['uuid'] == null) {
+        throw const CharacterManagerException(
+          'INVALID_RESPONSE',
+          'UUID를 받지 못했습니다',
+        );
+      }
+
+      final uuid = result['uuid'] as String;
+      final qrUrl = result['qrUrl'] as String?;
+      final version = result['version'] as String?;
+
+      if (uuid.isNotEmpty && qrUrl != null && qrUrl.isNotEmpty) {
+        final qrEndTime = DateTime.now();
+        final totalDuration = qrEndTime.difference(qrStartTime).inMilliseconds;
+
         debugPrint('✅ QR 프로필 생성 성공!');
         debugPrint('   - UUID: $uuid');
+        debugPrint('   - 버전: $version');
         debugPrint('   - QR Data URL: ${qrUrl.substring(0, 50)}...');
+        debugPrint('⚡ QR 생성 성능 요약:');
+        debugPrint('   - 직렬화: ${serializationDuration}ms');
+        debugPrint('   - 서버 요청: ${requestDuration}ms');
+        debugPrint('   - 전체 시간: ${totalDuration}ms');
+
         if (mounted) {
           setState(() {
             _qrUuid = uuid;
           });
         }
       } else {
-        throw Exception('Server did not return a valid UUID or QR URL.');
+        throw CharacterManagerException(
+          'QR_GENERATION_FAILED',
+          'QR 코드 생성에 실패했습니다: UUID=${uuid.isEmpty ? '없음' : uuid}, QR=${qrUrl?.isEmpty ?? true ? '없음' : '있음'}',
+        );
       }
-    } catch (e) {
-      debugPrint('🚨 QR 생성 실패: $e');
+    } on CharacterManagerException catch (e) {
+      final qrEndTime = DateTime.now();
+      final totalDuration = qrEndTime.difference(qrStartTime).inMilliseconds;
+
+      debugPrint('🚨 CharacterManagerException: ${e.code} - ${e.message}');
+      debugPrint('⏱️ 실패까지 소요 시간: ${totalDuration}ms');
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('QR 코드 생성에 실패했습니다: ${e.toString()}'),
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text(e.userFriendlyMessage)),
+              ],
+            ),
+            backgroundColor: _getErrorColor(e.code),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: '다시 시도',
+              textColor: Colors.white,
+              onPressed: () => _createQrProfile(profile),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      final qrEndTime = DateTime.now();
+      final totalDuration = qrEndTime.difference(qrStartTime).inMilliseconds;
+
+      debugPrint('🚨 예상치 못한 QR 생성 오류: $e');
+      debugPrint('⏱️ 실패까지 소요 시간: ${totalDuration}ms');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('QR 코드 생성 중 예상치 못한 오류가 발생했습니다')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: '다시 시도',
+              textColor: Colors.white,
+              onPressed: () => _createQrProfile(profile),
+            ),
           ),
         );
       }
@@ -151,6 +248,25 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           _creatingQr = false;
         });
       }
+    }
+  }
+
+  Color _getErrorColor(String errorCode) {
+    switch (errorCode) {
+      case 'NETWORK_ERROR':
+      case 'CONNECTION_FAILED':
+        return Colors.orange;
+      case 'TIMEOUT':
+        return Colors.amber;
+      case 'SERVER_ERROR':
+      case 'SERVICE_UNAVAILABLE':
+        return Colors.red;
+      case 'VALIDATION_FAILED':
+        return Colors.purple;
+      case 'QR_GENERATION_FAILED':
+        return Colors.indigo;
+      default:
+        return Colors.red;
     }
   }
 
@@ -166,13 +282,24 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
-        final character = provider.state.generatedCharacter;
+        // PersonalityProfile을 사용하도록 변경
+        final personalityProfile = provider.personalityProfile;
 
-        if (character == null) {
+        // PersonalityProfile이 없거나 비어있는 경우 체크
+        if (personalityProfile == null ||
+            personalityProfile.aiPersonalityProfile == null ||
+            personalityProfile.aiPersonalityProfile!.name.isEmpty) {
           return const Scaffold(
             body: Center(child: Text('캐릭터 정보를 불러올 수 없습니다.')),
           );
         }
+
+        // PersonalityProfile에서 Character 정보 추출
+        final characterName = personalityProfile.aiPersonalityProfile!.name;
+        final characterTraits =
+            personalityProfile.aiPersonalityProfile!.personalityTraits;
+        final characterGreeting =
+            personalityProfile.aiPersonalityProfile!.summary;
 
         return Scaffold(
           backgroundColor: Colors.white, // 전체 배경은 흰색으로 유지
@@ -281,7 +408,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             // 다시 Expanded로 변경
                                             child: ElevatedButton.icon(
                                               onPressed:
-                                                  () => _shareQRCode(character),
+                                                  () => _shareQRCode(
+                                                    characterName,
+                                                    characterTraits,
+                                                  ),
                                               icon: const Icon(
                                                 Icons.share,
                                                 size: 16,
@@ -325,7 +455,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                           Expanded(
                             flex: 35, // 30에서 35로 변경
                             child: GestureDetector(
-                              onTap: () => _showQRPopup(character),
+                              onTap: () => _showQRPopup(characterName),
                               child: Container(
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFC8A6FF), // 연보라색
@@ -347,7 +477,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child: RepaintBoundary(
                                       key: _qrKey,
                                       child: QrImageView(
-                                        data: _generateQRData(character),
+                                        data: _generateQRData(characterName),
                                         version: QrVersions.auto,
                                         backgroundColor: Colors.white,
                                       ),
@@ -389,7 +519,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '털찐말랑이',
+                                      characterName,
                                       style: const TextStyle(
                                         fontFamily: 'Pretendard',
                                         fontSize: 24,
@@ -410,16 +540,53 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Row(
+                                    Row(
                                       children: [
-                                        Icon(Icons.access_time, size: 16),
-                                        SizedBox(width: 4),
-                                        Text(
-                                          '멘탈지기',
-                                          style: TextStyle(
-                                            fontFamily: 'Pretendard',
-                                            fontSize: 12,
-                                          ),
+                                        const Icon(
+                                          Icons.work_outline,
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        FutureBuilder<String>(
+                                          future:
+                                              AiPersonalityService.summarizePurpose(
+                                                purpose:
+                                                    provider.state.purpose ??
+                                                    '멘탈지기',
+                                                objectType:
+                                                    provider
+                                                        .state
+                                                        .userInput
+                                                        ?.objectType ??
+                                                    '사물',
+                                              ),
+                                          builder: (context, snapshot) {
+                                            if (snapshot.connectionState ==
+                                                ConnectionState.waiting) {
+                                              return const Text(
+                                                '분석중...',
+                                                style: TextStyle(
+                                                  fontFamily: 'Pretendard',
+                                                  fontSize: 12,
+                                                ),
+                                              );
+                                            }
+
+                                            final summary =
+                                                snapshot.data ??
+                                                _summarizePurpose(
+                                                  provider.state.purpose ??
+                                                      '멘탈지기',
+                                                );
+
+                                            return Text(
+                                              summary,
+                                              style: const TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                fontSize: 12,
+                                              ),
+                                            );
+                                          },
                                         ),
                                       ],
                                     ),
@@ -463,7 +630,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                       ),
                                     ),
                                     child:
-                                        provider.state.photoPath != null
+                                        personalityProfile
+                                                    .aiPersonalityProfile !=
+                                                null
                                             ? ClipRRect(
                                               borderRadius:
                                                   BorderRadius.circular(10),
@@ -537,52 +706,129 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                           mainAxisAlignment:
                                               MainAxisAlignment.center,
                                           children: [
-                                            // 성격 태그들 (성격 슬라이더 기반)
-                                            Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                _buildPersonalityTag(
-                                                  _getPersonalityTag1(
-                                                    provider.state,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 8),
-                                                _buildPersonalityTag(
-                                                  _getPersonalityTag2(
-                                                    provider.state,
-                                                  ),
-                                                ),
-                                              ],
+                                            // 성격 태그들 (AI 기반)
+                                            FutureBuilder<List<String>>(
+                                              future:
+                                                  personalityProfile
+                                                              .aiPersonalityProfile
+                                                              ?.personalityTraits
+                                                              .isNotEmpty ==
+                                                          true
+                                                      ? Future.value([
+                                                        personalityProfile
+                                                                .aiPersonalityProfile!
+                                                                .personalityTraits
+                                                                .isNotEmpty
+                                                            ? personalityProfile
+                                                                .aiPersonalityProfile!
+                                                                .personalityTraits
+                                                                .first
+                                                            : '특별함',
+                                                        personalityProfile
+                                                                    .aiPersonalityProfile!
+                                                                    .personalityTraits
+                                                                    .length >=
+                                                                2
+                                                            ? personalityProfile
+                                                                .aiPersonalityProfile!
+                                                                .personalityTraits[1]
+                                                            : '매력적',
+                                                      ])
+                                                      : AiPersonalityService.generatePersonalityTags(
+                                                        state: provider.state,
+                                                        profile:
+                                                            personalityProfile,
+                                                      ),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                    children: [
+                                                      _buildPersonalityTag(
+                                                        '분석중',
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      _buildPersonalityTag(
+                                                        '...',
+                                                      ),
+                                                    ],
+                                                  );
+                                                }
+
+                                                final tags =
+                                                    snapshot.data ??
+                                                    ['특별함', '매력적'];
+                                                return Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    _buildPersonalityTag(
+                                                      '#${tags.isNotEmpty ? tags[0] : '특별함'}',
+                                                    ),
+                                                    const SizedBox(width: 8),
+                                                    _buildPersonalityTag(
+                                                      '#${tags.length >= 2 ? tags[1] : '매력적'}',
+                                                    ),
+                                                  ],
+                                                );
+                                              },
                                             ),
 
                                             const SizedBox(height: 24),
 
                                             // 말풍선 텍스트 (버블 배경 위에)
-                                            const Column(
-                                              children: [
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
+                                            FutureBuilder<String>(
+                                              future:
+                                                  personalityProfile
+                                                              .greeting
+                                                              ?.isNotEmpty ==
+                                                          true
+                                                      ? Future.value(
+                                                        personalityProfile
+                                                            .greeting!,
+                                                      )
+                                                      : AiPersonalityService.generateGreeting(
+                                                        state: provider.state,
+                                                        profile:
+                                                            personalityProfile,
+                                                      ),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return const Text(
+                                                    '인사말 생성 중...',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Pretendard',
+                                                      fontSize: 18,
+                                                      color: Colors.black54,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                                    textAlign: TextAlign.center,
+                                                  );
+                                                }
+
+                                                final greeting =
+                                                    snapshot.data ??
+                                                    personalityProfile
+                                                        .aiPersonalityProfile
+                                                        ?.summary ??
+                                                    '안녕하세요! 만나서 반가워요~';
+
+                                                return Text(
+                                                  greeting,
+                                                  style: const TextStyle(
                                                     fontFamily: 'Pretendard',
                                                     fontSize: 18,
                                                     color: Colors.black,
                                                     fontWeight: FontWeight.w500,
                                                   ),
                                                   textAlign: TextAlign.center,
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 18,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
+                                                );
+                                              },
                                             ),
                                           ],
                                         ),
@@ -593,28 +839,97 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                               ),
                             ),
 
-                            // 사진/말풍선과 성격차트 사이 간격 (두 배로 증가)
-                            const SizedBox(height: 80), // 기존 40에서 80으로 두 배 증가
+                            // AI 기반 성격 분석 섹션 (말풍선 밖에 배치)
+                            const SizedBox(height: 30),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF8F9FA),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.black.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '🎭 성격 분석',
+                                    style: TextStyle(
+                                      fontFamily: 'Pretendard',
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
 
-                            const SizedBox(height: 40), // 성격차트 위 간격
-                            // 성격 차트 추가
-                            Builder(
-                              builder: (context) {
-                                final personalityData =
-                                    _generatePersonalityData(provider.state);
-                                final traits =
-                                    personalityData["성격특성"]
-                                        as Map<String, dynamic>;
+                                  // 매력적 특성
+                                  if (personalityProfile
+                                      .attractiveFlaws
+                                      .isNotEmpty) ...[
+                                    const Text(
+                                      '✨ 매력적인 특징',
+                                      style: TextStyle(
+                                        fontFamily: 'Pretendard',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...personalityProfile.attractiveFlaws.map(
+                                      (flaw) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
+                                        child: Text(
+                                          '• $flaw',
+                                          style: const TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 13,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
 
-                                return PersonalityChart(
-                                  warmth: (traits["온기"] as double),
-                                  competence: (traits["능력"] as double),
-                                  extroversion: (traits["외향성"] as double),
-                                  creativity: (traits["창의성"] as double),
-                                  humour: (traits["유머감각"] as double),
-                                  reliability: (traits["신뢰성"] as double),
-                                );
-                              },
+                                  // 모순적 특성
+                                  if (personalityProfile
+                                      .contradictions
+                                      .isNotEmpty) ...[
+                                    const Text(
+                                      '🎪 복합적인 면',
+                                      style: TextStyle(
+                                        fontFamily: 'Pretendard',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    ...personalityProfile.contradictions.map(
+                                      (contradiction) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 4,
+                                        ),
+                                        child: Text(
+                                          '• $contradiction',
+                                          style: const TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 13,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -648,8 +963,14 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     onPressed: () {
                       Navigator.pushNamed(
                         context,
-                        '/chat/${character.id}',
-                        arguments: character,
+                        '/chat/$characterName',
+                        arguments: {
+                          'characterName': characterName,
+                          'characterHandle':
+                              '@${characterName}_${DateTime.now().millisecondsSinceEpoch}',
+                          'personalityTags': characterTraits,
+                          'greeting': characterGreeting,
+                        },
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -800,7 +1121,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
-                                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
+                                        '${characterName}이 깨어났어요!',
                                         style: const TextStyle(
                                           fontFamily: 'Pretendard',
                                           color: Colors.black,
@@ -850,19 +1171,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
-  String _generateQRData(Character character) {
+  String _generateQRData(String characterName) {
+    // 🎯 간단한 UUID 기반 딥링크 사용
+    if (_qrUuid != null) {
+      return 'nompangs://character/$_qrUuid';
+    }
+
+    // 폴백: 기본 데이터 구조
     final data = {
-      'characterId': character.id,
-      'name': character.name,
-      'objectType': character.objectType,
-      'personality': {
-        'warmth': character.personality.warmth,
-        'competence': character.personality.competence,
-        'extroversion': character.personality.extroversion,
-      },
-      'greeting': character.greeting,
-      'traits': character.traits,
-      'createdAt': character.createdAt?.toIso8601String(),
+      'characterId': characterName,
+      'name': characterName,
+      'objectType': 'personality',
+      'createdAt': DateTime.now().toIso8601String(),
     };
 
     return 'nompangs://character?data=${base64Url.encode(utf8.encode(jsonEncode(data)))}';
@@ -964,7 +1284,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     }
   }
 
-  Future<void> _shareQRCode(Character character) async {
+  Future<void> _shareQRCode(String characterName, List<String> traits) async {
     if (_qrUuid == null) return;
     try {
       // QR 코드 위젯을 이미지로 캡처
@@ -988,8 +1308,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       await Share.shareXFiles(
         [XFile(file.path)],
         text:
-            '${character.name}와 함께하세요! 놈팽쓰 QR 코드입니다 🎉\n\nQR을 스캔하면 ${character.name}과 대화할 수 있어요!',
-        subject: '놈팽쓰 친구 공유 - ${character.name}',
+            '${characterName}와 함께하세요! 놈팽쓰 QR 코드입니다 🎉\n\nQR을 스캔하면 ${characterName}과 대화할 수 있어요!',
+        subject: '놈팽쓰 친구 공유 - ${characterName}',
       );
 
       // 잠시 후 임시 파일 삭제
@@ -1012,9 +1332,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       print('QR 공유 오류: $e');
       if (mounted) {
         // 실패 시 기본 텍스트 공유
-        final qrData = _generateQRData(character);
+        final qrData = _generateQRData(characterName);
         await Share.share(
-          '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
+          '${characterName}와 함께하세요! 놈팽쓰 QR: $qrData',
           subject: '놈팽쓰 친구 공유',
         );
 
@@ -1030,7 +1350,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   }
 
   // QR 코드 팝업 표시
-  void _showQRPopup(Character character) {
+  void _showQRPopup(String characterName) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.8),
@@ -1060,7 +1380,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: QrImageView(
-                          data: _generateQRData(character),
+                          data: _generateQRData(characterName),
                           version: QrVersions.auto,
                           backgroundColor: Colors.white,
                         ),
@@ -1076,8 +1396,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
-  String _getPersonalityTag1(OnboardingState state) {
-    // 첫 번째 태그: 내향성 기반 (수줍음 ↔ 활발함)
+  String _getPersonalityTag1(
+    OnboardingState state,
+    PersonalityProfile profile,
+  ) {
+    // PersonalityProfile의 personalityTraits가 있으면 첫 번째 사용
+    if (profile.aiPersonalityProfile?.personalityTraits.isNotEmpty == true) {
+      final traits = profile.aiPersonalityProfile!.personalityTraits;
+      return '#${traits.first}';
+    }
+
+    // 없으면 기존 로직: 내향성 기반 (수줍음 ↔ 활발함)
     final introversion = state.introversion ?? 5;
     if (introversion <= 3) {
       return '#수줍음';
@@ -1088,8 +1417,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     }
   }
 
-  String _getPersonalityTag2(OnboardingState state) {
-    // 두 번째 태그: 감정표현과 유능함 조합 기반
+  String _getPersonalityTag2(
+    OnboardingState state,
+    PersonalityProfile profile,
+  ) {
+    // PersonalityProfile의 personalityTraits가 2개 이상 있으면 두 번째 사용
+    if (profile.aiPersonalityProfile?.personalityTraits != null &&
+        profile.aiPersonalityProfile!.personalityTraits.length >= 2) {
+      final traits = profile.aiPersonalityProfile!.personalityTraits;
+      return '#${traits[1]}';
+    }
+
+    // 없으면 기존 로직: 감정표현과 유능함 조합 기반
     final warmth = state.warmth ?? 5;
     final competence = state.competence ?? 5;
 
@@ -1127,7 +1466,53 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         "신뢰성": 50 + (competence * 5), // competence 기반
       },
       "유머스타일": state.humorStyle.isNotEmpty ? state.humorStyle : "따뜻한 유머러스",
-      "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안해함", "친구들과 함께 있을 때 더 빛남"],
+      "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안함", "친구들과 함께 있을 때 더 빛남"],
     };
+  }
+
+  String _summarizePurpose(String purpose) {
+    if (purpose.length <= 10) {
+      return purpose;
+    }
+
+    // 핵심 키워드 추출 및 요약
+    final keywords = {
+      '운동': '운동지기',
+      '헬스': '헬스지기',
+      '다이어트': '다이어트',
+      '공부': '공부지기',
+      '학습': '학습지기',
+      '시험': '시험지기',
+      '위로': '위로지기',
+      '상담': '상담지기',
+      '대화': '대화지기',
+      '친구': '친구',
+      '알람': '알람지기',
+      '깨워': '알람지기',
+      '일정': '일정지기',
+      '관리': '관리지기',
+      '채찍질': '채찍지기',
+      '닥달': '닥달지기',
+      '응원': '응원지기',
+      '격려': '격려지기',
+      '멘탈': '멘탈지기',
+      '감정': '감정지기',
+      '스트레스': '힐링지기',
+      '힐링': '힐링지기',
+      '음악': '음악지기',
+      '독서': '독서지기',
+      '요리': '요리지기',
+      '청소': '청소지기',
+    };
+
+    // 키워드 매칭
+    for (final entry in keywords.entries) {
+      if (purpose.contains(entry.key)) {
+        return entry.value;
+      }
+    }
+
+    // 키워드가 없으면 첫 10글자 + ...
+    return purpose.substring(0, 7) + '...';
   }
 }

@@ -7,9 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:nompangs/services/character_manager.dart';
 
 class DeepLinkHelper {
-  static Future<Map<String, dynamic>?> processCharacterData(
-    String uuid,
-  ) async {
+  static Future<Map<String, dynamic>?> processCharacterData(String uuid) async {
     final String platform = defaultTargetPlatform.name;
     final baseUrl = dotenv.env['QR_API_BASE_URL'] ?? 'http://localhost:8080';
     try {
@@ -42,14 +40,18 @@ class DeepLinkHelper {
       };
 
       if (characterData.containsKey('personalityProfile')) {
-        final personalityProfile = characterData['personalityProfile'] as Map<String, dynamic>?;
+        final personalityProfile =
+            characterData['personalityProfile'] as Map<String, dynamic>?;
         if (personalityProfile != null) {
           result['fullPersonalityProfile'] = personalityProfile;
-          
+
           if (personalityProfile.containsKey('aiPersonalityProfile')) {
-            final aiProfile = personalityProfile['aiPersonalityProfile'] as Map<String, dynamic>?;
+            final aiProfile =
+                personalityProfile['aiPersonalityProfile']
+                    as Map<String, dynamic>?;
             if (aiProfile != null) {
-              result['personalityTraits'] = aiProfile['personalityTraits'] ?? result['personalityTags'];
+              result['personalityTraits'] =
+                  aiProfile['personalityTraits'] ?? result['personalityTags'];
               result['emotionalRange'] = aiProfile['emotionalRange'];
               result['communicationStyle'] = aiProfile['communicationStyle'];
               result['humorStyle'] = aiProfile['humorStyle'];
@@ -60,33 +62,43 @@ class DeepLinkHelper {
               result['innerComplaints'] = aiProfile['innerComplaints'];
             }
           }
-          
+
           if (personalityProfile.containsKey('lifeStory')) {
-            final lifeStory = personalityProfile['lifeStory'] as Map<String, dynamic>?;
+            final lifeStory =
+                personalityProfile['lifeStory'] as Map<String, dynamic>?;
             if (lifeStory != null) {
               result['background'] = lifeStory['background'];
-              result['secretWishes'] = lifeStory['secretWishes'] ?? result['secretWishes'];
-              result['innerComplaints'] = lifeStory['innerComplaints'] ?? result['innerComplaints'];
+              result['secretWishes'] =
+                  lifeStory['secretWishes'] ?? result['secretWishes'];
+              result['innerComplaints'] =
+                  lifeStory['innerComplaints'] ?? result['innerComplaints'];
             }
           }
-          
+
           if (personalityProfile.containsKey('humorMatrix')) {
-            final humorMatrix = personalityProfile['humorMatrix'] as Map<String, dynamic>?;
+            final humorMatrix =
+                personalityProfile['humorMatrix'] as Map<String, dynamic>?;
             if (humorMatrix != null) {
-              result['humorStyle'] = humorMatrix['style'] ?? result['humorStyle'];
+              result['humorStyle'] =
+                  humorMatrix['style'] ?? result['humorStyle'];
             }
           }
-          
+
           if (personalityProfile.containsKey('communicationStyle')) {
-            final commStyle = personalityProfile['communicationStyle'] as Map<String, dynamic>?;
+            final commStyle =
+                personalityProfile['communicationStyle']
+                    as Map<String, dynamic>?;
             if (commStyle != null) {
-              result['communicationStyle'] = commStyle['tone'] ?? result['communicationStyle'];
+              result['communicationStyle'] =
+                  commStyle['tone'] ?? result['communicationStyle'];
             }
           }
         }
       }
 
-      print('[DeepLinkHelper][$platform] 전체 성격 데이터 포함 완료: ${result.keys.toList()}');
+      print(
+        '[DeepLinkHelper][$platform] 전체 성격 데이터 포함 완료: ${result.keys.toList()}',
+      );
       return result;
     } catch (e, s) {
       print('[DeepLinkHelper][$platform] 데이터 처리 중 오류: $e');
@@ -119,5 +131,113 @@ class DeepLinkHelper {
         duration: const Duration(seconds: 3),
       ),
     );
+  }
+
+  static Future<void> handleQrDeeplink(
+    String uuid,
+    BuildContext context,
+  ) async {
+    try {
+      debugPrint('🔗 QR Deeplink 처리: $uuid');
+
+      // 서버에서 캐릭터 로드
+      final baseUrl = dotenv.env['QR_API_BASE_URL'] ?? 'http://localhost:8080';
+      final response = await http.get(Uri.parse('$baseUrl/loadQR/$uuid'));
+      if (response.statusCode != 200) {
+        print(
+          '[DeepLinkHelper][${defaultTargetPlatform.name}] loadQR 실패: ${response.statusCode}',
+        );
+        return;
+      }
+      final characterData = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (!_isValidCharacterData(characterData)) {
+        print(
+          '[DeepLinkHelper][${defaultTargetPlatform.name}] 유효하지 않은 캐릭터 데이터 형식.',
+        );
+        return;
+      }
+
+      final personaId = characterData['personaId'] as String?;
+      if (personaId == null) {
+        print('[DeepLinkHelper][${defaultTargetPlatform.name}] personaId 누락');
+        return;
+      }
+
+      await CharacterManager.instance.handleCharacterFromQR(personaId);
+      print('[DeepLinkHelper][${defaultTargetPlatform.name}] 사용자-캐릭터 관계 생성 완료');
+
+      final result = {
+        'characterName': characterData['name'] as String,
+        'personalityTags': List<String>.from(characterData['tags'] as List),
+        'greeting': characterData['greeting'] as String?,
+        'personaId': personaId,
+      };
+
+      if (characterData.containsKey('personalityProfile')) {
+        final personalityProfile =
+            characterData['personalityProfile'] as Map<String, dynamic>?;
+        if (personalityProfile != null) {
+          result['fullPersonalityProfile'] = personalityProfile;
+
+          if (personalityProfile.containsKey('aiPersonalityProfile')) {
+            final aiProfile =
+                personalityProfile['aiPersonalityProfile']
+                    as Map<String, dynamic>?;
+            if (aiProfile != null) {
+              result['personalityTraits'] =
+                  aiProfile['personalityTraits'] ?? result['personalityTags'];
+              result['emotionalRange'] = aiProfile['emotionalRange'];
+              result['communicationStyle'] = aiProfile['communicationStyle'];
+              result['humorStyle'] = aiProfile['humorStyle'];
+              result['lifeStory'] = aiProfile['lifeStory'];
+              result['attractiveFlaws'] = aiProfile['attractiveFlaws'];
+              result['contradictions'] = aiProfile['contradictions'];
+              result['secretWishes'] = aiProfile['secretWishes'];
+              result['innerComplaints'] = aiProfile['innerComplaints'];
+            }
+          }
+
+          if (personalityProfile.containsKey('lifeStory')) {
+            final lifeStory =
+                personalityProfile['lifeStory'] as Map<String, dynamic>?;
+            if (lifeStory != null) {
+              result['background'] = lifeStory['background'];
+              result['secretWishes'] =
+                  lifeStory['secretWishes'] ?? result['secretWishes'];
+              result['innerComplaints'] =
+                  lifeStory['innerComplaints'] ?? result['innerComplaints'];
+            }
+          }
+
+          if (personalityProfile.containsKey('humorMatrix')) {
+            final humorMatrix =
+                personalityProfile['humorMatrix'] as Map<String, dynamic>?;
+            if (humorMatrix != null) {
+              result['humorStyle'] =
+                  humorMatrix['style'] ?? result['humorStyle'];
+            }
+          }
+
+          if (personalityProfile.containsKey('communicationStyle')) {
+            final commStyle =
+                personalityProfile['communicationStyle']
+                    as Map<String, dynamic>?;
+            if (commStyle != null) {
+              result['communicationStyle'] =
+                  commStyle['tone'] ?? result['communicationStyle'];
+            }
+          }
+        }
+      }
+
+      print(
+        '[DeepLinkHelper][${defaultTargetPlatform.name}] 전체 성격 데이터 포함 완료: ${result.keys.toList()}',
+      );
+      // 이 부분은 이전 코드와 동일하게 유지됩니다.
+    } catch (e, s) {
+      print('[DeepLinkHelper][${defaultTargetPlatform.name}] 데이터 처리 중 오류: $e');
+      print('[DeepLinkHelper][${defaultTargetPlatform.name}] Stacktrace: $s');
+    }
   }
 }

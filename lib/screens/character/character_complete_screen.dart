@@ -20,7 +20,8 @@ class CharacterCompleteScreen extends StatefulWidget {
   });
 
   @override
-  State<CharacterCompleteScreen> createState() => _CharacterCompleteScreenState();
+  State<CharacterCompleteScreen> createState() =>
+      _CharacterCompleteScreenState();
 }
 
 class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
@@ -51,18 +52,18 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
         'contradictions': [],
         'communicationStyle': {},
         'structuredPrompt': widget.greeting,
-      }
+      },
     };
     try {
-      final result = await CharacterManager.instance.saveCharacterForQR(data);
+      final result = await CharacterManager.saveCharacterForQR(data);
       final uuid = result['uuid'] as String;
       final message = result['message'] as String?;
-      
+
       // 🎯 간소화 정보 로깅
       if (message != null) {
         print('✅ $message');
       }
-      
+
       if (mounted) setState(() => _qrUuid = uuid);
     } catch (e) {
       print('QR 생성 실패: $e');
@@ -85,18 +86,22 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     }
   }
 
-  String get _qrData => _qrUuid != null ? 'nompangs://character?id=$_qrUuid' : '';
+  String get _qrData =>
+      _qrUuid != null ? 'nompangs://character?id=$_qrUuid' : '';
 
   Future<void> _shareQRCode() async {
     if (_qrUuid == null) return;
-    final boundary = _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final boundary =
+        _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final bytes = byteData!.buffer.asUint8List();
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/qr.png');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: '${widget.characterName} 캐릭터의 QR 코드입니다.');
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], text: '${widget.characterName} 캐릭터의 QR 코드입니다.');
   }
 
   @override
@@ -111,24 +116,31 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
             children: [
               Text(
                 widget.characterName,
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               RepaintBoundary(
                 key: _qrKey,
-                child: _qrUuid != null
-                    ? QrImageView(
-                        data: _qrData,
-                        version: QrVersions.auto,
-                        size: 200,
-                      )
-                    : SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: _loading
-                            ? const Center(child: CircularProgressIndicator())
-                            : const SizedBox.shrink(),
-                      ),
+                child:
+                    _qrUuid != null
+                        ? QrImageView(
+                          data: _qrData,
+                          version: QrVersions.auto,
+                          size: 200,
+                        )
+                        : SizedBox(
+                          width: 200,
+                          height: 200,
+                          child:
+                              _loading
+                                  ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                  : const SizedBox.shrink(),
+                        ),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -141,7 +153,8 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
                 onPressed: () {
                   final characterData = {
                     'characterName': widget.characterName,
-                    'characterHandle': '@User_${DateTime.now().millisecondsSinceEpoch}',
+                    'characterHandle':
+                        '@User_${DateTime.now().millisecondsSinceEpoch}',
                     'personalityTags': widget.personalityTags,
                     'greeting': widget.greeting,
                     'personaId': _qrUuid, // QR 생성 시 받은 ID

@@ -240,9 +240,9 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     });
 
     try {
-      final PersonalityProfile generatedProfile =
-          await _personalityService.generateProfile(provider.state);
-      
+      final PersonalityProfile generatedProfile = await _personalityService
+          .generateProfile(provider.state);
+
       _longRunningTimer?.cancel(); // 성공 시 타이머 취소
 
       if (generatedProfile.aiPersonalityProfile == null ||
@@ -251,15 +251,16 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
         throw Exception("생성된 프로필의 핵심 데이터가 비어있습니다.");
       }
 
-      debugPrint("✅ 페르소나 생성 성공! 요약: ${generatedProfile.aiPersonalityProfile!.summary}");
+      debugPrint(
+        "✅ 페르소나 생성 성공! 요약: ${generatedProfile.aiPersonalityProfile!.summary}",
+      );
 
       // 3. Provider에 최종 결과 저장
       provider.setFinalPersonality(generatedProfile);
       provider.setGenerating(false, "생성 완료!");
 
-      // 4. 완료 화면으로 이동
-      Navigator.pushNamed(context, '/onboarding/completion');
-
+      // 4. 성격 조정 화면으로 이동 (완료 화면이 아닌)
+      Navigator.pushNamed(context, '/onboarding/personality');
     } catch (e, s) {
       _longRunningTimer?.cancel(); // 실패 시에도 타이머 취소
       debugPrint("🚨 페르소나 생성 실패: $e");
@@ -275,19 +276,20 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('오류'),
-        content: Text('페르소나 생성 중 오류가 발생했습니다.\n\n$message'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // 다이얼로그 닫기
-              Navigator.of(context).pop(); // 이전 화면으로 돌아가기
-            },
-            child: const Text('확인'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('오류'),
+            content: Text('페르소나 생성 중 오류가 발생했습니다.\n\n$message'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // 다이얼로그 닫기
+                  Navigator.of(context).pop(); // 이전 화면으로 돌아가기
+                },
+                child: const Text('확인'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 

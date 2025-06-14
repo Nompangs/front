@@ -3,7 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
-import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/services/character_manager.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -15,7 +15,7 @@ class QRScannerScreen extends StatefulWidget {
 class _QRScannerScreenState extends State<QRScannerScreen> {
   late MobileScannerController controller;
   bool _isProcessing = false;
-  final ApiService _apiService = ApiService();
+  String? _lastScannedCode; // 중복 스캔 방지용
 
   @override
   void initState() {
@@ -33,46 +33,196 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
   Future<void> _handleQRCode(String code) async {
     if (!mounted || _isProcessing) return;
-    
-    setState(() { _isProcessing = true; });
+
+    // 중복 스캔 방지
+    if (_lastScannedCode == code) {
+      print('[QRScannerScreen] 중복 스캔 무시: $code');
+      return;
+    }
+
+    setState(() {
+      _isProcessing = true;
+      _lastScannedCode = code;
+    });
 
     try {
       // QR 코드로 읽은 문자열(code)이 바로 uuid라고 가정합니다.
-      // 만약 URL 형태라면 파싱이 필요합니다. 
-      // 예: final uuid = Uri.parse(code).queryParameters['id'];
-      final String uuid = code; 
+      final String uuid = code.trim();
+      debugPrint('🔍 QR 스캔된 UUID: $uuid');
 
-      final PersonalityProfile profile = await _apiService.loadProfile(uuid);
+      if (uuid.isEmpty) {
+        throw const CharacterManagerException('INVALID_UUID', '빈 QR 코드입니다');
+      }
 
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            // ChatScreen에 profile 객체 하나만 전달합니다.
-            builder: (context) => ChatScreen(profile: profile),
-          ),
+      // UUID 형식 간단 검증 (36자 길이와 하이픈 위치)
+      if (!_isValidUUIDFormat(uuid)) {
+        throw const CharacterManagerException(
+          'INVALID_UUID',
+          '올바르지 않은 QR 코드 형식입니다',
         );
       }
-    } catch (e) {
-      print('🚨 QR 스캔 처리 실패: $e');
-      if (mounted) {
-        _showError('프로필을 불러오는데 실패했습니다.');
-        setState(() {
-          _isProcessing = false; // 에러 발생 시 스캔 재개를 위해 상태 복원
-        });
+
+      // 서버에서 캐릭터 데이터 로드
+      final data = await CharacterManager.instance.loadCharacterFromServer(
+        uuid,
+      );
+
+      if (data == null) {
+        throw const CharacterManagerException(
+          'PROFILE_NOT_FOUND',
+          '캐릭터 데이터를 찾을 수 없습니다',
+        );
       }
-    } 
-    // 성공적으로 네비게이션하면 이 화면은 dispose되므로 finally 블록은 불필요.
+
+      // 🎯 로드된 데이터 상세 확인
+      debugPrint('🔍 서버에서 로드된 데이터 확인:');
+      debugPrint('   - 성공 여부: ${data['success']}');
+      debugPrint('   - 이름: ${data['name']}');
+      debugPrint('   - 버전: ${data['version']}');
+
+      // personalityProfile 구조 검증
+      if (!data.containsKey('personalityProfile')) {
+        throw const CharacterManagerException(
+          'INVALID_RESPONSE',
+          'PersonalityProfile 데이터가 없습니다',
+        );
+      }
+
+      final personalityProfileData =
+          data['personalityProfile'] as Map<String, dynamic>;
+      debugPrint(
+        '   - PersonalityProfile 키: ${personalityProfileData.keys.toList()}',
+      );
+
+      final profile = PersonalityProfile.fromMap(personalityProfileData);
+
+      // 🎯 PersonalityProfile 변환 결과 확인
+      debugPrint('🔍 PersonalityProfile 변환 결과:');
+      debugPrint('   - 매력적 결함 개수: ${profile.attractiveFlaws.length}');
+      debugPrint('   - 모순적 특성 개수: ${profile.contradictions.length}');
+      debugPrint('   - AI 프로필 이름: ${profile.aiPersonalityProfile?.name}');
+      debugPrint('   - UUID: ${profile.uuid}');
+
+      if (mounted) {
+        // 성공적으로 로드되었음을 사용자에게 피드백
+        _showSuccess(
+          '${profile.aiPersonalityProfile?.name ?? '캐릭터'}와 연결되었습니다!',
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500)); // 피드백 시간
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => ChatScreen(profile: profile)),
+        );
+      }
+    } on CharacterManagerException catch (e) {
+      print('🚨 CharacterManagerException: ${e.code} - ${e.message}');
+      if (mounted) {
+        _showError(e.userFriendlyMessage, e.code);
+        _resetScanning();
+      }
+    } catch (e) {
+      print('🚨 예상치 못한 QR 스캔 오류: $e');
+      if (mounted) {
+        _showError('예상치 못한 오류가 발생했습니다', 'UNEXPECTED_ERROR');
+        _resetScanning();
+      }
+    }
   }
 
-  void _showError(String message) {
+  bool _isValidUUIDFormat(String uuid) {
+    // UUID v4 형식: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx (36자)
+    if (uuid.length != 36) return false;
+    if (uuid[8] != '-' || uuid[13] != '-' || uuid[18] != '-' || uuid[23] != '-')
+      return false;
+
+    // 기본적인 16진수 문자 검증
+    final cleanUuid = uuid.replaceAll('-', '');
+    return RegExp(r'^[0-9a-fA-F]{32}$').hasMatch(cleanUuid);
+  }
+
+  void _resetScanning() {
+    setState(() {
+      _isProcessing = false;
+      _lastScannedCode = null;
+    });
+  }
+
+  void _showSuccess(String message) {
     if (!mounted) return;
-    print('[QRScannerScreen_showError][${defaultTargetPlatform.name}] 오류: $message');
+    print(
+      '[QRScannerScreen_showSuccess][${defaultTargetPlatform.name}] 성공: $message',
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _showError(String message, String errorCode) {
+    if (!mounted) return;
+    print(
+      '[QRScannerScreen_showError][${defaultTargetPlatform.name}] $errorCode: $message',
+    );
+
+    // 에러 유형에 따른 아이콘 선택
+    IconData errorIcon;
+    Color backgroundColor;
+
+    switch (errorCode) {
+      case 'NETWORK_ERROR':
+      case 'CONNECTION_FAILED':
+        errorIcon = Icons.wifi_off;
+        backgroundColor = Colors.orange;
+        break;
+      case 'PROFILE_NOT_FOUND':
+        errorIcon = Icons.search_off;
+        backgroundColor = Colors.blue;
+        break;
+      case 'INVALID_UUID':
+        errorIcon = Icons.qr_code_scanner;
+        backgroundColor = Colors.purple;
+        break;
+      case 'TIMEOUT':
+        errorIcon = Icons.access_time;
+        backgroundColor = Colors.amber;
+        break;
+      case 'SERVER_ERROR':
+      case 'SERVICE_UNAVAILABLE':
+        errorIcon = Icons.cloud_off;
+        backgroundColor = Colors.red;
+        break;
+      default:
+        errorIcon = Icons.error;
+        backgroundColor = Colors.red;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(errorIcon, color: Colors.white),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: backgroundColor,
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: '다시 시도',
+          textColor: Colors.white,
+          onPressed: _resetScanning,
+        ),
       ),
     );
   }
@@ -84,14 +234,27 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: const Text(
-          'QR 코드 스캔',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('QR 코드 스캔', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          if (_isProcessing)
+            const Padding(
+              padding: EdgeInsets.only(right: 16.0),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -106,24 +269,26 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                       return;
                     }
                     final List<Barcode> barcodes = capture.barcodes;
-                    if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+                    if (barcodes.isNotEmpty &&
+                        barcodes.first.rawValue != null) {
                       final String scannedCode = barcodes.first.rawValue!;
-                      // 스캔이 완료되면 즉시 처리 상태로 변경하여 중복 스캔 방지
-                      setState(() {
-                        _isProcessing = true;
-                      });
                       _handleQRCode(scannedCode.trim());
                     }
                   },
                 ),
+                // 스캔 영역 표시
                 Container(
                   width: MediaQuery.of(context).size.width * 0.7,
                   height: MediaQuery.of(context).size.width * 0.7,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.green, width: 2),
+                    border: Border.all(
+                      color: _isProcessing ? Colors.blue : Colors.green,
+                      width: 2,
+                    ),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
+                // 처리 중 오버레이
                 if (_isProcessing)
                   Container(
                     color: Colors.black.withOpacity(0.5),
@@ -131,9 +296,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                          CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
                           SizedBox(height: 16),
-                          Text('QR 코드 처리 중...', style: TextStyle(color: Colors.white, fontSize: 16)),
+                          Text(
+                            'QR 코드 처리 중...',
+                            style: TextStyle(color: Colors.white, fontSize: 16),
+                          ),
                         ],
                       ),
                     ),
@@ -143,12 +315,21 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           ),
           Container(
             padding: const EdgeInsets.all(20),
-            child: const Text(
-              '캐릭터 QR 코드를 스캔해주세요',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+            child: Column(
+              children: [
+                Text(
+                  _isProcessing ? '캐릭터 정보를 불러오는 중...' : '캐릭터 QR 코드를 스캔해주세요',
+                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                if (_isProcessing) const SizedBox(height: 8),
+                if (_isProcessing)
+                  const Text(
+                    '잠시만 기다려주세요',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+              ],
             ),
           ),
         ],
