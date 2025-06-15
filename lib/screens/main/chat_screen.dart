@@ -188,16 +188,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.profile.aiPersonalityProfile?.name ?? '채팅',
-                    style: TextStyle(color: Colors.white),
-                    overflow: TextOverflow.ellipsis,
+                    widget.profile.aiPersonalityProfile?.name ?? '페르소나',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  if (widget.profile.aiPersonalityProfile?.personalityTraits != null && widget.profile.aiPersonalityProfile!.personalityTraits.isNotEmpty)
-                    Text(
-                      widget.profile.aiPersonalityProfile!.personalityTraits.join(', '),
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  SizedBox(height: 2),
+                  Text(
+                    "다정함",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),

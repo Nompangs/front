@@ -88,7 +88,6 @@ class PersonalityProfile {
 class AiPersonalityProfile {
   final String name;
   final String objectType;
-  final List<String> personalityTraits;
   final int emotionalRange;
   final List<String> coreValues;
   final String relationshipStyle;
@@ -98,7 +97,6 @@ class AiPersonalityProfile {
   AiPersonalityProfile({
     required this.name,
     required this.objectType,
-    required this.personalityTraits,
     required this.emotionalRange,
     required this.coreValues,
     required this.relationshipStyle,
@@ -109,7 +107,6 @@ class AiPersonalityProfile {
   factory AiPersonalityProfile.empty() => AiPersonalityProfile(
         name: '',
         objectType: '',
-        personalityTraits: [],
         emotionalRange: 5,
         coreValues: [],
         relationshipStyle: '',
@@ -120,7 +117,6 @@ class AiPersonalityProfile {
   Map<String, dynamic> toMap() => {
         'name': name,
         'objectType': objectType,
-        'personalityTraits': personalityTraits,
         'emotionalRange': emotionalRange,
         'coreValues': coreValues,
         'relationshipStyle': relationshipStyle,
@@ -132,7 +128,6 @@ class AiPersonalityProfile {
     return AiPersonalityProfile(
       name: map['name'] as String? ?? '',
       objectType: map['objectType'] as String? ?? '',
-      personalityTraits: List<String>.from((map['personalityTraits'] as List<dynamic>? ?? []).map((e) => e.toString())),
       emotionalRange: map['emotionalRange'] as int? ?? 5,
       coreValues: List<String>.from((map['coreValues'] as List<dynamic>? ?? []).map((e) => e.toString())),
       relationshipStyle: map['relationshipStyle'] as String? ?? '',

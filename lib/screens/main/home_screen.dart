@@ -197,7 +197,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       aiPersonalityProfile: AiPersonalityProfile(
         name: '야옹이',
         objectType: '고양이',
-        personalityTraits: ['감성적인', '귀여운', '엉뚱한'],
         emotionalRange: 7,
         coreValues: ['관심', '간식'],
         relationshipStyle: '애교 많은',
