@@ -119,6 +119,7 @@ class PersonalityService {
       greeting: greeting,
       initialUserMessage: finalState.purpose,
       communicationPrompt: communicationPrompt,
+      photoPath: finalState.photoPath,
     );
     debugPrint("✅ 2/2단계: 최종 프로필 조합 완료!");
     return finalProfile;

@@ -9,6 +9,7 @@ class OnboardingProvider extends ChangeNotifier {
   OnboardingState _state = const OnboardingState();
   PersonalityProfile _profile = PersonalityProfile.empty();
   AIPersonalityDraft? _draft;
+  PersonalityProfile? _generatedCharacter;
 
   PersonalityProfile get personalityProfile => _profile;
 
@@ -26,17 +27,17 @@ class OnboardingProvider extends ChangeNotifier {
 
   AIPersonalityDraft? get draft => _draft;
 
+  PersonalityProfile? get generatedCharacter => _generatedCharacter;
+
+  OnboardingProvider() {
+    _logStatus('OnboardingProvider 생성됨');
+  }
+
   void _logStatus(String action) {
     debugPrint('=== Onboarding Status [$action] ===');
     debugPrint(jsonEncode(_state.toJson()));
     debugPrint(jsonEncode(_profile.toMap()));
     debugPrint('===============================');
-  }
-  
-  void nextStep() {
-    _state = _state.copyWith(currentStep: _state.currentStep + 1);
-    notifyListeners();
-    _logStatus('nextStep');
   }
   
   void updateUserBasicInfo({
@@ -93,21 +94,14 @@ class OnboardingProvider extends ChangeNotifier {
     _logStatus('updatePersonalitySlider');
   }
   
-  /// QR 코드 URL 업데이트 (완료 단계)
-  void updateQRCodeUrl(String url) {
-    _state = _state.copyWith(qrCodeUrl: url);
-    notifyListeners();
-    _logStatus('updateQRCodeUrl');
-  }
-  
   void setPhotoPath(String path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
     _logStatus('setPhotoPath');
   }
   
-  void setGeneratedCharacter(Character character) {
-    _state = _state.copyWith(generatedCharacter: character);
+  void setGeneratedCharacter(PersonalityProfile profile) {
+    _generatedCharacter = profile;
     notifyListeners();
     _logStatus('setGeneratedCharacter');
   }
@@ -140,6 +134,8 @@ class OnboardingProvider extends ChangeNotifier {
     };
   }
   
+  /*
+  // 이 함수는 personality_service로 대체되었으므로 주석 처리합니다.
   Future<void> generateCharacter() async {
     if (_state.nickname.isEmpty) {
       setError('사용자 입력 정보가 없습니다.');
@@ -163,8 +159,8 @@ class OnboardingProvider extends ChangeNotifier {
       // 실제 AI 호출 (향후 구현)
       final character = await _generateMockCharacter();
       
+      _generatedCharacter = character;
       _state = _state.copyWith(
-        generatedCharacter: character,
         isGenerating: false,
         generationProgress: 1.0,
       );
@@ -193,27 +189,23 @@ class OnboardingProvider extends ChangeNotifier {
     }
   }
   
-  Future<Character> _generateMockCharacter() async {
+  Future<PersonalityProfile> _generateMockCharacter() async {
     final random = Random();
     
     // 사용자가 입력한 용도와 유머스타일을 반영한 성격 생성
-    final personality = Personality(
-      warmth: _state.warmth ?? (50 + random.nextInt(40)),
-      competence: _state.competence ?? (30 + random.nextInt(50)), 
-      extroversion: _state.introversion ?? (40 + random.nextInt(40)),
-    );
-    
-    final traits = _generateTraits(personality);
-    final greeting = _generateGreeting(_state.nickname, personality);
-    
-    return Character(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+    final aiProfile = AiPersonalityProfile(
       name: _state.nickname,
       objectType: _state.objectType,
-      personality: personality,
-      greeting: greeting,
-      traits: traits,
-      createdAt: DateTime.now(),
+      emotionalRange: 50 + random.nextInt(40),
+      coreValues: ['신뢰', '재미'],
+      relationshipStyle: '조력자',
+      summary: '이것은 목업 데이터입니다.'
+    );
+    
+    return PersonalityProfile(
+      aiPersonalityProfile: aiProfile,
+      greeting: "만나서 반가워요! 저는 목업 캐릭터입니다.",
+      contradictions: [],
     );
   }
   
@@ -241,58 +233,15 @@ class OnboardingProvider extends ChangeNotifier {
     return traits;
   }
   
-  String _generateGreeting(String nickname, Personality personality) {
-    // 유머스타일에 따른 인사말 생성
-    final humorStyle = _state.humorStyle ?? '';
-    
-    if (humorStyle == '따뜻한') {
-      return "$nickname아~ 안녕! 따뜻하게 함께하자 💕";
-    } else if (humorStyle == '날카로운 관찰자적') {
-      return "흠... $nickname. 너에 대해 관찰해보겠어. 흥미롭군.";
-    } else if (humorStyle == '위트있는') {
-      return "$nickname! 나와 함께라면 재미있을 거야. 위트 한 스푼 넣어서! 😂";
-    } else if (humorStyle == '자기비하적') {
-      return "어... $nickname? 나 같은 거랑 친해져도 괜찮을까? 😅";
-    } else if (humorStyle == '장난꾸러기') {
-      return "앗! $nickname 발견! 나랑 장난치자~ 헤헤 😝";
+  String _generateGreeting(String name, Personality personality) {
+    if (personality.warmth > 70) {
+      return "안녕, $name! 만나서 정말 반가워. 무슨 재미있는 이야기 해볼까?";
     } else {
-      return "안녕 $nickname! 잘 부탁해 😊";
+      return "반가워, $name. 나는 네가 필요할 때 곁에 있을게.";
     }
   }
+  */
   
-  void updatePersonality(PersonalityType type, double value) {
-    final currentCharacter = _state.generatedCharacter;
-    if (currentCharacter == null) return;
-    
-    final intValue = value.round();
-    Personality updatedPersonality;
-    
-    switch (type) {
-      case PersonalityType.warmth:
-        updatedPersonality = currentCharacter.personality.copyWith(warmth: intValue);
-        break;
-      case PersonalityType.competence:
-        updatedPersonality = currentCharacter.personality.copyWith(competence: intValue);
-        break;
-      case PersonalityType.extroversion:
-        updatedPersonality = currentCharacter.personality.copyWith(extroversion: intValue);
-        break;
-    }
-    
-    final updatedGreeting = _generateGreeting(currentCharacter.name, updatedPersonality);
-    final updatedTraits = _generateTraits(updatedPersonality);
-    
-    final updatedCharacter = currentCharacter.copyWith(
-      personality: updatedPersonality,
-      greeting: updatedGreeting,
-      traits: updatedTraits,
-    );
-    
-    _state = _state.copyWith(generatedCharacter: updatedCharacter);
-    notifyListeners();
-    _logStatus('updatePersonality');
-  }
-
   void setPersonalityProfile(PersonalityProfile profile) {
     _profile = profile;
     notifyListeners();
@@ -302,6 +251,8 @@ class OnboardingProvider extends ChangeNotifier {
   void reset() {
     _state = const OnboardingState();
     _profile = PersonalityProfile.empty();
+    _draft = null;
+    _generatedCharacter = null;
     _isGenerating = false;
     _generationMessage = '';
     _errorMessage = null;
@@ -340,6 +291,7 @@ class OnboardingProvider extends ChangeNotifier {
       competence: draft.initialCompetence,
     );
     notifyListeners();
+    _logStatus('setAiDraft');
   }
 
   void updateGenerationStatus(double progress, String message) {

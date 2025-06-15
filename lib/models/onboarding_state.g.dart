@@ -9,59 +9,41 @@ part of 'onboarding_state.dart';
 _$OnboardingStateImpl _$$OnboardingStateImplFromJson(
   Map<String, dynamic> json,
 ) => _$OnboardingStateImpl(
-  currentStep: (json['currentStep'] as num?)?.toInt() ?? 0,
   nickname: json['nickname'] as String? ?? '',
+  humorStyle: json['humorStyle'] as String? ?? '',
+  purpose: json['purpose'] as String? ?? '',
   location: json['location'] as String? ?? '',
   duration: json['duration'] as String? ?? '',
   objectType: json['objectType'] as String? ?? '',
-  photoPath: json['photoPath'] as String? ?? null,
-  generatedCharacter:
-      json['generatedCharacter'] == null
-          ? null
-          : Character.fromJson(
-            json['generatedCharacter'] as Map<String, dynamic>,
-          ),
+  photoPath: json['photoPath'] as String?,
   isLoading: json['isLoading'] as bool? ?? false,
   errorMessage: json['errorMessage'] as String? ?? null,
   isGenerating: json['isGenerating'] as bool? ?? false,
   generationProgress: (json['generationProgress'] as num?)?.toDouble() ?? 0.0,
-  generationMessage: json['generationMessage'] as String? ?? "",
-  purpose: json['purpose'] as String? ?? "",
-  humorStyle: json['humorStyle'] as String? ?? "",
-  introversion: (json['introversion'] as num?)?.toInt() ?? null,
-  warmth: (json['warmth'] as num?)?.toInt() ?? null,
-  competence: (json['competence'] as num?)?.toInt() ?? null,
-  qrCodeUrl: json['qrCodeUrl'] as String? ?? null,
-  finalPersonality:
-      json['finalPersonality'] == null
-          ? null
-          : FinalPersonality.fromJson(
-            json['finalPersonality'] as Map<String, dynamic>,
-          ),
+  generationMessage: json['generationMessage'] as String? ?? '',
+  warmth: (json['warmth'] as num?)?.toInt() ?? 5,
+  competence: (json['competence'] as num?)?.toInt() ?? 5,
+  introversion: (json['introversion'] as num?)?.toInt() ?? 5,
 );
 
 Map<String, dynamic> _$$OnboardingStateImplToJson(
   _$OnboardingStateImpl instance,
 ) => <String, dynamic>{
-  'currentStep': instance.currentStep,
   'nickname': instance.nickname,
+  'humorStyle': instance.humorStyle,
+  'purpose': instance.purpose,
   'location': instance.location,
   'duration': instance.duration,
   'objectType': instance.objectType,
   'photoPath': instance.photoPath,
-  'generatedCharacter': instance.generatedCharacter,
   'isLoading': instance.isLoading,
   'errorMessage': instance.errorMessage,
   'isGenerating': instance.isGenerating,
   'generationProgress': instance.generationProgress,
   'generationMessage': instance.generationMessage,
-  'purpose': instance.purpose,
-  'humorStyle': instance.humorStyle,
-  'introversion': instance.introversion,
   'warmth': instance.warmth,
   'competence': instance.competence,
-  'qrCodeUrl': instance.qrCodeUrl,
-  'finalPersonality': instance.finalPersonality,
+  'introversion': instance.introversion,
 };
 
 _$CharacterImpl _$$CharacterImplFromJson(Map<String, dynamic> json) =>

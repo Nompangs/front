@@ -86,7 +86,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     }
 
     // 이미 생성된 캐릭터가 있는 경우 바로 다음 페이지로 이동
-    if (provider.state.generatedCharacter != null) {
+    if (provider.generatedCharacter != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/onboarding/personality');
@@ -96,7 +96,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     }
 
     // 생성 중이 아니고 캐릭터가 없는 경우에만 생성 시작
-    if (!provider.state.isGenerating) {
+    if (!provider.isGenerating) {
       _startGeneration();
       _startTimeoutTimer(); // 타임아웃 타이머 시작
     }

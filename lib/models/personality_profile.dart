@@ -9,6 +9,7 @@ class PersonalityProfile {
   final String? greeting;
   final String? initialUserMessage;
   final String communicationPrompt;
+  final String? photoPath;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -19,6 +20,7 @@ class PersonalityProfile {
     this.greeting,
     this.initialUserMessage,
     this.communicationPrompt = '',
+    this.photoPath,
   });
 
   factory PersonalityProfile.empty() => PersonalityProfile(
@@ -29,6 +31,7 @@ class PersonalityProfile {
         contradictions: [],
         greeting: null,
         initialUserMessage: null,
+        photoPath: null,
       );
 
   Map<String, dynamic> toMap() {
@@ -60,6 +63,7 @@ class PersonalityProfile {
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
       communicationPrompt: map['communicationPrompt'] as String? ?? '',
+      photoPath: map['photoPath'] as String?,
     );
   }
 }

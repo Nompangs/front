@@ -26,6 +26,7 @@ import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/screens/main/new_home_screen.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 String? pendingRoomId;
 
@@ -231,27 +232,36 @@ class _NompangsAppState extends State<NompangsApp> {
           '/flutter-mobile-clone': (context) => MainScreen(),
         },
         onGenerateRoute: (settings) {
-          final Uri uri = Uri.parse(settings.name ?? '');
+          final uri = Uri.parse(settings.name ?? '');
 
-          if (uri.pathSegments.length == 2 &&
-              uri.pathSegments.first == 'chat') {
+          // '/chat/{characterId}' 형태의 경로를 처리
+          if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'chat') {
             final characterId = uri.pathSegments.last;
-            final args = settings.arguments as Map<String, dynamic>?;
 
-            final profile = args?['profile'] as PersonalityProfile?;
+            // 라우트 인자(arguments)에서 PersonalityProfile 객체를 가져옴
+            final profile = settings.arguments as PersonalityProfile?;
 
-            if (profile == null) {
+            // profile 객체가 정상적으로 전달되었는지 확인
+            if (profile != null) {
               return MaterialPageRoute(
-                builder:
-                    (_) => Scaffold(body: Center(child: Text('캐릭터 정보를 전달받지 못했습니다.'))),
+                builder: (context) {
+                  // ChatScreen은 profile 객체를 직접 인자로 받음
+                  return ChatScreen(profile: profile);
+                },
+              );
+            } else {
+              // 딥링크를 통해 들어왔지만 profile 정보가 없는 경우 등 예외 처리
+              // TODO: characterId를 사용하여 Firestore 등에서 프로필 정보를 가져오는 로직 구현 필요
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  body: Center(
+                    child: Text('캐릭터 정보를 불러올 수 없습니다. (ID: $characterId)'),
+                  ),
+                ),
               );
             }
-            return MaterialPageRoute(
-              builder: (context) {
-                return ChatScreen(profile: profile);
-              },
-            );
           }
+          // 일치하는 라우트가 없으면 null을 반환
           return null;
         },
       ),
