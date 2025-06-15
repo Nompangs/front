@@ -204,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         summary: '사람을 잘 따르는 귀여운 고양이입니다.',
         npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
       ),
+      contradictions: ['진지한 대화를 좋아하면서도 가벼운 농담을 즐김'],
       greeting: '안녕이다옹! 무슨 일 있었냐옹?',
       initialUserMessage: inputText,
     );

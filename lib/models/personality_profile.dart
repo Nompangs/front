@@ -12,6 +12,7 @@ class PersonalityProfile {
   final String? uuid;
   final String? greeting;
   final String? initialUserMessage;
+  final String communicationPrompt;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -19,12 +20,13 @@ class PersonalityProfile {
     this.lifeStory,
     this.humorMatrix,
     this.attractiveFlaws = const [],
-    this.contradictions = const [],
+    required this.contradictions,
     this.communicationStyle,
     this.structuredPrompt = '',
     this.uuid,
     this.greeting,
     this.initialUserMessage,
+    this.communicationPrompt = '',
   });
 
   factory PersonalityProfile.empty() => PersonalityProfile(
@@ -51,6 +53,7 @@ class PersonalityProfile {
       'uuid': uuid,
       'greeting': greeting,
       'initialUserMessage': initialUserMessage,
+      'communicationPrompt': communicationPrompt,
     };
   }
 
@@ -77,6 +80,7 @@ class PersonalityProfile {
       uuid: map['uuid'] as String?,
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
+      communicationPrompt: map['communicationPrompt'] as String? ?? '',
     );
   }
 }
@@ -228,38 +232,29 @@ class LifeStory {
 }
 
 class HumorMatrix {
-  final String style;
-  final String frequency;
-  final List<String> topics;
-  final List<String> avoidance;
+  final int warmthVsWit; // 0(순수 지적 위트) - 100(순수 따뜻한 유머)
+  final int selfVsObservational; // 0(순수 관찰형) - 100(순수 자기참조형)
+  final int subtleVsExpressive; // 0(미묘한 유머) - 100(표현적/과장된 유머)
 
   HumorMatrix({
-    required this.style,
-    required this.frequency,
-    required this.topics,
-    required this.avoidance,
+    this.warmthVsWit = 50,
+    this.selfVsObservational = 50,
+    this.subtleVsExpressive = 50,
   });
 
-  factory HumorMatrix.empty() => HumorMatrix(
-        style: '',
-        frequency: '',
-        topics: [],
-        avoidance: [],
-      );
+  factory HumorMatrix.empty() => HumorMatrix();
 
   Map<String, dynamic> toMap() => {
-        'style': style,
-        'frequency': frequency,
-        'topics': topics,
-        'avoidance': avoidance,
-      };
+    'warmthVsWit': warmthVsWit,
+    'selfVsObservational': selfVsObservational,
+    'subtleVsExpressive': subtleVsExpressive,
+  };
 
   factory HumorMatrix.fromMap(Map<String, dynamic> map) {
     return HumorMatrix(
-      style: map['style'] as String? ?? '',
-      frequency: map['frequency'] as String? ?? '',
-      topics: List<String>.from((map['topics'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      avoidance: List<String>.from((map['avoidance'] as List<dynamic>? ?? []).map((e) => e.toString())),
+      warmthVsWit: map['warmthVsWit'] as int? ?? 50,
+      selfVsObservational: map['selfVsObservational'] as int? ?? 50,
+      subtleVsExpressive: map['subtleVsExpressive'] as int? ?? 50,
     );
   }
 }
@@ -268,14 +263,12 @@ class CommunicationStyle {
   final String tone;
   final String formality;
   final String responseLength;
-  final List<String> preferredTopics;
   final String expressionStyle;
 
   CommunicationStyle({
     required this.tone,
     required this.formality,
     required this.responseLength,
-    required this.preferredTopics,
     required this.expressionStyle,
   });
 
@@ -283,7 +276,6 @@ class CommunicationStyle {
         tone: '',
         formality: '',
         responseLength: '',
-        preferredTopics: [],
         expressionStyle: '',
       );
 
@@ -291,7 +283,6 @@ class CommunicationStyle {
         'tone': tone,
         'formality': formality,
         'responseLength': responseLength,
-        'preferredTopics': preferredTopics,
         'expressionStyle': expressionStyle,
       };
 
@@ -300,7 +291,6 @@ class CommunicationStyle {
       tone: map['tone'] as String? ?? '',
       formality: map['formality'] as String? ?? '',
       responseLength: map['responseLength'] as String? ?? '',
-      preferredTopics: List<String>.from((map['preferredTopics'] as List<dynamic>? ?? []).map((e) => e.toString())),
       expressionStyle: map['expressionStyle'] as String? ?? '',
     );
   }

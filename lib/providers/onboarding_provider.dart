@@ -1,12 +1,14 @@
 import 'package:flutter/foundation.dart';
 import 'package:nompangs/models/onboarding_state.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/services/personality_service.dart';
 import 'dart:math';
 import 'dart:convert';
 
 class OnboardingProvider extends ChangeNotifier {
   OnboardingState _state = const OnboardingState();
   PersonalityProfile _profile = PersonalityProfile.empty();
+  AIPersonalityDraft? _draft;
 
   PersonalityProfile get personalityProfile => _profile;
 
@@ -21,6 +23,8 @@ class OnboardingProvider extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  AIPersonalityDraft? get draft => _draft;
 
   void _logStatus(String action) {
     debugPrint('=== Onboarding Status [$action] ===');
@@ -298,6 +302,26 @@ class OnboardingProvider extends ChangeNotifier {
   // 최종 생성된 페르소나 프로필을 저장하는 메서드
   void setFinalPersonality(PersonalityProfile profile) {
     _profile = profile;
+    notifyListeners();
+  }
+
+  // AI 초안 데이터를 저장하는 메소드
+  void setAiDraft(AIPersonalityDraft draft) {
+    _draft = draft;
+    // AI 추천값으로 state 업데이트
+    _state = _state.copyWith(
+      warmth: draft.initialWarmth,
+      introversion: draft.initialIntroversion,
+      competence: draft.initialCompetence,
+    );
+    notifyListeners();
+  }
+
+  void updateGenerationStatus(double progress, String message) {
+    _state = _state.copyWith(
+      generationProgress: progress,
+      generationMessage: message,
+    );
     notifyListeners();
   }
 }

@@ -16,6 +16,7 @@ import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/widgets/qr_code_generator.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -37,6 +38,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   String? _qrUuid;
   bool _creatingQr = false;
   final ApiService _apiService = ApiService();
+  final PersonalityService _personalityService = PersonalityService();
+  String? _qrCodeUrl;
+  bool _isLoading = true;
+  String _message = "최종 페르소나를 완성하고 있어요...";
 
   @override
   void initState() {
@@ -70,21 +75,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 이제 OnboardingProvider에서 이미 생성 완료된 프로필을 가져옵니다.
-      final profile = context.read<OnboardingProvider>().personalityProfile;
-      
-      if (profile != null) {
-        // 프로필이 있으면 QR 생성을 바로 시작합니다.
-        _createQrProfile(profile);
-      } else {
-        // 만약 프로필이 없다면 오류 상황입니다.
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('오류: 페르소나 정보를 불러올 수 없습니다. 이전 화면으로 돌아가 다시 시도해주세요.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      _finalizeAndSaveProfile();
     });
   }
 
@@ -111,46 +102,42 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     super.dispose();
   }
 
-  Future<void> _createQrProfile(PersonalityProfile profile) async {
-    if (_creatingQr || !mounted) return;
-    setState(() {
-      _creatingQr = true;
-    });
+  Future<void> _finalizeAndSaveProfile() async {
+    final provider = context.read<OnboardingProvider>();
+    if (provider.draft == null) {
+      // 비정상적인 접근 처리
+      setState(() {
+        _isLoading = false;
+        _message = "오류: AI 초안 데이터가 없습니다. 처음부터 다시 시도해주세요.";
+      });
+      return;
+    }
 
     try {
-      // ApiService를 사용하여 서버에 프로필을 전송하고 결과를 받습니다.
-      final result = await _apiService.createProfileAndGetQr(profile);
-      final uuid = result['uuid'] as String?;
-      final qrUrl = result['qrUrl'] as String?;
+      // 1. 최종 프로필 생성
+      setState(() => _message = "당신의 선택을 페르소나에 반영하는 중...");
+      final finalProfile = await _personalityService.finalizeUserProfile(
+        draft: provider.draft!,
+        finalState: provider.state,
+      );
 
-      if (uuid != null && qrUrl != null) {
-        debugPrint('✅ QR 프로필 생성 성공!');
-        debugPrint('   - UUID: $uuid');
-        debugPrint('   - QR Data URL: ${qrUrl.substring(0, 50)}...');
-        if (mounted) {
-          setState(() {
-            _qrUuid = uuid;
-          });
-        }
-      } else {
-        throw Exception('Server did not return a valid UUID or QR URL.');
-      }
+      // 2. 서버에 저장하고 QR 코드 URL 받기
+      setState(() => _message = "서버에 안전하게 저장하는 중...");
+      final result = await _apiService.createQrProfile(
+        generatedProfile: finalProfile.toMap(),
+        userInput: provider.state.toJson(), // OnboardingState에 toMap() 대신 toJson() 사용
+      );
+
+      setState(() {
+        _qrCodeUrl = result['qrUrl'];
+        _isLoading = false;
+        _message = "페르소나 생성 완료!";
+      });
     } catch (e) {
-      debugPrint('🚨 QR 생성 실패: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('QR 코드 생성에 실패했습니다: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _creatingQr = false;
-        });
-      }
+      setState(() {
+        _isLoading = false;
+        _message = "오류가 발생했어요: ${e.toString()}";
+      });
     }
   }
 

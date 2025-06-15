@@ -67,14 +67,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: '', isUser: false));
     });
 
-    final characterProfile = {
-      'name': widget.profile.aiPersonalityProfile?.name,
-      'tags': widget.profile.aiPersonalityProfile?.personalityTraits,
-      'greeting': widget.profile.greeting,
-    };
-
     _apiStreamSubscription = _openAiChatService
-        .getChatCompletionStream(userInput, characterProfile: characterProfile)
+        .getChatCompletionStream(userInput, profile: widget.profile)
         .listen(
       (textChunk) {
         if (mounted) {
