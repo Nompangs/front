@@ -6,7 +6,6 @@ class PersonalityProfile {
   final HumorMatrix? humorMatrix;
   final List<String> attractiveFlaws;
   final List<String> contradictions;
-  final String? uuid;
   final String? greeting;
   final String? initialUserMessage;
   final String communicationPrompt;
@@ -17,7 +16,6 @@ class PersonalityProfile {
     this.humorMatrix,
     this.attractiveFlaws = const [],
     required this.contradictions,
-    this.uuid,
     this.greeting,
     this.initialUserMessage,
     this.communicationPrompt = '',
@@ -29,7 +27,6 @@ class PersonalityProfile {
         humorMatrix: HumorMatrix.empty(),
         attractiveFlaws: [],
         contradictions: [],
-        uuid: null,
         greeting: null,
         initialUserMessage: null,
       );
@@ -41,7 +38,6 @@ class PersonalityProfile {
       'humorMatrix': humorMatrix?.toMap(),
       'attractiveFlaws': attractiveFlaws,
       'contradictions': contradictions,
-      'uuid': uuid,
       'greeting': greeting,
       'initialUserMessage': initialUserMessage,
       'communicationPrompt': communicationPrompt,
@@ -61,7 +57,6 @@ class PersonalityProfile {
           : null,
       attractiveFlaws: List<String>.from((map['attractiveFlaws'] as List<dynamic>? ?? []).map((e) => e.toString())),
       contradictions: List<String>.from((map['contradictions'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      uuid: map['uuid'] as String?,
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
       communicationPrompt: map['communicationPrompt'] as String? ?? '',
