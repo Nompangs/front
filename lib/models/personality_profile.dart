@@ -7,7 +7,6 @@ class PersonalityProfile {
   final HumorMatrix? humorMatrix;
   final List<String> attractiveFlaws;
   final List<String> contradictions;
-  final CommunicationStyle? communicationStyle;
   final String structuredPrompt;
   final String? uuid;
   final String? greeting;
@@ -21,7 +20,6 @@ class PersonalityProfile {
     this.humorMatrix,
     this.attractiveFlaws = const [],
     required this.contradictions,
-    this.communicationStyle,
     this.structuredPrompt = '',
     this.uuid,
     this.greeting,
@@ -36,7 +34,6 @@ class PersonalityProfile {
         humorMatrix: HumorMatrix.empty(),
         attractiveFlaws: [],
         contradictions: [],
-        communicationStyle: CommunicationStyle.empty(),
         structuredPrompt: '',
       );
 
@@ -48,7 +45,6 @@ class PersonalityProfile {
       'humorMatrix': humorMatrix?.toMap(),
       'attractiveFlaws': attractiveFlaws,
       'contradictions': contradictions,
-      'communicationStyle': communicationStyle?.toMap(),
       'structuredPrompt': structuredPrompt,
       'uuid': uuid,
       'greeting': greeting,
@@ -73,9 +69,6 @@ class PersonalityProfile {
           : null,
       attractiveFlaws: List<String>.from((map['attractiveFlaws'] as List<dynamic>? ?? []).map((e) => e.toString())),
       contradictions: List<String>.from((map['contradictions'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      communicationStyle: map['communicationStyle'] != null
-          ? CommunicationStyle.fromMap(map['communicationStyle'] as Map<String, dynamic>)
-          : null,
       structuredPrompt: map['structuredPrompt'] as String? ?? '',
       uuid: map['uuid'] as String?,
       greeting: map['greeting'] as String?,
@@ -250,43 +243,6 @@ class HumorMatrix {
       warmthVsWit: map['warmthVsWit'] as int? ?? 50,
       selfVsObservational: map['selfVsObservational'] as int? ?? 50,
       subtleVsExpressive: map['subtleVsExpressive'] as int? ?? 50,
-    );
-  }
-}
-
-class CommunicationStyle {
-  final String tone;
-  final String formality;
-  final String responseLength;
-  final String expressionStyle;
-
-  CommunicationStyle({
-    required this.tone,
-    required this.formality,
-    required this.responseLength,
-    required this.expressionStyle,
-  });
-
-  factory CommunicationStyle.empty() => CommunicationStyle(
-        tone: '',
-        formality: '',
-        responseLength: '',
-        expressionStyle: '',
-      );
-
-  Map<String, dynamic> toMap() => {
-        'tone': tone,
-        'formality': formality,
-        'responseLength': responseLength,
-        'expressionStyle': expressionStyle,
-      };
-
-  factory CommunicationStyle.fromMap(Map<String, dynamic> map) {
-    return CommunicationStyle(
-      tone: map['tone'] as String? ?? '',
-      formality: map['formality'] as String? ?? '',
-      responseLength: map['responseLength'] as String? ?? '',
-      expressionStyle: map['expressionStyle'] as String? ?? '',
     );
   }
 }

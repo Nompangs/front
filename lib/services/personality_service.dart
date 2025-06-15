@@ -107,7 +107,6 @@ class PersonalityService {
       humorMatrix: humorMatrix,
       attractiveFlaws: attractiveFlaws,
       contradictions: contradictions,
-      communicationStyle: CommunicationStyle.empty(),
       greeting: null,
       initialUserMessage: finalState.purpose,
       communicationPrompt: communicationPrompt,
