@@ -3,11 +3,9 @@
 class PersonalityProfile {
   final AiPersonalityProfile? aiPersonalityProfile;
   final PhotoAnalysis? photoAnalysis;
-  final LifeStory? lifeStory;
   final HumorMatrix? humorMatrix;
   final List<String> attractiveFlaws;
   final List<String> contradictions;
-  final String structuredPrompt;
   final String? uuid;
   final String? greeting;
   final String? initialUserMessage;
@@ -16,11 +14,9 @@ class PersonalityProfile {
   PersonalityProfile({
     this.aiPersonalityProfile,
     this.photoAnalysis,
-    this.lifeStory,
     this.humorMatrix,
     this.attractiveFlaws = const [],
     required this.contradictions,
-    this.structuredPrompt = '',
     this.uuid,
     this.greeting,
     this.initialUserMessage,
@@ -30,22 +26,21 @@ class PersonalityProfile {
   factory PersonalityProfile.empty() => PersonalityProfile(
         aiPersonalityProfile: AiPersonalityProfile.empty(),
         photoAnalysis: PhotoAnalysis.empty(),
-        lifeStory: LifeStory.empty(),
         humorMatrix: HumorMatrix.empty(),
         attractiveFlaws: [],
         contradictions: [],
-        structuredPrompt: '',
+        uuid: null,
+        greeting: null,
+        initialUserMessage: null,
       );
 
   Map<String, dynamic> toMap() {
     return {
       'aiPersonalityProfile': aiPersonalityProfile?.toMap(),
       'photoAnalysis': photoAnalysis?.toMap(),
-      'lifeStory': lifeStory?.toMap(),
       'humorMatrix': humorMatrix?.toMap(),
       'attractiveFlaws': attractiveFlaws,
       'contradictions': contradictions,
-      'structuredPrompt': structuredPrompt,
       'uuid': uuid,
       'greeting': greeting,
       'initialUserMessage': initialUserMessage,
@@ -61,15 +56,11 @@ class PersonalityProfile {
       photoAnalysis: map['photoAnalysis'] != null
           ? PhotoAnalysis.fromMap(map['photoAnalysis'] as Map<String, dynamic>)
           : null,
-      lifeStory: map['lifeStory'] != null
-          ? LifeStory.fromMap(map['lifeStory'] as Map<String, dynamic>)
-          : null,
       humorMatrix: map['humorMatrix'] != null
           ? HumorMatrix.fromMap(map['humorMatrix'] as Map<String, dynamic>)
           : null,
       attractiveFlaws: List<String>.from((map['attractiveFlaws'] as List<dynamic>? ?? []).map((e) => e.toString())),
       contradictions: List<String>.from((map['contradictions'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      structuredPrompt: map['structuredPrompt'] as String? ?? '',
       uuid: map['uuid'] as String?,
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
@@ -178,43 +169,6 @@ class PhotoAnalysis {
       estimatedAge: map['estimatedAge'] as String? ?? '',
       historicalSignificance: List<String>.from((map['historicalSignificance'] as List<dynamic>? ?? []).map((e) => e.toString())),
       culturalContext: List<String>.from((map['culturalContext'] as List<dynamic>? ?? []).map((e) => e.toString())),
-    );
-  }
-}
-
-class LifeStory {
-  final String background;
-  final List<String> keyEvents;
-  final List<String> secretWishes;
-  final List<String> innerComplaints;
-
-  LifeStory({
-    required this.background,
-    required this.keyEvents,
-    required this.secretWishes,
-    required this.innerComplaints,
-  });
-
-  factory LifeStory.empty() => LifeStory(
-        background: '',
-        keyEvents: [],
-        secretWishes: [],
-        innerComplaints: [],
-      );
-
-  Map<String, dynamic> toMap() => {
-        'background': background,
-        'keyEvents': keyEvents,
-        'secretWishes': secretWishes,
-        'innerComplaints': innerComplaints,
-      };
-
-  factory LifeStory.fromMap(Map<String, dynamic> map) {
-    return LifeStory(
-      background: map['background'] as String? ?? '',
-      keyEvents: List<String>.from((map['keyEvents'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      secretWishes: List<String>.from((map['secretWishes'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      innerComplaints: List<String>.from((map['innerComplaints'] as List<dynamic>? ?? []).map((e) => e.toString())),
     );
   }
 }
