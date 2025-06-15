@@ -25,6 +25,7 @@ import 'package:nompangs/screens/chat/chat_history_screen.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/screens/main/new_home_screen.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
+import 'package:nompangs/models/personality_profile.dart';
 
 String? pendingRoomId;
 
@@ -175,29 +176,27 @@ class _NompangsAppState extends State<NompangsApp> {
   void _handleDeepLink(Uri uri) async {
     final roomId = uri.queryParameters['roomId'];
     final uuid = uri.queryParameters['id'];
-    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId');
+    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId, uuid: $uuid');
 
-    if (roomId != null) {
-      if (uuid != null) {
-        final chatData = await DeepLinkHelper.processCharacterData(uuid);
+    if (uuid != null) {
+      final chatData = await DeepLinkHelper.processCharacterData(uuid);
 
-        if (chatData != null) {
-          _navigatorKey.currentState?.pushNamed(
-            '/chat/${chatData['personaId']}',
-            arguments: chatData,
-          );
-        } else {
-          DeepLinkHelper.showError(
-            _navigatorKey.currentContext!,
-            '캐릭터 정보를 읽을 수 없습니다.',
-          );
-        }
+      if (chatData != null) {
+        _navigatorKey.currentState?.pushNamed(
+          '/chat/$uuid',
+          arguments: chatData,
+        );
       } else {
         DeepLinkHelper.showError(
           _navigatorKey.currentContext!,
-          '캐릭터 정보가 없는 QR 코드입니다.',
+          '캐릭터 정보를 불러올 수 없습니다.',
         );
       }
+    } else if (roomId != null) {
+      DeepLinkHelper.showError(
+        _navigatorKey.currentContext!,
+        '캐릭터 정보가 없는 QR 코드입니다.',
+      );
     }
   }
 
@@ -239,29 +238,18 @@ class _NompangsAppState extends State<NompangsApp> {
             final characterId = uri.pathSegments.last;
             final args = settings.arguments as Map<String, dynamic>?;
 
-            if (args == null) {
+            final profile = args?['profile'] as PersonalityProfile?;
+
+            if (profile == null) {
               return MaterialPageRoute(
                 builder:
-                    (_) => Scaffold(body: Center(child: Text('캐릭터 정보 없음'))),
+                    (_) => Scaffold(body: Center(child: Text('캐릭터 정보를 전달받지 못했습니다.'))),
               );
             }
             return MaterialPageRoute(
               builder: (context) {
-                return ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(
-                        characterName: args['characterName'] ?? '이름 없음',
-                        characterHandle:
-                            args['characterHandle'] ?? '@unknown_handle',
-                        personalityTags: List<String>.from(
-                          args['personalityTags'] ?? [],
-                        ),
-                        greeting: args['greeting'],
-                      ),
-                  child: const ChatTextScreen(),
-                );
+                return ChatScreen(profile: profile);
               },
-              settings: settings,
             );
           }
           return null;

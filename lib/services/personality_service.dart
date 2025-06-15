@@ -96,7 +96,16 @@ class PersonalityService {
     );
     debugPrint("✅ 4단계 풍부한 자연어 프로필 생성 완료");
 
-    // 3. 최종 프로필 조합
+    // 4. 첫인사 생성 (AI 기반)
+    final greeting = await _generateGreeting(
+      finalState,
+      userAdjustedVariables,
+      contradictions,
+      attractiveFlaws,
+    );
+    debugPrint("✅ 5단계 첫인사 생성 완료: $greeting");
+
+    // 5. 최종 프로필 조합
     final finalProfile = PersonalityProfile(
       aiPersonalityProfile: AiPersonalityProfile.fromMap({
         'npsScores': userAdjustedVariables,
@@ -107,7 +116,7 @@ class PersonalityService {
       humorMatrix: humorMatrix,
       attractiveFlaws: attractiveFlaws,
       contradictions: contradictions,
-      greeting: null,
+      greeting: greeting,
       initialUserMessage: finalState.purpose,
       communicationPrompt: communicationPrompt,
     );
@@ -541,6 +550,71 @@ class PersonalityService {
       }
     } catch (e) {
       return ["네트워크 또는 JSON 오류"];
+    }
+  }
+
+  // 신규: 첫인사 생성 (목표 지정 AI 기반)
+  Future<String> _generateGreeting(
+    OnboardingState state,
+    Map<String, int> variables,
+    List<String> contradictions,
+    List<String> attractiveFlaws,
+  ) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) return "API 키가 없어 인사를 할 수 없네요.";
+
+    // AI에게 전달할 캐릭터 정보 요약
+    final summary = """
+    - 내 이름: ${state.nickname ?? '이름 없음'}
+    - 나는 이런 사물이야: ${state.objectType ?? '사물'}
+    - 사용자가 나를 통해 원하는 것: ${state.purpose ?? '특별한 목적 없음'}
+    - 내 성격 요약:
+      - 핵심 특성: 친절함(${variables['W01_친절함']}%), 사교성(${variables['E01_사교성']}%), 전문성(${variables['C02_전문성']}%)
+      - 매력적인 결점: ${attractiveFlaws.join(', ')}
+      - 모순적인 모습: ${contradictions.join(', ')}
+    """;
+
+    final systemPrompt = '''
+    당신은 방금 만들어진 페르소나입니다. 당신의 성격 정보를 바탕으로 사용자에게 건넬 첫인사 메시지를 딱 한 문장으로 생성해주세요.
+    반드시 다음 규칙을 지켜주세요.
+    1. 당신의 이름과 정체성(${state.nickname}, ${state.objectType})이 자연스럽게 드러나게 하세요.
+    2. 사용자에게 친근하고 매력적으로 다가가세요.
+    3. 요약된 성격 특성(결점, 모순 포함)이 은유적으로나 간접적으로 드러나도록 표현하세요.
+    4. 절대로 자기소개를 하듯 정보를 나열하지 마세요. (예: "저는 친절하고 전문적인 컵입니다." -> 금지)
+    5. 오직 한 문장의 인사 메시지만 응답하세요. 다른 설명은 붙이지 마세요.
+
+    좋은 예시:
+    "안녕? 난 네 곁을 지킬 듬직한 머그컵, 머그야. 가끔은 넘칠 듯 뜨거워져도, 네 이야기는 전부 담아줄게."
+    "반가워. 네 책상 위에서 조용히 세상을 탐험하는 탐험가, '필'이라고 해. 조금 느려도 괜찮다면 함께 떠나볼까?"
+    ''';
+
+    final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+    try {
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': summary},
+          ],
+          'max_tokens': 100,
+          'temperature': 0.9,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final content = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        return content.trim();
+      } else {
+        return "AI가 인사를 건네기 곤란한가봐요. (오류: ${response.statusCode})";
+      }
+    } catch (e) {
+      return "인사말을 생각하다가 네트워크 연결이 끊어졌어요.";
     }
   }
 
