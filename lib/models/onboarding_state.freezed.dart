@@ -22,7 +22,10 @@ OnboardingState _$OnboardingStateFromJson(Map<String, dynamic> json) {
 /// @nodoc
 mixin _$OnboardingState {
   int get currentStep => throw _privateConstructorUsedError;
-  UserInput? get userInput => throw _privateConstructorUsedError;
+  String get nickname => throw _privateConstructorUsedError;
+  String get location => throw _privateConstructorUsedError;
+  String get duration => throw _privateConstructorUsedError;
+  String get objectType => throw _privateConstructorUsedError;
   String? get photoPath => throw _privateConstructorUsedError;
   Character? get generatedCharacter => throw _privateConstructorUsedError;
   bool get isLoading => throw _privateConstructorUsedError;
@@ -60,7 +63,10 @@ abstract class $OnboardingStateCopyWith<$Res> {
   @useResult
   $Res call({
     int currentStep,
-    UserInput? userInput,
+    String nickname,
+    String location,
+    String duration,
+    String objectType,
     String? photoPath,
     Character? generatedCharacter,
     bool isLoading,
@@ -77,7 +83,6 @@ abstract class $OnboardingStateCopyWith<$Res> {
     FinalPersonality? finalPersonality,
   });
 
-  $UserInputCopyWith<$Res>? get userInput;
   $CharacterCopyWith<$Res>? get generatedCharacter;
   $FinalPersonalityCopyWith<$Res>? get finalPersonality;
 }
@@ -98,7 +103,10 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
   @override
   $Res call({
     Object? currentStep = null,
-    Object? userInput = freezed,
+    Object? nickname = null,
+    Object? location = null,
+    Object? duration = null,
+    Object? objectType = null,
     Object? photoPath = freezed,
     Object? generatedCharacter = freezed,
     Object? isLoading = null,
@@ -121,11 +129,26 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
                     ? _value.currentStep
                     : currentStep // ignore: cast_nullable_to_non_nullable
                         as int,
-            userInput:
-                freezed == userInput
-                    ? _value.userInput
-                    : userInput // ignore: cast_nullable_to_non_nullable
-                        as UserInput?,
+            nickname:
+                null == nickname
+                    ? _value.nickname
+                    : nickname // ignore: cast_nullable_to_non_nullable
+                        as String,
+            location:
+                null == location
+                    ? _value.location
+                    : location // ignore: cast_nullable_to_non_nullable
+                        as String,
+            duration:
+                null == duration
+                    ? _value.duration
+                    : duration // ignore: cast_nullable_to_non_nullable
+                        as String,
+            objectType:
+                null == objectType
+                    ? _value.objectType
+                    : objectType // ignore: cast_nullable_to_non_nullable
+                        as String,
             photoPath:
                 freezed == photoPath
                     ? _value.photoPath
@@ -205,20 +228,6 @@ class _$OnboardingStateCopyWithImpl<$Res, $Val extends OnboardingState>
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $UserInputCopyWith<$Res>? get userInput {
-    if (_value.userInput == null) {
-      return null;
-    }
-
-    return $UserInputCopyWith<$Res>(_value.userInput!, (value) {
-      return _then(_value.copyWith(userInput: value) as $Val);
-    });
-  }
-
-  /// Create a copy of OnboardingState
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @pragma('vm:prefer-inline')
   $CharacterCopyWith<$Res>? get generatedCharacter {
     if (_value.generatedCharacter == null) {
       return null;
@@ -255,7 +264,10 @@ abstract class _$$OnboardingStateImplCopyWith<$Res>
   @useResult
   $Res call({
     int currentStep,
-    UserInput? userInput,
+    String nickname,
+    String location,
+    String duration,
+    String objectType,
     String? photoPath,
     Character? generatedCharacter,
     bool isLoading,
@@ -272,8 +284,6 @@ abstract class _$$OnboardingStateImplCopyWith<$Res>
     FinalPersonality? finalPersonality,
   });
 
-  @override
-  $UserInputCopyWith<$Res>? get userInput;
   @override
   $CharacterCopyWith<$Res>? get generatedCharacter;
   @override
@@ -295,7 +305,10 @@ class __$$OnboardingStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? currentStep = null,
-    Object? userInput = freezed,
+    Object? nickname = null,
+    Object? location = null,
+    Object? duration = null,
+    Object? objectType = null,
     Object? photoPath = freezed,
     Object? generatedCharacter = freezed,
     Object? isLoading = null,
@@ -318,11 +331,26 @@ class __$$OnboardingStateImplCopyWithImpl<$Res>
                 ? _value.currentStep
                 : currentStep // ignore: cast_nullable_to_non_nullable
                     as int,
-        userInput:
-            freezed == userInput
-                ? _value.userInput
-                : userInput // ignore: cast_nullable_to_non_nullable
-                    as UserInput?,
+        nickname:
+            null == nickname
+                ? _value.nickname
+                : nickname // ignore: cast_nullable_to_non_nullable
+                    as String,
+        location:
+            null == location
+                ? _value.location
+                : location // ignore: cast_nullable_to_non_nullable
+                    as String,
+        duration:
+            null == duration
+                ? _value.duration
+                : duration // ignore: cast_nullable_to_non_nullable
+                    as String,
+        objectType:
+            null == objectType
+                ? _value.objectType
+                : objectType // ignore: cast_nullable_to_non_nullable
+                    as String,
         photoPath:
             freezed == photoPath
                 ? _value.photoPath
@@ -403,7 +431,10 @@ class __$$OnboardingStateImplCopyWithImpl<$Res>
 class _$OnboardingStateImpl implements _OnboardingState {
   const _$OnboardingStateImpl({
     this.currentStep = 0,
-    this.userInput = null,
+    this.nickname = '',
+    this.location = '',
+    this.duration = '',
+    this.objectType = '',
     this.photoPath = null,
     this.generatedCharacter = null,
     this.isLoading = false,
@@ -428,7 +459,16 @@ class _$OnboardingStateImpl implements _OnboardingState {
   final int currentStep;
   @override
   @JsonKey()
-  final UserInput? userInput;
+  final String nickname;
+  @override
+  @JsonKey()
+  final String location;
+  @override
+  @JsonKey()
+  final String duration;
+  @override
+  @JsonKey()
+  final String objectType;
   @override
   @JsonKey()
   final String? photoPath;
@@ -481,7 +521,7 @@ class _$OnboardingStateImpl implements _OnboardingState {
 
   @override
   String toString() {
-    return 'OnboardingState(currentStep: $currentStep, userInput: $userInput, photoPath: $photoPath, generatedCharacter: $generatedCharacter, isLoading: $isLoading, errorMessage: $errorMessage, isGenerating: $isGenerating, generationProgress: $generationProgress, generationMessage: $generationMessage, purpose: $purpose, humorStyle: $humorStyle, introversion: $introversion, warmth: $warmth, competence: $competence, qrCodeUrl: $qrCodeUrl, finalPersonality: $finalPersonality)';
+    return 'OnboardingState(currentStep: $currentStep, nickname: $nickname, location: $location, duration: $duration, objectType: $objectType, photoPath: $photoPath, generatedCharacter: $generatedCharacter, isLoading: $isLoading, errorMessage: $errorMessage, isGenerating: $isGenerating, generationProgress: $generationProgress, generationMessage: $generationMessage, purpose: $purpose, humorStyle: $humorStyle, introversion: $introversion, warmth: $warmth, competence: $competence, qrCodeUrl: $qrCodeUrl, finalPersonality: $finalPersonality)';
   }
 
   @override
@@ -491,8 +531,14 @@ class _$OnboardingStateImpl implements _OnboardingState {
             other is _$OnboardingStateImpl &&
             (identical(other.currentStep, currentStep) ||
                 other.currentStep == currentStep) &&
-            (identical(other.userInput, userInput) ||
-                other.userInput == userInput) &&
+            (identical(other.nickname, nickname) ||
+                other.nickname == nickname) &&
+            (identical(other.location, location) ||
+                other.location == location) &&
+            (identical(other.duration, duration) ||
+                other.duration == duration) &&
+            (identical(other.objectType, objectType) ||
+                other.objectType == objectType) &&
             (identical(other.photoPath, photoPath) ||
                 other.photoPath == photoPath) &&
             (identical(other.generatedCharacter, generatedCharacter) ||
@@ -523,10 +569,13 @@ class _$OnboardingStateImpl implements _OnboardingState {
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(
+  int get hashCode => Object.hashAll([
     runtimeType,
     currentStep,
-    userInput,
+    nickname,
+    location,
+    duration,
+    objectType,
     photoPath,
     generatedCharacter,
     isLoading,
@@ -541,7 +590,7 @@ class _$OnboardingStateImpl implements _OnboardingState {
     competence,
     qrCodeUrl,
     finalPersonality,
-  );
+  ]);
 
   /// Create a copy of OnboardingState
   /// with the given fields replaced by the non-null parameter values.
@@ -563,7 +612,10 @@ class _$OnboardingStateImpl implements _OnboardingState {
 abstract class _OnboardingState implements OnboardingState {
   const factory _OnboardingState({
     final int currentStep,
-    final UserInput? userInput,
+    final String nickname,
+    final String location,
+    final String duration,
+    final String objectType,
     final String? photoPath,
     final Character? generatedCharacter,
     final bool isLoading,
@@ -586,7 +638,13 @@ abstract class _OnboardingState implements OnboardingState {
   @override
   int get currentStep;
   @override
-  UserInput? get userInput;
+  String get nickname;
+  @override
+  String get location;
+  @override
+  String get duration;
+  @override
+  String get objectType;
   @override
   String? get photoPath;
   @override
@@ -621,270 +679,6 @@ abstract class _OnboardingState implements OnboardingState {
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
   _$$OnboardingStateImplCopyWith<_$OnboardingStateImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-UserInput _$UserInputFromJson(Map<String, dynamic> json) {
-  return _UserInput.fromJson(json);
-}
-
-/// @nodoc
-mixin _$UserInput {
-  String get nickname => throw _privateConstructorUsedError;
-  String get location => throw _privateConstructorUsedError;
-  String get duration => throw _privateConstructorUsedError;
-  String get objectType => throw _privateConstructorUsedError;
-  String get additionalInfo => throw _privateConstructorUsedError;
-
-  /// Serializes this UserInput to a JSON map.
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-
-  /// Create a copy of UserInput
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  $UserInputCopyWith<UserInput> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $UserInputCopyWith<$Res> {
-  factory $UserInputCopyWith(UserInput value, $Res Function(UserInput) then) =
-      _$UserInputCopyWithImpl<$Res, UserInput>;
-  @useResult
-  $Res call({
-    String nickname,
-    String location,
-    String duration,
-    String objectType,
-    String additionalInfo,
-  });
-}
-
-/// @nodoc
-class _$UserInputCopyWithImpl<$Res, $Val extends UserInput>
-    implements $UserInputCopyWith<$Res> {
-  _$UserInputCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  /// Create a copy of UserInput
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? nickname = null,
-    Object? location = null,
-    Object? duration = null,
-    Object? objectType = null,
-    Object? additionalInfo = null,
-  }) {
-    return _then(
-      _value.copyWith(
-            nickname:
-                null == nickname
-                    ? _value.nickname
-                    : nickname // ignore: cast_nullable_to_non_nullable
-                        as String,
-            location:
-                null == location
-                    ? _value.location
-                    : location // ignore: cast_nullable_to_non_nullable
-                        as String,
-            duration:
-                null == duration
-                    ? _value.duration
-                    : duration // ignore: cast_nullable_to_non_nullable
-                        as String,
-            objectType:
-                null == objectType
-                    ? _value.objectType
-                    : objectType // ignore: cast_nullable_to_non_nullable
-                        as String,
-            additionalInfo:
-                null == additionalInfo
-                    ? _value.additionalInfo
-                    : additionalInfo // ignore: cast_nullable_to_non_nullable
-                        as String,
-          )
-          as $Val,
-    );
-  }
-}
-
-/// @nodoc
-abstract class _$$UserInputImplCopyWith<$Res>
-    implements $UserInputCopyWith<$Res> {
-  factory _$$UserInputImplCopyWith(
-    _$UserInputImpl value,
-    $Res Function(_$UserInputImpl) then,
-  ) = __$$UserInputImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({
-    String nickname,
-    String location,
-    String duration,
-    String objectType,
-    String additionalInfo,
-  });
-}
-
-/// @nodoc
-class __$$UserInputImplCopyWithImpl<$Res>
-    extends _$UserInputCopyWithImpl<$Res, _$UserInputImpl>
-    implements _$$UserInputImplCopyWith<$Res> {
-  __$$UserInputImplCopyWithImpl(
-    _$UserInputImpl _value,
-    $Res Function(_$UserInputImpl) _then,
-  ) : super(_value, _then);
-
-  /// Create a copy of UserInput
-  /// with the given fields replaced by the non-null parameter values.
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? nickname = null,
-    Object? location = null,
-    Object? duration = null,
-    Object? objectType = null,
-    Object? additionalInfo = null,
-  }) {
-    return _then(
-      _$UserInputImpl(
-        nickname:
-            null == nickname
-                ? _value.nickname
-                : nickname // ignore: cast_nullable_to_non_nullable
-                    as String,
-        location:
-            null == location
-                ? _value.location
-                : location // ignore: cast_nullable_to_non_nullable
-                    as String,
-        duration:
-            null == duration
-                ? _value.duration
-                : duration // ignore: cast_nullable_to_non_nullable
-                    as String,
-        objectType:
-            null == objectType
-                ? _value.objectType
-                : objectType // ignore: cast_nullable_to_non_nullable
-                    as String,
-        additionalInfo:
-            null == additionalInfo
-                ? _value.additionalInfo
-                : additionalInfo // ignore: cast_nullable_to_non_nullable
-                    as String,
-      ),
-    );
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$UserInputImpl implements _UserInput {
-  const _$UserInputImpl({
-    required this.nickname,
-    required this.location,
-    required this.duration,
-    required this.objectType,
-    this.additionalInfo = "",
-  });
-
-  factory _$UserInputImpl.fromJson(Map<String, dynamic> json) =>
-      _$$UserInputImplFromJson(json);
-
-  @override
-  final String nickname;
-  @override
-  final String location;
-  @override
-  final String duration;
-  @override
-  final String objectType;
-  @override
-  @JsonKey()
-  final String additionalInfo;
-
-  @override
-  String toString() {
-    return 'UserInput(nickname: $nickname, location: $location, duration: $duration, objectType: $objectType, additionalInfo: $additionalInfo)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$UserInputImpl &&
-            (identical(other.nickname, nickname) ||
-                other.nickname == nickname) &&
-            (identical(other.location, location) ||
-                other.location == location) &&
-            (identical(other.duration, duration) ||
-                other.duration == duration) &&
-            (identical(other.objectType, objectType) ||
-                other.objectType == objectType) &&
-            (identical(other.additionalInfo, additionalInfo) ||
-                other.additionalInfo == additionalInfo));
-  }
-
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  int get hashCode => Object.hash(
-    runtimeType,
-    nickname,
-    location,
-    duration,
-    objectType,
-    additionalInfo,
-  );
-
-  /// Create a copy of UserInput
-  /// with the given fields replaced by the non-null parameter values.
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$UserInputImplCopyWith<_$UserInputImpl> get copyWith =>
-      __$$UserInputImplCopyWithImpl<_$UserInputImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$UserInputImplToJson(this);
-  }
-}
-
-abstract class _UserInput implements UserInput {
-  const factory _UserInput({
-    required final String nickname,
-    required final String location,
-    required final String duration,
-    required final String objectType,
-    final String additionalInfo,
-  }) = _$UserInputImpl;
-
-  factory _UserInput.fromJson(Map<String, dynamic> json) =
-      _$UserInputImpl.fromJson;
-
-  @override
-  String get nickname;
-  @override
-  String get location;
-  @override
-  String get duration;
-  @override
-  String get objectType;
-  @override
-  String get additionalInfo;
-
-  /// Create a copy of UserInput
-  /// with the given fields replaced by the non-null parameter values.
-  @override
-  @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$UserInputImplCopyWith<_$UserInputImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

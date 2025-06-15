@@ -51,7 +51,7 @@ class PersonalityService {
     debugPrint("✅ 1/2단계: AI 페르소나 초안 생성 시작...");
 
     // 1. 이미지 분석
-    final photoAnalysisResult = await _analyzeImage(state.photoPath, state.userInput);
+    final photoAnalysisResult = await _analyzeImage(state.photoPath);
     debugPrint("  - 이미지 분석 완료: ${photoAnalysisResult['objectType']}");
 
     // 2. 80개 NPS 변수 생성 (AI 기반)
@@ -100,8 +100,8 @@ class PersonalityService {
     final finalProfile = PersonalityProfile(
       aiPersonalityProfile: AiPersonalityProfile.fromMap({
         'npsScores': userAdjustedVariables,
-        'name': finalState.userInput?.nickname ?? '이름 없음',
-        'objectType': finalState.userInput?.objectType ?? '사물',
+        'name': finalState.nickname ?? '이름 없음',
+        'objectType': finalState.objectType ?? '사물',
       }),
       photoAnalysis: PhotoAnalysis.fromMap(draft.photoAnalysis),
       humorMatrix: humorMatrix,
@@ -115,7 +115,7 @@ class PersonalityService {
     return finalProfile;
   }
 
-  Future<Map<String, dynamic>> _analyzeImage(String? photoPath, UserInput? userInput) async {
+  Future<Map<String, dynamic>> _analyzeImage(String? photoPath) async {
     if (photoPath == null || photoPath.isEmpty) {
       throw Exception('이미지 경로가 없습니다.');
     }
@@ -188,9 +188,9 @@ class PersonalityService {
 아래에 제공된 사물 정보를 반드시 참고하여 각 변수의 값을 1부터 100 사이의 정수로 추론해주세요.
 
 --- 사물 정보 ---
-- 사물 종류: ${state.userInput?.objectType}
-- 사물의 사용 기간: ${state.userInput?.duration}
-- 내가 부여한 별명: ${state.userInput?.nickname}
+- 사물 종류: ${state.objectType}
+- 사물의 사용 기간: ${state.duration}
+- 내가 부여한 별명: ${state.nickname}
 - 내가 바라는 사용 목적: ${state.purpose}
 - 선호하는 유머 스타일: ${state.humorStyle.isNotEmpty ? state.humorStyle : '지정되지 않음'}
 - 사진 분석 결과: ${photoAnalysisJson ?? '없음'}
@@ -488,7 +488,7 @@ class PersonalityService {
 
     // AI에게 전달할 핵심 정보 요약
     final summary = """
-    - 사물: ${state.userInput?.objectType ?? '사물'} (${photoAnalysis['visualDescription'] ?? '특징 없음'})
+    - 사물: ${state.objectType ?? '사물'} (${photoAnalysis['visualDescription'] ?? '특징 없음'})
     - 핵심 성격: 
       - 친절함: ${variables['W01_친절함']}%
       - 사교성: ${variables['E01_사교성']}%

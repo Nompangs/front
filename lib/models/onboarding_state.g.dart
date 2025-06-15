@@ -10,10 +10,10 @@ _$OnboardingStateImpl _$$OnboardingStateImplFromJson(
   Map<String, dynamic> json,
 ) => _$OnboardingStateImpl(
   currentStep: (json['currentStep'] as num?)?.toInt() ?? 0,
-  userInput:
-      json['userInput'] == null
-          ? null
-          : UserInput.fromJson(json['userInput'] as Map<String, dynamic>),
+  nickname: json['nickname'] as String? ?? '',
+  location: json['location'] as String? ?? '',
+  duration: json['duration'] as String? ?? '',
+  objectType: json['objectType'] as String? ?? '',
   photoPath: json['photoPath'] as String? ?? null,
   generatedCharacter:
       json['generatedCharacter'] == null
@@ -44,7 +44,10 @@ Map<String, dynamic> _$$OnboardingStateImplToJson(
   _$OnboardingStateImpl instance,
 ) => <String, dynamic>{
   'currentStep': instance.currentStep,
-  'userInput': instance.userInput,
+  'nickname': instance.nickname,
+  'location': instance.location,
+  'duration': instance.duration,
+  'objectType': instance.objectType,
   'photoPath': instance.photoPath,
   'generatedCharacter': instance.generatedCharacter,
   'isLoading': instance.isLoading,
@@ -60,24 +63,6 @@ Map<String, dynamic> _$$OnboardingStateImplToJson(
   'qrCodeUrl': instance.qrCodeUrl,
   'finalPersonality': instance.finalPersonality,
 };
-
-_$UserInputImpl _$$UserInputImplFromJson(Map<String, dynamic> json) =>
-    _$UserInputImpl(
-      nickname: json['nickname'] as String,
-      location: json['location'] as String,
-      duration: json['duration'] as String,
-      objectType: json['objectType'] as String,
-      additionalInfo: json['additionalInfo'] as String? ?? "",
-    );
-
-Map<String, dynamic> _$$UserInputImplToJson(_$UserInputImpl instance) =>
-    <String, dynamic>{
-      'nickname': instance.nickname,
-      'location': instance.location,
-      'duration': instance.duration,
-      'objectType': instance.objectType,
-      'additionalInfo': instance.additionalInfo,
-    };
 
 _$CharacterImpl _$$CharacterImplFromJson(Map<String, dynamic> json) =>
     _$CharacterImpl(

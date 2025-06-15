@@ -79,8 +79,8 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   void _checkAndStartGeneration() {
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
 
-    // 사용자 입력이 없는 경우 에러 처리
-    if (provider.state.userInput == null) {
+    // 사용자 입력이 없는 경우 에러 처리 (nickname으로 확인)
+    if (provider.state.nickname.isEmpty) {
       provider.setError('사용자 입력 정보가 없습니다. 이전 단계로 돌아가서 정보를 입력해주세요.');
       return;
     }
@@ -249,6 +249,17 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
         debugPrint('   - StackTrace: $stackTrace');
         provider.setErrorMessage('페르소나 생성에 실패했어요: ${e.toString()}');
       }
+    }
+  }
+
+  void _updateUIForCompletion() {
+    final provider = context.read<OnboardingProvider>();
+    if (mounted) {
+      // 닉네임과 목적을 화면에 표시하기 위해 상태에서 직접 가져옴
+      final nickname = provider.state.nickname;
+      final purpose = provider.state.purpose;
+
+      // ... (관련 UI 업데이트 로직) ...
     }
   }
 
@@ -545,7 +556,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
               Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
-                  final hasUserInput = provider.state.userInput != null;
+                  final hasUserInput = provider.state.nickname.isNotEmpty;
 
                   return Column(
                     children: [

@@ -7,7 +7,10 @@ part 'onboarding_state.g.dart';
 class OnboardingState with _$OnboardingState {
   const factory OnboardingState({
     @Default(0) int currentStep,
-    @Default(null) UserInput? userInput,
+    @Default('') String nickname,
+    @Default('') String location,
+    @Default('') String duration,
+    @Default('') String objectType,
     @Default(null) String? photoPath,
     @Default(null) Character? generatedCharacter,
     @Default(false) bool isLoading,
@@ -28,20 +31,6 @@ class OnboardingState with _$OnboardingState {
 
   factory OnboardingState.fromJson(Map<String, dynamic> json) =>
       _$OnboardingStateFromJson(json);
-}
-
-@freezed
-class UserInput with _$UserInput {
-  const factory UserInput({
-    required String nickname,
-    required String location,
-    required String duration,
-    required String objectType,
-    @Default("") String additionalInfo,
-  }) = _UserInput;
-
-  factory UserInput.fromJson(Map<String, dynamic> json) =>
-      _$UserInputFromJson(json);
 }
 
 @freezed

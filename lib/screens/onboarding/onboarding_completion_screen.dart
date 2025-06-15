@@ -125,7 +125,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
         generatedProfile: finalProfile.toMap(),
-        userInput: provider.state.toJson(), // OnboardingState에 toMap() 대신 toJson() 사용
+        userInput: provider.getUserInputAsMap(),
       );
 
       setState(() {
@@ -416,8 +416,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         const Icon(Icons.location_on, size: 16),
                                         const SizedBox(width: 4),
                                         Text(
-                                          provider.state.userInput?.location ??
-                                              '우리집 거실',
+                                          provider.state.location,
                                           style: const TextStyle(
                                             fontFamily: 'Pretendard',
                                             fontSize: 12,

@@ -39,10 +39,20 @@ class OnboardingProvider extends ChangeNotifier {
     _logStatus('nextStep');
   }
   
-  void setUserInput(UserInput input) {
-    _state = _state.copyWith(userInput: input);
+  void updateUserBasicInfo({
+    required String nickname,
+    required String location,
+    required String duration,
+    required String objectType,
+  }) {
+    _state = _state.copyWith(
+      nickname: nickname,
+      location: location,
+      duration: duration,
+      objectType: objectType,
+    );
     notifyListeners();
-    _logStatus('setUserInput');
+    _logStatus('updateUserBasicInfo');
   }
   
   /// 용도 업데이트 (Step 3)
@@ -114,8 +124,24 @@ class OnboardingProvider extends ChangeNotifier {
     _logStatus('clearError');
   }
   
+  /// 서버 전송용 사용자 입력 데이터를 Map으로 변환합니다.
+  Map<String, dynamic> getUserInputAsMap() {
+    return {
+      'photoPath': state.photoPath,
+      'objectType': state.objectType,
+      'purpose': state.purpose,
+      'nickname': state.nickname,
+      'location': state.location,
+      'duration': state.duration,
+      'humorStyle': state.humorStyle,
+      'warmth': state.warmth,
+      'introversion': state.introversion,
+      'competence': state.competence,
+    };
+  }
+  
   Future<void> generateCharacter() async {
-    if (_state.userInput == null) {
+    if (_state.nickname.isEmpty) {
       setError('사용자 입력 정보가 없습니다.');
       return;
     }
@@ -168,7 +194,6 @@ class OnboardingProvider extends ChangeNotifier {
   }
   
   Future<Character> _generateMockCharacter() async {
-    final userInput = _state.userInput!;
     final random = Random();
     
     // 사용자가 입력한 용도와 유머스타일을 반영한 성격 생성
@@ -179,12 +204,12 @@ class OnboardingProvider extends ChangeNotifier {
     );
     
     final traits = _generateTraits(personality);
-    final greeting = _generateGreeting(userInput.nickname, personality);
+    final greeting = _generateGreeting(_state.nickname, personality);
     
     return Character(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      name: userInput.nickname,
-      objectType: userInput.objectType,
+      name: _state.nickname,
+      objectType: _state.objectType,
       personality: personality,
       greeting: greeting,
       traits: traits,
