@@ -36,7 +36,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   final GlobalKey _qrKey = GlobalKey();
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = false;
-  String? _qrUuid;
+  String? _qrImageData;
   bool _creatingQr = false;
   final ApiService _apiService = ApiService();
   final PersonalityService _personalityService = PersonalityService();
@@ -133,7 +133,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       );
 
       setState(() {
-        _qrUuid = result['id'] as String?; // 서버가 보내준 id 저장
+        _qrImageData = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
         _isLoading = false;
         _message = "페르소나 생성 완료!";
       });
@@ -142,6 +142,21 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         _isLoading = false;
         _message = "오류가 발생했어요: ${e.toString()}";
       });
+    }
+  }
+
+  // Base64 데이터를 이미지 바이트로 변환하는 헬퍼 함수
+  Uint8List? _decodeQrImage(String? base64String) {
+    if (base64String == null || !base64String.startsWith('data:image')) {
+      return null;
+    }
+    // "data:image/png;base64," 부분을 제거하고 순수 base64 데이터만 추출
+    final pureBase64 = base64String.substring(base64String.indexOf(',') + 1);
+    try {
+      return base64Decode(pureBase64);
+    } catch (e) {
+      print("Base64 디코딩 실패: $e");
+      return null;
     }
   }
 
@@ -158,6 +173,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
         final character = provider.personalityProfile;
+        final qrBytes = _decodeQrImage(_qrImageData);
 
         if (_isLoading) {
           return Scaffold(
@@ -348,16 +364,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
                                     ),
-                                    child: RepaintBoundary(
-                                      key: _qrKey,
-                                      child: QrImageView(
-                                        data: _qrUuid != null
-                                            ? 'nompangs://character?id=$_qrUuid'
-                                            : '',
-                                        version: QrVersions.auto,
-                                        backgroundColor: Colors.white,
-                                      ),
-                                    ),
+                                    child: qrBytes != null
+                                        ? RepaintBoundary(
+                                            key: _qrKey,
+                                            child: Image.memory(
+                                              qrBytes,
+                                              width: 100,
+                                              height: 100,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          )
+                                        : const Center(
+                                            child: CircularProgressIndicator()),
                                   ),
                                 ),
                               ),
@@ -651,10 +669,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      if (_qrUuid != null && character != null) {
+                      if (_qrImageData != null && character != null) {
                         Navigator.pushNamed(
                           context,
-                          '/chat/$_qrUuid',
+                          '/chat/$_qrImageData',
                           arguments: character,
                         );
                       }
@@ -858,9 +876,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   }
 
   String _generateQRData(PersonalityProfile character) {
-    if (_qrUuid == null) return '';
+    if (_qrImageData == null) return '';
     final data = {
-      'characterId': _qrUuid,
+      'characterId': _qrImageData,
       'name': character.aiPersonalityProfile?.name,
       'objectType': character.aiPersonalityProfile?.objectType,
       'greeting': character.greeting,
@@ -1061,10 +1079,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: QrImageView(
-                          data: _qrUuid != null
-                              ? 'nompangs://character?id=$_qrUuid'
+                          data: _qrImageData != null
+                              ? 'https://invitepage.netlify.app/?roomId=${_qrImageData!}'
                               : '',
                           version: QrVersions.auto,
+                          size: 100.0,
                           backgroundColor: Colors.white,
                         ),
                       ),

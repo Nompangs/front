@@ -3,6 +3,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:ui' as ui;
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:nompangs/services/character_manager.dart';
 import 'package:flutter/rendering.dart';
@@ -25,7 +26,7 @@ class CharacterCompleteScreen extends StatefulWidget {
 
 class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
   final GlobalKey _qrKey = GlobalKey();
-  String? _qrUuid;
+  String? _qrImageData;
   bool _loading = false;
 
   @override
@@ -55,15 +56,13 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     };
     try {
       final result = await CharacterManager.instance.saveCharacterForQR(data);
-      final uuid = result['uuid'] as String;
-      final message = result['message'] as String?;
+      final qrUrl = result['qrUrl'] as String?;
       
-      // 🎯 간소화 정보 로깅
-      if (message != null) {
-        print('✅ $message');
+      if (mounted) {
+        setState(() {
+          _qrImageData = qrUrl;
+        });
       }
-      
-      if (mounted) setState(() => _qrUuid = uuid);
     } catch (e) {
       print('QR 생성 실패: $e');
       if (mounted) {
@@ -85,11 +84,8 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     }
   }
 
-  String get _qrData =>
-      _qrUuid != null ? 'nompangs://character?id=$_qrUuid' : '';
-
   Future<void> _shareQRCode() async {
-    if (_qrUuid == null) return;
+    if (_qrImageData == null) return;
     final boundary = _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
@@ -100,8 +96,19 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     await Share.shareXFiles([XFile(file.path)], text: '${widget.characterName} 캐릭터의 QR 코드입니다.');
   }
 
+  // Base64 데이터를 이미지 바이트로 변환하는 헬퍼 함수
+  Uint8List? _decodeQrImage(String? base64String) {
+    if (base64String == null || !base64String.startsWith('data:image')) {
+      return null;
+    }
+    final uri = Uri.parse(base64String);
+    return uri.data?.contentAsBytes();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final qrBytes = _decodeQrImage(_qrImageData);
+
     return Scaffold(
       appBar: AppBar(title: const Text('캐릭터 완성')),
       body: SingleChildScrollView(
@@ -117,18 +124,18 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
               const SizedBox(height: 20),
               RepaintBoundary(
                 key: _qrKey,
-                child: _qrUuid != null
-                    ? QrImageView(
-                        data: _qrData,
-                        version: QrVersions.auto,
-                        size: 200,
+                child: qrBytes != null
+                    ? Image.memory(
+                        qrBytes,
+                        width: 200,
+                        height: 200,
                       )
                     : SizedBox(
                         width: 200,
                         height: 200,
                         child: _loading
                             ? const Center(child: CircularProgressIndicator())
-                            : const SizedBox.shrink(),
+                            : const Center(child: Text("QR 생성 실패")),
                       ),
               ),
               const SizedBox(height: 20),
@@ -145,14 +152,14 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
                     'characterHandle': '@User_${DateTime.now().millisecondsSinceEpoch}',
                     'personalityTags': widget.personalityTags,
                     'greeting': widget.greeting,
-                    'personaId': _qrUuid, // QR 생성 시 받은 ID
                   };
 
-                  Navigator.pushNamed(
-                    context,
-                    '/chat/$_qrUuid',
-                    arguments: characterData,
-                  );
+                  // UUID를 모르므로 채팅 화면으로 바로 이동하는 기능은 수정이 필요합니다.
+                  // 우선은 비활성화하거나 홈으로 이동하도록 처리합니다.
+                  // For now, let's just pop the screen
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  }
                 },
                 icon: const Icon(Icons.chat),
                 label: const Text('지금 바로 대화해요'),
