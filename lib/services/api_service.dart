@@ -83,7 +83,23 @@ class ApiService {
       // ---  loadProfile 상세 로깅 END ---
 
       if (response.statusCode == 200) {
-        return PersonalityProfile.fromMap(jsonDecode(response.body));
+        // UTF-8로 디코딩하여 한국어 깨짐 방지
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final jsonData = jsonDecode(decodedBody);
+        
+        print('--- [loadProfile] 서버 응답 ---');
+        print('Raw Body: ${response.body}');
+        print('Decoded JSON: $jsonData');
+        print('-----------------------------');
+
+        // 서버 응답에서 'generatedProfile' 객체를 추출합니다.
+        final profileData = jsonData['generatedProfile'];
+        if (profileData == null) {
+          throw Exception('Server response did not contain "generatedProfile" field.');
+        }
+        
+        // 추출한 프로필 데이터로 Profile 객체를 생성합니다.
+        return PersonalityProfile.fromMap(profileData);
       } else {
         throw Exception(
             'Failed to load profile from server. Status: ${response.statusCode}');
