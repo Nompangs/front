@@ -353,7 +353,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child: RepaintBoundary(
                                       key: _qrKey,
                                       child: QrImageView(
-                                        data: _qrCodeUrl ?? '',
+                                        data: _qrUuid ?? '',
                                         version: QrVersions.auto,
                                         backgroundColor: Colors.white,
                                       ),
@@ -1061,7 +1061,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: QrImageView(
-                          data: _qrCodeUrl ?? '',
+                          data: _qrUuid ?? '',
                           version: QrVersions.auto,
                           backgroundColor: Colors.white,
                         ),
