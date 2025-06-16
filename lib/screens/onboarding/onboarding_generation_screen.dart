@@ -36,7 +36,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     GenerationStep(1.0, '거의 완성되었어요', '마지막 손질을 하고 있어요'),
   ];
 
-  final PersonalityService _personalityService = const PersonalityService();
+  final PersonalityService _personalityService = PersonalityService();
 
   @override
   void initState() {
@@ -62,7 +62,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
     // Provider 상태 확인 후 생성 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndStartGeneration();
+      _startGeneration();
     });
   }
 
@@ -79,14 +79,14 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   void _checkAndStartGeneration() {
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
 
-    // 사용자 입력이 없는 경우 에러 처리
-    if (provider.state.userInput == null) {
+    // 사용자 입력이 없는 경우 에러 처리 (nickname으로 확인)
+    if (provider.state.nickname.isEmpty) {
       provider.setError('사용자 입력 정보가 없습니다. 이전 단계로 돌아가서 정보를 입력해주세요.');
       return;
     }
 
     // 이미 생성된 캐릭터가 있는 경우 바로 다음 페이지로 이동
-    if (provider.state.generatedCharacter != null) {
+    if (provider.generatedCharacter != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/onboarding/personality');
@@ -96,7 +96,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     }
 
     // 생성 중이 아니고 캐릭터가 없는 경우에만 생성 시작
-    if (!provider.state.isGenerating) {
+    if (!provider.isGenerating) {
       _startGeneration();
       _startTimeoutTimer(); // 타임아웃 타이머 시작
     }
@@ -228,67 +228,39 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
   Future<void> _startGeneration() async {
     final provider = context.read<OnboardingProvider>();
-    if (provider.isGenerating) return;
-
-    provider.setGenerating(true, "페르소나 분석을 시작합니다...");
-
-    // 15초 후에 메시지를 변경하는 타이머를 설정합니다.
-    _longRunningTimer = Timer(const Duration(seconds: 15), () {
-      if (provider.isGenerating && mounted) {
-        provider.setGenerating(true, "꼼꼼하게 분석 중이에요.\n시간이 조금 더 걸릴 수 있어요...");
-      }
-    });
-
     try {
-      final PersonalityProfile generatedProfile =
-          await _personalityService.generateProfile(provider.state);
+      // 1단계: AI 초안 생성 API 호출
+      provider.updateGenerationStatus(0.3, 'AI가 당신의 사물을 분석하고 있어요...');
+      final draft = await _personalityService.generateAIPart(provider.state);
       
-      _longRunningTimer?.cancel(); // 성공 시 타이머 취소
+      // 2단계: AI 추천값을 Provider에 저장
+      provider.updateGenerationStatus(0.8, '성격 초안을 완성했어요!');
+      provider.setAiDraft(draft);
 
-      if (generatedProfile.aiPersonalityProfile == null ||
-          generatedProfile.aiPersonalityProfile!.summary.isEmpty ||
-          generatedProfile.structuredPrompt.isEmpty) {
-        throw Exception("생성된 프로필의 핵심 데이터가 비어있습니다.");
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      // 3단계: 성격 조정 화면으로 이동
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/onboarding/personality');
       }
-
-      debugPrint("✅ 페르소나 생성 성공! 요약: ${generatedProfile.aiPersonalityProfile!.summary}");
-
-      // 3. Provider에 최종 결과 저장
-      provider.setFinalPersonality(generatedProfile);
-      provider.setGenerating(false, "생성 완료!");
-
-      // 4. 완료 화면으로 이동
-      Navigator.pushNamed(context, '/onboarding/completion');
-
-    } catch (e, s) {
-      _longRunningTimer?.cancel(); // 실패 시에도 타이머 취소
-      debugPrint("🚨 페르소나 생성 실패: $e");
-      debugPrint("   - StackTrace: $s");
-      provider.setErrorMessage("페르소나 생성에 실패했습니다. 다시 시도해주세요.");
-      provider.setGenerating(false, "오류 발생");
-      // 필요하다면 에러 팝업 후 이전 화면으로 이동
-      _showErrorDialog(e.toString());
+    } catch (e, stackTrace) {
+      if (mounted) {
+        debugPrint('🚨 페르소나 생성 실패: $e');
+        debugPrint('   - StackTrace: $stackTrace');
+        provider.setErrorMessage('페르소나 생성에 실패했어요: ${e.toString()}');
+      }
     }
   }
 
-  void _showErrorDialog(String message) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('오류'),
-        content: Text('페르소나 생성 중 오류가 발생했습니다.\n\n$message'),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // 다이얼로그 닫기
-              Navigator.of(context).pop(); // 이전 화면으로 돌아가기
-            },
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
+  void _updateUIForCompletion() {
+    final provider = context.read<OnboardingProvider>();
+    if (mounted) {
+      // 닉네임과 목적을 화면에 표시하기 위해 상태에서 직접 가져옴
+      final nickname = provider.state.nickname;
+      final purpose = provider.state.purpose;
+
+      // ... (관련 UI 업데이트 로직) ...
+    }
   }
 
   @override
@@ -584,7 +556,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
               Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
-                  final hasUserInput = provider.state.userInput != null;
+                  final hasUserInput = provider.state.nickname.isNotEmpty;
 
                   return Column(
                     children: [

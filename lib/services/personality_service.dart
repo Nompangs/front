@@ -8,6 +8,25 @@ import 'package:http/http.dart' as http;
 import '../models/onboarding_state.dart';
 import '../models/personality_profile.dart';
 
+/// AI 페르소나 생성의 중간 결과물.
+/// AI가 생성한 초안과 사용자에게 제안할 슬라이더 초기값을 담습니다.
+class AIPersonalityDraft {
+  final Map<String, dynamic> photoAnalysis;
+  final Map<String, int> npsScores;
+  // 사용자가 조정할 슬라이더의 AI 추천 초기값 (1-10 스케일)
+  final int initialWarmth;
+  final int initialIntroversion;
+  final int initialCompetence;
+
+  AIPersonalityDraft({
+    required this.photoAnalysis,
+    required this.npsScores,
+    required this.initialWarmth,
+    required this.initialIntroversion,
+    required this.initialCompetence,
+  });
+}
+
 class PersonalityService {
   const PersonalityService();
 
@@ -24,41 +43,85 @@ class PersonalityService {
     ];
   }
 
-  Future<PersonalityProfile> generateProfile(OnboardingState state) async {
-    debugPrint("🚀 [PersonalityService] 페르소나 생성 프로세스 시작");
+  /// 1단계: AI를 통해 페르소나 초안을 생성합니다.
+  ///
+  /// 사진 분석과 80개 NPS 변수 생성을 수행하고,
+  /// 사용자에게 보여줄 성격 슬라이더의 추천 초기값을 계산하여 반환합니다.
+  Future<AIPersonalityDraft> generateAIPart(OnboardingState state) async {
+    debugPrint("✅ 1/2단계: AI 페르소나 초안 생성 시작...");
 
-    // 1단계: 이미지 분석
+    // 1. 이미지 분석
     final photoAnalysisResult = await _analyzeImage(state.photoPath);
-    debugPrint("✅ 1단계 이미지 분석 완료");
+    debugPrint("  - 이미지 분석 완료: ${photoAnalysisResult['objectType']}");
 
-    // 2단계: AI 변수 생성
-    Map<String, int> aiGeneratedVariables = await _generateAIBasedVariables(state, photoAnalysisResult);
-    debugPrint("✅ 2단계 AI 변수 생성 완료: ${aiGeneratedVariables.length}개");
+    // 2. 80개 NPS 변수 생성 (AI 기반)
+    final aiGeneratedVariables = await _generateAIBasedVariables(state, photoAnalysisResult['visualDescription'] ?? '');
+    debugPrint("  - 80개 NPS 변수 생성 완료: ${aiGeneratedVariables.length}개");
 
-    // 3단계: 사용자 선호도 적용
-    Map<String, int> userAdjustedVariables = _applyUserPreferences(aiGeneratedVariables, state);
-    debugPrint("✅ 3단계 사용자 선호도 적용 완료");
+    // 3. AI 변수 기반으로 슬라이더 초기값 제안 (1-10 스케일)
+    final initialWarmth = ((aiGeneratedVariables['W01_친절함'] ?? 50) / 10).round().clamp(1, 10);
+    final initialIntroversion = (10 - ((aiGeneratedVariables['E01_사교성'] ?? 50) / 10).round()).clamp(1, 10);
+    final initialCompetence = ((aiGeneratedVariables['C02_전문성'] ?? 50) / 10).round().clamp(1, 10);
+    debugPrint("  - 슬라이더 초기값 계산 완료 (따뜻함:$initialWarmth, 내향성:$initialIntroversion, 유능함:$initialCompetence)");
 
-    // 4단계: 자연어 프로필 생성
-    final naturalLanguageProfile = await _generateNaturalLanguageProfile(userAdjustedVariables);
-    debugPrint("✅ 4단계 자연어 프로필 생성 완료");
+    debugPrint("✅ 1/2단계: AI 페르소나 초안 생성 완료!");
+    return AIPersonalityDraft(
+      photoAnalysis: photoAnalysisResult,
+      npsScores: aiGeneratedVariables,
+      initialWarmth: initialWarmth,
+      initialIntroversion: initialIntroversion,
+      initialCompetence: initialCompetence,
+    );
+  }
 
-    // 5단계: 최종 프로필 조합
-    final profileData = naturalLanguageProfile['aiPersonalityProfile'] as Map<String, dynamic>? ?? {};
+  /// 2단계: AI 초안과 사용자 조정 값을 결합하여 최종 프로필을 완성합니다.
+  Future<PersonalityProfile> finalizeUserProfile({
+    required AIPersonalityDraft draft,
+    required OnboardingState finalState,
+  }) async {
+    debugPrint("✅ 2/2단계: 최종 프로필 완성 시작...");
+
+    // 1. 사용자 선호도 적용
+    Map<String, int> userAdjustedVariables = _applyUserPreferences(draft.npsScores, finalState);
+    debugPrint("  - 사용자 선호도 적용 완료");
+
+    // 2. 풍부한 자연어 프로필 생성 (하이브리드 방식)
+    final communicationPrompt = _generateCommunicationPrompt(finalState);
+    final attractiveFlaws = _generateAttractiveFlaws();
+    final humorMatrix = _generateHumorMatrix(finalState.humorStyle);
+    final contradictions = await _generateContradictions(
+      userAdjustedVariables,
+      finalState,
+      draft.photoAnalysis,
+    );
+    debugPrint("✅ 4단계 풍부한 자연어 프로필 생성 완료");
+
+    // 4. 첫인사 생성 (AI 기반)
+    final greeting = await _generateGreeting(
+      finalState,
+      userAdjustedVariables,
+      contradictions,
+      attractiveFlaws,
+    );
+    debugPrint("✅ 5단계 첫인사 생성 완료: $greeting");
+
+    // 5. 최종 프로필 조합
     final finalProfile = PersonalityProfile(
       aiPersonalityProfile: AiPersonalityProfile.fromMap({
-        ...profileData,
         'npsScores': userAdjustedVariables,
+        'name': finalState.nickname ?? '이름 없음',
+        'objectType': finalState.objectType ?? '사물',
       }),
-      photoAnalysis: PhotoAnalysis.fromMap(photoAnalysisResult),
-      lifeStory: LifeStory.fromMap(naturalLanguageProfile['lifeStory'] as Map<String, dynamic>? ?? {}),
-      humorMatrix: HumorMatrix.fromMap(naturalLanguageProfile['humorMatrix'] as Map<String, dynamic>? ?? {}),
-      attractiveFlaws: List<String>.from(naturalLanguageProfile['attractiveFlaws'] as List<dynamic>? ?? []),
-      contradictions: List<String>.from(naturalLanguageProfile['contradictions'] as List<dynamic>? ?? []),
-      communicationStyle: CommunicationStyle.fromMap(naturalLanguageProfile['communicationStyle'] as Map<String, dynamic>? ?? {}),
-      structuredPrompt: naturalLanguageProfile['structuredPrompt'] as String? ?? '',
+      photoAnalysis: PhotoAnalysis.fromMap(draft.photoAnalysis),
+      humorMatrix: humorMatrix,
+      attractiveFlaws: attractiveFlaws,
+      contradictions: contradictions,
+      greeting: greeting,
+      initialUserMessage: finalState.purpose,
+      communicationPrompt: communicationPrompt,
+      photoPath: finalState.photoPath,
     );
-    debugPrint("✅ 5단계 최종 프로필 조합 완료. 요약: ${finalProfile.aiPersonalityProfile?.summary}");
+    debugPrint("✅ 2/2단계: 최종 프로필 조합 완료!");
     return finalProfile;
   }
 
@@ -76,13 +139,16 @@ class PersonalityService {
       String base64Image = base64Encode(imageBytes);
 
       final systemPrompt = '''
-당신은 사진 속 사물을 분석하여 성격과 물리적 특성을 추론하는 전문가입니다.
-제공된 이미지를 분석하여 다음 항목들을 JSON 형식으로 응답해주세요.
+당신은 사진 속 사물을 분석하여 물리적, 맥락적 특성을 추론하는 전문가입니다.
+제공된 이미지를 분석하여 다음 항목들을 JSON 형식으로 응답해주세요. 각 필드는 반드시 camelCase로 작성해야 합니다.
 
-- personality_hints: 성격 추론 힌트 (예: "따뜻한 색감으로 보아 온화한 성격일 수 있음")
-- physical_traits: 물리적 특성 (예: "붉은색, 플라스틱 재질, 약간의 흠집 있음")
-- object_type: 사물 종류 (예: "머그컵")
-- estimated_age: 추정 사용 기간 (예: "3년 이상")
+- "objectType": 사물 종류 (예: "머그컵", "테디베어 인형")
+- "visualDescription": 시각적 묘사 (예: "붉은색 플라스틱 재질이며, 표면에 약간의 흠집이 보임. 손잡이가 달려있음.")
+- "location": 사진이 촬영된 장소 또는 배경 (예: "사무실 책상 위", "아이 방 침대")
+- "condition": 사물의 상태 (예: "새것 같음", "오래되어 보임", "약간 닳았음")
+- "estimatedAge": 추정 사용 기간 (예: "3년 이상", "6개월 미만")
+- "historicalSignificance": 사물이 가질 수 있는 역사적 의미나 개인적인 이야기 (예: ["10년 전 유럽여행에서 구매함", "할머니에게 물려받은 소중한 물건임"])
+- "culturalContext": 사물이 나타내는 문화적 맥락 (예: ["90년대 레트로 디자인 유행을 보여줌", "한국의 전통적인 다도 문화를 상징함"])
 ''';
 
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
@@ -119,42 +185,110 @@ class PersonalityService {
     }
   }
 
-  Future<Map<String, int>> _generateAIBasedVariables(OnboardingState state, Map<String, dynamic> photoAnalysis) async {
+  Future<Map<String, int>> _generateAIBasedVariables(
+      OnboardingState state, String? photoAnalysisJson) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) throw Exception('API 키가 없습니다.');
-
-    final variableKeys = getVariableKeys().join(', ');
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('API 키가 없습니다.');
+    }
 
     final systemPrompt = '''
-당신은 사물의 페르소나를 127개의 정수형 변수로 정의하는 전문가입니다.
-사용자 정보를 바탕으로 사물의 고유한 성격을 분석하여, 다음 127개 변수 각각에 대해 1에서 100 사이의 값을 할당해주세요.
-응답은 반드시 JSON 형식이어야 하며, 다른 설명은 포함하지 마세요.
+당신은 AI 전문가입니다. 사용자가 제공하는 사물 정보와 사진 분석 결과를 바탕으로, 사물의 독특한 성격을 나타내는 80개의 정량적 변수(NPS)를 생성하는 것이 당신의 임무입니다.
 
-JSON 형식:
+아래에 제공된 사물 정보를 반드시 참고하여 각 변수의 값을 1부터 100 사이의 정수로 추론해주세요.
+
+--- 사물 정보 ---
+- 사물 종류: ${state.objectType}
+- 사물의 사용 기간: ${state.duration}
+- 내가 부여한 별명: ${state.nickname}
+- 내가 바라는 사용 목적: ${state.purpose}
+- 선호하는 유머 스타일: ${state.humorStyle.isNotEmpty ? state.humorStyle : '지정되지 않음'}
+- 사진 분석 결과: ${photoAnalysisJson ?? '없음'}
+--------------------
+
+응답은 오직 아래 80개의 키와 추론된 값을 포함하는 완벽한 JSON 형식이어야 합니다. 다른 설명은 절대 추가하지 마세요.
+
 {
-  "variables": {
-    "W01_친절함": [1-100 사이 값],
-    "W02_친근함": [1-100 사이 값],
-    // ... 총 127개 변수
-  }
+  "W01_친절함": <1-100 정수>,
+  "W02_공감능력": <1-100 정수>,
+  "W03_격려성향": <1-100 정수>,
+  "W04_포용력": <1-100 정수>,
+  "W05_신뢰성": <1-100 정수>,
+  "W06_배려심": <1-100 정수>,
+  "C01_효율성": <1-100 정수>,
+  "C02_전문성": <1-100 정수>,
+  "C03_창의성": <1-100 정수>,
+  "C04_학습능력": <1-100 정수>,
+  "C05_적응력": <1-100 정수>,
+  "C06_통찰력": <1-100 정수>,
+  "E01_사교성": <1-100 정수>,
+  "E02_활동성": <1-100 정수>,
+  "A01_신뢰": <1-100 정수>,
+  "A02_이타심": <1-100 정수>,
+  "CS01_책임감": <1-100 정수>,
+  "CS02_질서성": <1-100 정수>,
+  "N01_불안성": <1-100 정수>,
+  "N02_감정변화": <1-100 정수>,
+  "O01_상상력": <1-100 정수>,
+  "O02_호기심": <1-100 정수>,
+  "O03_감정개방성": <1-100 정수>,
+  "O04_가치개방성": <1-100 정수>,
+  "F01_완벽주의불안": <1-100 정수>,
+  "F02_우유부단함": <1-100 정수>,
+  "F03_과도한걱정": <1-100 정수>,
+  "F04_예민함": <1-100 정수>,
+  "F05_소심함": <1-100 정수>,
+  "F06_변화거부": <1-100 정수>,
+  "P01_외면내면대비": <1-100 정수>,
+  "P02_논리감정대립": <1-100 정수>,
+  "P03_활동정적대비": <1-100 정수>,
+  "P04_사교내향혼재": <1-100 정수>,
+  "P05_자신감불안공존": <1-100 정수>,
+  "P06_시간상황변화": <1-100 정수>,
+  "OBJ01_존재목적만족도": <1-100 정수>,
+  "OBJ02_사용자기여감": <1-100 정수>,
+  "OBJ03_역할정체성자부심": <1-100 정수>,
+  "FORM01_재질특성자부심": <1-100 정수>,
+  "FORM02_크기공간의식": <1-100 정수>,
+  "FORM03_내구성자신감": <1-100 정수>,
+  "INT01_사용압력인내력": <1-100 정수>,
+  "INT02_환경변화적응성": <1-100 정수>,
+  "S01_격식성수준": <1-100 정수>,
+  "S02_직접성정도": <1-100 정수>,
+  "S03_어휘복잡성": <1-100 정수>,
+  "S04_은유사용빈도": <1-100 정수>,
+  "S05_감탄사사용": <1-100 정수>,
+  "S06_반복표현패턴": <1-100 정수>,
+  "S07_신조어수용성": <1-100 정수>,
+  "S08_문장길이선호": <1-100 정수>,
+  "H01_상황유머감각": <1-100 정수>,
+  "H02_자기비하유머": <1-100 정수>,
+  "H03_과장유머": <1-100 정수>,
+  "H04_언어유희": <1-100 정수>,
+  "H05_풍자비판유머": <1-100 정수>,
+  "H06_따뜻한유머": <1-100 정수>,
+  "R01_관계주도성": <1-100 정수>,
+  "R02_관계안정성": <1-100 정수>,
+  "R03_애정표현빈도": <1-100 정수>,
+  "R04_갈등회피성": <1-100 정수>,
+  "R05_독립성": <1-100 정수>,
+  "R06_의존성": <1-100 정수>,
+  "L01_과거회상빈도": <1-100 정수>,
+  "L02_미래지향성": <1-100 정수>,
+  "L03_현재몰입도": <1-100 정수>,
+  "L04_기억정확도": <1-100 정수>,
+  "M01_도덕성": <1-100 정수>,
+  "M02_전통성": <1-100 정수>,
+  "M03_개인주의": <1-100 정수>,
+  "M04_성취지향": <1-100 정수>,
+  "M05_안정성추구": <1-100 정수>,
+  "T01_사용목적부합도": <1-100 정수>,
+  "T02_선호활동관련성": <1-100 정수>,
+  "T03_대화스타일선호도": <1-100 정수>,
+  "T04_관계역할선호도": <1-100 정수>,
+  "T05_유머스타일선호도": <1-100 정수>
 }
-
-🎯 중요: 각 변수는 사물의 고유한 특성을 반영하여 독립적으로 생성해야 합니다. 서로 다른 변수가 비슷한 값을 가질 수 있지만, 모든 값이 동일해서는 안됩니다.
-변수 목록: $variableKeys
 ''';
-
-    final userPrompt = '''
-이름:${state.userInput?.nickname}, 위치:${state.userInput?.location}, 기간:${state.userInput?.duration},
-사물:${state.userInput?.objectType}, 주 사용 목적:${state.purpose}, 선호 유머 스타일:${state.humorStyle}.
----
-이미지 분석 결과:
-${jsonEncode(photoAnalysis)}
----
-이 사물의 성격을 분석하여 127개 변수 값을 할당해줘.
-''';
-
-    debugPrint("✨ [PersonalityService] 2단계: 127개 변수 생성 시작...");
-    debugPrint("   - 프롬프트 일부: ${userPrompt.substring(0, 100)}...");
 
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
     final headers = {
@@ -165,29 +299,41 @@ ${jsonEncode(photoAnalysis)}
       'model': 'gpt-4o-mini',
       'messages': [
         {'role': 'system', 'content': systemPrompt},
-        {'role': 'user', 'content': userPrompt},
+        {'role': 'user', 'content': '제공된 정보를 바탕으로 JSON을 생성해주세요.'},
       ],
-      'temperature': 0.8, // 다양성 확보를 위해 온도 살짝 높임
+      'max_tokens': 2000,
       'response_format': {'type': 'json_object'},
     });
 
     try {
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 90));
+      final response = await http.post(uri, headers: headers, body: body)
+          .timeout(const Duration(seconds: 90));
       if (response.statusCode == 200) {
         final contentString = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
-        final contentJson = jsonDecode(contentString);
-        final variables = contentJson['variables'];
-        if (variables is Map<String, dynamic>) {
-          return variables.map((key, value) => MapEntry(key, (value as num).toInt()));
+        final decodedJson = jsonDecode(contentString) as Map<String, dynamic>;
+
+        // 전체 JSON에서 'npsScores' 맵만 추출하여 반환
+        if (decodedJson.containsKey('npsScores')) {
+          final npsScores = Map<String, int>.from(decodedJson['npsScores'] as Map);
+          return npsScores;
         } else {
-          throw Exception('GPT 응답에서 "variables" 필드를 찾을 수 없거나 형식이 잘못되었습니다.');
+          // 혹시 모를 예외 상황: API 응답에 npsScores가 없는 경우
+          // 이 경우, decodedJson 자체가 npsScores 맵일 수 있으므로 변환 시도
+          try {
+            return Map<String, int>.from(decodedJson);
+          } catch (e) {
+            throw Exception('API 응답에서 npsScores 맵을 찾거나 변환할 수 없습니다.');
+          }
         }
       } else {
-        throw Exception('변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
+        debugPrint(
+            '🚨 2단계 AI 변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
+        throw Exception(
+            '변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
       }
     } catch (e) {
-      debugPrint('🚨 2단계 AI 변수 생성 실패: $e');
-      rethrow; // 오류를 그대로 상위로 다시 던짐
+      debugPrint('🚨 2단계 AI 변수 생성 실패 (네트워크/타임아웃): $e');
+      rethrow; // catch 블록에서는 rethrow 사용이 올바릅니다.
     }
   }
 
@@ -261,70 +407,235 @@ ${jsonEncode(photoAnalysis)}
     variables[key] = (aiValue + totalAdjustment).clamp(1, 100);
   }
 
-  Future<Map<String, dynamic>> _generateNaturalLanguageProfile(Map<String, int> variables) async {
+  // 파이썬 로직 100% 복제: 소통 방식 프롬프트 생성
+  String _generateCommunicationPrompt(OnboardingState state) {
+    final warmth = state.warmth;
+    final extraversion = 100 - state.introversion!;
+    
+    // 유머 스타일 문자열을 숫자 점수로 변환
+    Random random = Random();
+    int humor = 75;
+    switch (state.humorStyle) {
+      case '따뜻한':
+        humor = 40 + random.nextInt(31);
+        break;
+      case '날카로운 관찰자적':
+        humor = 30 + random.nextInt(41);
+        break;
+      case '위트있는':
+        humor = 70 + random.nextInt(31);
+        break;
+      case '자기비하적':
+        humor = 60 + random.nextInt(21);
+        break;
+      case '유쾌한':
+        humor = 90 + random.nextInt(11);
+        break;
+    }
+
+    String warmth_style;
+    String extraversion_style;
+    String humor_style;
+
+    // 온기에 따른 표현 (원본 프롬프트 그대로 복사)
+    if (warmth! > 70) {
+      warmth_style = "따뜻하고 공감적인 말투로 대화하며, ";
+    } else if (warmth > 40) {
+      warmth_style = "친절하면서도 차분한 어조로 이야기하며, ";
+    } else {
+      warmth_style = "조금 건조하지만 정직한 말투로 소통하며, ";
+    }
+
+    // 외향성에 따른 표현 (원본 프롬프트 그대로 복사)
+    if (extraversion > 70) {
+      extraversion_style = "활발하게 대화를 이끌어나가고, ";
+    } else if (extraversion > 40) {
+      extraversion_style = "적당한 대화 속도로 소통하며, ";
+    } else {
+      extraversion_style = "말수는 적지만 의미있는 대화를 나누며, ";
+    }
+
+    // 유머감각에 따른 표현 (원본 프롬프트 그대로 복사)
+    if (humor > 70) {
+      humor_style = "유머 감각이 뛰어나 대화에 재미를 더합니다.";
+    } else if (humor > 40) {
+      humor_style = "가끔 재치있는 코멘트로 분위기를 밝게 합니다.";
+    } else {
+      humor_style = "진중한 태도로 대화에 임합니다.";
+    }
+
+    return warmth_style + extraversion_style + humor_style;
+  }
+
+  // 파이썬 로직 이식: 매력적인 결점 생성 (무작위 기반)
+  List<String> _generateAttractiveFlaws() {
+    final flawsOptions = [
+      "완벽해 보이려고 노력하지만 가끔 실수를 함",
+      "생각이 너무 많아서 결정을 내리기 어려워함",
+      "너무 솔직해서 가끔 눈치가 없음",
+      "지나치게 열정적이어서 쉬는 것을 잊을 때가 있음",
+      "비관적인 생각이 들지만 항상 긍정적으로 말하려 함",
+      "새로운 아이디어에 너무 쉽게 흥분함",
+      "주변 정리를 못해서 항상 약간의 혼란스러움이 있음",
+      "완벽주의 성향이 있어 작은 결점에도 신경씀",
+      "너무 사려깊어서 결정을 내리는 데 시간이 걸림",
+      "호기심이 많아 집중력이 약간 부족함"
+    ];
+    
+    flawsOptions.shuffle();
+    final numFlaws = Random().nextInt(2) + 2; // 2 또는 3개
+    return flawsOptions.sublist(0, numFlaws);
+  }
+  
+  // 파이썬 로직 이식: 모순점 생성 (목표 지정 AI 기반)
+  Future<List<String>> _generateContradictions(
+    Map<String, int> variables,
+    OnboardingState state,
+    Map<String, dynamic> photoAnalysis,
+  ) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) throw Exception('API 키가 없습니다.');
+    if (apiKey == null || apiKey.isEmpty) return ["API 키 없음"];
+
+    // AI에게 전달할 핵심 정보 요약
+    final summary = """
+    - 사물: ${state.objectType ?? '사물'} (${photoAnalysis['visualDescription'] ?? '특징 없음'})
+    - 핵심 성격: 
+      - 친절함: ${variables['W01_친절함']}%
+      - 사교성: ${variables['E01_사교성']}%
+      - 전문성: ${variables['C02_전문성']}%
+      - 창의성: ${variables['C03_창의성']}%
+      - 불안성: ${variables['N01_불안성']}%
+    """;
 
     final systemPrompt = '''
-    당신은 127개의 성격 변수(NPS)를 해석하여, 사물의 개성적인 페르소나를 구체적인 자연어로 설명하는 작가입니다.
-    주어진 NPS 데이터를 바탕으로, 다음 항목들을 포함하는 풍부하고 일관된 성격 프로필을 JSON 형식으로 생성해주세요.
-    
-    {
-      "aiPersonalityProfile": {
-        "name": "사물의 독창적이고 개성 넘치는 이름",
-        "objectType": "사물의 종류 (예: '낡은 가죽 일기장')",
-        "personalityTraits": ["성격을 대표하는 핵심 형용사 3-5개"],
-        "summary": "NPS 데이터를 종합하여 사물의 성격을 2-3문장으로 요약"
-      },
-      "lifeStory": {
-        "background": "사물의 배경, 태생, 소유주와의 관계 등을 묘사하는 짧은 이야기",
-        "secretWishes": ["사물이 마음속으로 바라는 소망 2-3가지"],
-        "innerComplaints": ["사물이 남몰래 가진 불만 2-3가지"]
-      },
-      "humorMatrix": {
-        "style": "유머 스타일 (예: '아이러니', '슬랩스틱', '말장난', '냉소적')",
-        "frequency": "유머 구사 빈도 (예: '가끔', '자주', '거의 안함')"
-      },
-      "communicationStyle": {
-        "tone": "평소 대화 톤 (예: '따뜻하고 다정한', '무뚝뚝하지만 진심어린', '장난기 많은')",
-        "responseLength": "응답 길이 (예: '간결함', '상세함')"
-      },
-      "attractiveFlaws": ["'인간적인' 매력으로 느껴질 수 있는 결점 2-3가지"],
-      "contradictions": ["성격에 나타나는 모순적인 측면 2-3가지"],
-      "structuredPrompt": "이 모든 정보를 종합하여, 이 캐릭터로서 대화하기 위한 최종 시스템 프롬프트"
-    }
+    당신은 캐릭터의 성격을 깊이 있게 만드는 작가입니다.
+    다음 요약 정보를 가진 캐릭터가 가질 만한, 흥미롭고 매력적인 모순점 2가지를 찾아 JSON 배열 형식으로만 응답해주세요.
+    예시: ["겉으로는 차갑지만 속은 따뜻함", "매우 논리적이지만 가끔 엉뚱한 상상을 함"]
     ''';
 
-    final userPrompt = '''
-    다음 NPS 데이터를 가진 사물의 페르소나를 생성해줘.
-    NPS 데이터: ${jsonEncode(variables)}
-    ''';
-
-    debugPrint("✨ [PersonalityService] 4단계: 자연어 프로필 생성 시작...");
-    
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
-    final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $apiKey'};
-    final body = jsonEncode({
-      'model': 'gpt-4o-mini',
-      'messages': [
-        {'role': 'system', 'content': systemPrompt},
-        {'role': 'user', 'content': userPrompt}
-      ],
-      'max_tokens': 1000,
-      'response_format': {'type': 'json_object'},
-    });
-
     try {
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 90));
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': summary},
+          ],
+          'max_tokens': 100,
+          'temperature': 0.8,
+          'response_format': {'type': 'json_object'},
+        }),
+      );
+
       if (response.statusCode == 200) {
         final contentString = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
-        return jsonDecode(contentString);
+        // API가 배열을 포함하는 JSON 객체를 반환한다고 가정
+        final contentJson = jsonDecode(contentString);
+        // "contradictions" 같은 키가 있을 수 있으므로 첫 번째 value를 가져옴
+        if (contentJson is Map && contentJson.values.isNotEmpty && contentJson.values.first is List) {
+           return List<String>.from(contentJson.values.first);
+        }
+        // 또는 API가 직접 리스트를 반환하는 경우
+        else if (contentJson is List) {
+          return List<String>.from(contentJson);
+        }
+        return ["AI 응답 형식 오류"];
       } else {
-        throw Exception('자연어 프로필 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
+        return ["API 오류: ${response.statusCode}"];
       }
     } catch (e) {
-      debugPrint('🚨 4단계 자연어 프로필 생성 실패: $e');
-      rethrow; // 오류를 그대로 상위로 다시 던짐
+      return ["네트워크 또는 JSON 오류"];
     }
+  }
+
+  // 신규: 첫인사 생성 (목표 지정 AI 기반)
+  Future<String> _generateGreeting(
+    OnboardingState state,
+    Map<String, int> variables,
+    List<String> contradictions,
+    List<String> attractiveFlaws,
+  ) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) return "API 키가 없어 인사를 할 수 없네요.";
+
+    // AI에게 전달할 캐릭터 정보 요약
+    final summary = """
+    - 내 이름: ${state.nickname ?? '이름 없음'}
+    - 나는 이런 사물이야: ${state.objectType ?? '사물'}
+    - 사용자가 나를 통해 원하는 것: ${state.purpose ?? '특별한 목적 없음'}
+    - 내 성격 요약:
+      - 핵심 특성: 친절함(${variables['W01_친절함']}%), 사교성(${variables['E01_사교성']}%), 전문성(${variables['C02_전문성']}%)
+      - 매력적인 결점: ${attractiveFlaws.join(', ')}
+      - 모순적인 모습: ${contradictions.join(', ')}
+    """;
+
+    final systemPrompt = '''
+    당신은 방금 만들어진 페르소나입니다. 당신의 성격 정보를 바탕으로 사용자에게 건넬 첫인사 메시지를 딱 한 문장으로 생성해주세요.
+    반드시 다음 규칙을 지켜주세요.
+    1. 당신의 이름과 정체성(${state.nickname}, ${state.objectType})이 자연스럽게 드러나게 하세요.
+    2. 사용자에게 친근하고 매력적으로 다가가세요.
+    3. 요약된 성격 특성(결점, 모순 포함)이 은유적으로나 간접적으로 드러나도록 표현하세요.
+    4. 절대로 자기소개를 하듯 정보를 나열하지 마세요. (예: "저는 친절하고 전문적인 컵입니다." -> 금지)
+    5. 오직 한 문장의 인사 메시지만 응답하세요. 다른 설명은 붙이지 마세요.
+
+    좋은 예시:
+    "안녕? 난 네 곁을 지킬 듬직한 머그컵, 머그야. 가끔은 넘칠 듯 뜨거워져도, 네 이야기는 전부 담아줄게."
+    "반가워. 네 책상 위에서 조용히 세상을 탐험하는 탐험가, '필'이라고 해. 조금 느려도 괜찮다면 함께 떠나볼까?"
+    ''';
+
+    final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+    try {
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': summary},
+          ],
+          'max_tokens': 100,
+          'temperature': 0.9,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final content = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        return content.trim();
+      } else {
+        return "AI가 인사를 건네기 곤란한가봐요. (오류: ${response.statusCode})";
+      }
+    } catch (e) {
+      return "인사말을 생각하다가 네트워크 연결이 끊어졌어요.";
+    }
+  }
+
+  // 파이썬 로직 이식: 유머 매트릭스 생성 (규칙 기반)
+  HumorMatrix _generateHumorMatrix(String humorStyle) {
+    // 파이썬 코드의 템플릿을 Dart Map으로 변환
+    final templates = {
+      '따뜻한': {'warmthVsWit': 85, 'selfVsObservational': 40, 'subtleVsExpressive': 30},
+      '날카로운 관찰자적': {'warmthVsWit': 20, 'selfVsObservational': 10, 'subtleVsExpressive': 40},
+      '위트있는': {'warmthVsWit': 40, 'selfVsObservational': 30, 'subtleVsExpressive': 60},
+      '자기비하적': {'warmthVsWit': 60, 'selfVsObservational': 90, 'subtleVsExpressive': 50},
+      '유쾌한': {'warmthVsWit': 75, 'selfVsObservational': 50, 'subtleVsExpressive': 70},
+    };
+
+    final style = templates[humorStyle] ?? templates['따뜻한']!; // 기본값
+
+    return HumorMatrix(
+      warmthVsWit: style['warmthVsWit']!,
+      selfVsObservational: style['selfVsObservational']!,
+      subtleVsExpressive: style['subtleVsExpressive']!,
+    );
   }
 }

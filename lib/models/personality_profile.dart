@@ -3,54 +3,47 @@
 class PersonalityProfile {
   final AiPersonalityProfile? aiPersonalityProfile;
   final PhotoAnalysis? photoAnalysis;
-  final LifeStory? lifeStory;
   final HumorMatrix? humorMatrix;
   final List<String> attractiveFlaws;
   final List<String> contradictions;
-  final CommunicationStyle? communicationStyle;
-  final String structuredPrompt;
-  final String? uuid;
   final String? greeting;
   final String? initialUserMessage;
+  final String communicationPrompt;
+  final String? photoPath;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
     this.photoAnalysis,
-    this.lifeStory,
     this.humorMatrix,
     this.attractiveFlaws = const [],
-    this.contradictions = const [],
-    this.communicationStyle,
-    this.structuredPrompt = '',
-    this.uuid,
+    required this.contradictions,
     this.greeting,
     this.initialUserMessage,
+    this.communicationPrompt = '',
+    this.photoPath,
   });
 
   factory PersonalityProfile.empty() => PersonalityProfile(
         aiPersonalityProfile: AiPersonalityProfile.empty(),
         photoAnalysis: PhotoAnalysis.empty(),
-        lifeStory: LifeStory.empty(),
         humorMatrix: HumorMatrix.empty(),
         attractiveFlaws: [],
         contradictions: [],
-        communicationStyle: CommunicationStyle.empty(),
-        structuredPrompt: '',
+        greeting: null,
+        initialUserMessage: null,
+        photoPath: null,
       );
 
   Map<String, dynamic> toMap() {
     return {
       'aiPersonalityProfile': aiPersonalityProfile?.toMap(),
       'photoAnalysis': photoAnalysis?.toMap(),
-      'lifeStory': lifeStory?.toMap(),
       'humorMatrix': humorMatrix?.toMap(),
       'attractiveFlaws': attractiveFlaws,
       'contradictions': contradictions,
-      'communicationStyle': communicationStyle?.toMap(),
-      'structuredPrompt': structuredPrompt,
-      'uuid': uuid,
       'greeting': greeting,
       'initialUserMessage': initialUserMessage,
+      'communicationPrompt': communicationPrompt,
     };
   }
 
@@ -62,21 +55,15 @@ class PersonalityProfile {
       photoAnalysis: map['photoAnalysis'] != null
           ? PhotoAnalysis.fromMap(map['photoAnalysis'] as Map<String, dynamic>)
           : null,
-      lifeStory: map['lifeStory'] != null
-          ? LifeStory.fromMap(map['lifeStory'] as Map<String, dynamic>)
-          : null,
       humorMatrix: map['humorMatrix'] != null
           ? HumorMatrix.fromMap(map['humorMatrix'] as Map<String, dynamic>)
           : null,
       attractiveFlaws: List<String>.from((map['attractiveFlaws'] as List<dynamic>? ?? []).map((e) => e.toString())),
       contradictions: List<String>.from((map['contradictions'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      communicationStyle: map['communicationStyle'] != null
-          ? CommunicationStyle.fromMap(map['communicationStyle'] as Map<String, dynamic>)
-          : null,
-      structuredPrompt: map['structuredPrompt'] as String? ?? '',
-      uuid: map['uuid'] as String?,
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
+      communicationPrompt: map['communicationPrompt'] as String? ?? '',
+      photoPath: map['photoPath'] as String?,
     );
   }
 }
@@ -84,7 +71,6 @@ class PersonalityProfile {
 class AiPersonalityProfile {
   final String name;
   final String objectType;
-  final List<String> personalityTraits;
   final int emotionalRange;
   final List<String> coreValues;
   final String relationshipStyle;
@@ -94,7 +80,6 @@ class AiPersonalityProfile {
   AiPersonalityProfile({
     required this.name,
     required this.objectType,
-    required this.personalityTraits,
     required this.emotionalRange,
     required this.coreValues,
     required this.relationshipStyle,
@@ -105,7 +90,6 @@ class AiPersonalityProfile {
   factory AiPersonalityProfile.empty() => AiPersonalityProfile(
         name: '',
         objectType: '',
-        personalityTraits: [],
         emotionalRange: 5,
         coreValues: [],
         relationshipStyle: '',
@@ -116,7 +100,6 @@ class AiPersonalityProfile {
   Map<String, dynamic> toMap() => {
         'name': name,
         'objectType': objectType,
-        'personalityTraits': personalityTraits,
         'emotionalRange': emotionalRange,
         'coreValues': coreValues,
         'relationshipStyle': relationshipStyle,
@@ -128,7 +111,6 @@ class AiPersonalityProfile {
     return AiPersonalityProfile(
       name: map['name'] as String? ?? '',
       objectType: map['objectType'] as String? ?? '',
-      personalityTraits: List<String>.from((map['personalityTraits'] as List<dynamic>? ?? []).map((e) => e.toString())),
       emotionalRange: map['emotionalRange'] as int? ?? 5,
       coreValues: List<String>.from((map['coreValues'] as List<dynamic>? ?? []).map((e) => e.toString())),
       relationshipStyle: map['relationshipStyle'] as String? ?? '',
@@ -190,118 +172,30 @@ class PhotoAnalysis {
   }
 }
 
-class LifeStory {
-  final String background;
-  final List<String> keyEvents;
-  final List<String> secretWishes;
-  final List<String> innerComplaints;
-
-  LifeStory({
-    required this.background,
-    required this.keyEvents,
-    required this.secretWishes,
-    required this.innerComplaints,
-  });
-
-  factory LifeStory.empty() => LifeStory(
-        background: '',
-        keyEvents: [],
-        secretWishes: [],
-        innerComplaints: [],
-      );
-
-  Map<String, dynamic> toMap() => {
-        'background': background,
-        'keyEvents': keyEvents,
-        'secretWishes': secretWishes,
-        'innerComplaints': innerComplaints,
-      };
-
-  factory LifeStory.fromMap(Map<String, dynamic> map) {
-    return LifeStory(
-      background: map['background'] as String? ?? '',
-      keyEvents: List<String>.from((map['keyEvents'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      secretWishes: List<String>.from((map['secretWishes'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      innerComplaints: List<String>.from((map['innerComplaints'] as List<dynamic>? ?? []).map((e) => e.toString())),
-    );
-  }
-}
-
 class HumorMatrix {
-  final String style;
-  final String frequency;
-  final List<String> topics;
-  final List<String> avoidance;
+  final int warmthVsWit; // 0(순수 지적 위트) - 100(순수 따뜻한 유머)
+  final int selfVsObservational; // 0(순수 관찰형) - 100(순수 자기참조형)
+  final int subtleVsExpressive; // 0(미묘한 유머) - 100(표현적/과장된 유머)
 
   HumorMatrix({
-    required this.style,
-    required this.frequency,
-    required this.topics,
-    required this.avoidance,
+    this.warmthVsWit = 50,
+    this.selfVsObservational = 50,
+    this.subtleVsExpressive = 50,
   });
 
-  factory HumorMatrix.empty() => HumorMatrix(
-        style: '',
-        frequency: '',
-        topics: [],
-        avoidance: [],
-      );
+  factory HumorMatrix.empty() => HumorMatrix();
 
   Map<String, dynamic> toMap() => {
-        'style': style,
-        'frequency': frequency,
-        'topics': topics,
-        'avoidance': avoidance,
-      };
+    'warmthVsWit': warmthVsWit,
+    'selfVsObservational': selfVsObservational,
+    'subtleVsExpressive': subtleVsExpressive,
+  };
 
   factory HumorMatrix.fromMap(Map<String, dynamic> map) {
     return HumorMatrix(
-      style: map['style'] as String? ?? '',
-      frequency: map['frequency'] as String? ?? '',
-      topics: List<String>.from((map['topics'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      avoidance: List<String>.from((map['avoidance'] as List<dynamic>? ?? []).map((e) => e.toString())),
-    );
-  }
-}
-
-class CommunicationStyle {
-  final String tone;
-  final String formality;
-  final String responseLength;
-  final List<String> preferredTopics;
-  final String expressionStyle;
-
-  CommunicationStyle({
-    required this.tone,
-    required this.formality,
-    required this.responseLength,
-    required this.preferredTopics,
-    required this.expressionStyle,
-  });
-
-  factory CommunicationStyle.empty() => CommunicationStyle(
-        tone: '',
-        formality: '',
-        responseLength: '',
-        preferredTopics: [],
-        expressionStyle: '',
-      );
-
-  Map<String, dynamic> toMap() => {
-        'tone': tone,
-        'formality': formality,
-        'responseLength': responseLength,
-        'preferredTopics': preferredTopics,
-        'expressionStyle': expressionStyle,
-      };
-
-  factory CommunicationStyle.fromMap(Map<String, dynamic> map) {
-    return CommunicationStyle(
-      tone: map['tone'] as String? ?? '',
-      formality: map['formality'] as String? ?? '',
-      responseLength: map['responseLength'] as String? ?? '',
-      preferredTopics: List<String>.from((map['preferredTopics'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      expressionStyle: map['expressionStyle'] as String? ?? '',
+      warmthVsWit: map['warmthVsWit'] as int? ?? 50,
+      selfVsObservational: map['selfVsObservational'] as int? ?? 50,
+      subtleVsExpressive: map['subtleVsExpressive'] as int? ?? 50,
     );
   }
 }

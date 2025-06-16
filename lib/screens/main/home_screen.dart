@@ -197,13 +197,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       aiPersonalityProfile: AiPersonalityProfile(
         name: '야옹이',
         objectType: '고양이',
-        personalityTraits: ['감성적인', '귀여운', '엉뚱한'],
         emotionalRange: 7,
         coreValues: ['관심', '간식'],
         relationshipStyle: '애교 많은',
         summary: '사람을 잘 따르는 귀여운 고양이입니다.',
         npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
       ),
+      contradictions: ['진지한 대화를 좋아하면서도 가벼운 농담을 즐김'],
       greeting: '안녕이다옹! 무슨 일 있었냐옹?',
       initialUserMessage: inputText,
     );

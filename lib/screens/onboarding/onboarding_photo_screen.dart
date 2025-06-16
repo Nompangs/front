@@ -220,7 +220,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
 
       // 디버그 정보 출력
       print('📸 Photo Screen Debug - Before setting photo:');
-      print('  - UserInput: ${provider.state.userInput}');
+      print('  - Nickname: ${provider.state.nickname}');
       print('  - Purpose: ${provider.state.purpose}');
       print('  - HumorStyle: ${provider.state.humorStyle}');
       print('  - CapturedImagePath: $_capturedImagePath');

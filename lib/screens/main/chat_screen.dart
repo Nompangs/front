@@ -67,14 +67,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: '', isUser: false));
     });
 
-    final characterProfile = {
-      'name': widget.profile.aiPersonalityProfile?.name,
-      'tags': widget.profile.aiPersonalityProfile?.personalityTraits,
-      'greeting': widget.profile.greeting,
-    };
-
     _apiStreamSubscription = _openAiChatService
-        .getChatCompletionStream(userInput, characterProfile: characterProfile)
+        .getChatCompletionStream(userInput, profile: widget.profile)
         .listen(
       (textChunk) {
         if (mounted) {
@@ -194,16 +188,14 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.profile.aiPersonalityProfile?.name ?? '채팅',
-                    style: TextStyle(color: Colors.white),
-                    overflow: TextOverflow.ellipsis,
+                    widget.profile.aiPersonalityProfile?.name ?? '페르소나',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  if (widget.profile.aiPersonalityProfile?.personalityTraits != null && widget.profile.aiPersonalityProfile!.personalityTraits.isNotEmpty)
-                    Text(
-                      widget.profile.aiPersonalityProfile!.personalityTraits.join(', '),
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  SizedBox(height: 2),
+                  Text(
+                    "다정함",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),
