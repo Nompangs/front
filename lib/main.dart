@@ -66,6 +66,7 @@ class TestScreen extends StatelessWidget {
                         (context) => ChangeNotifierProvider(
                           create:
                               (_) => ChatProvider(
+                                uuid: 'static_test_uuid',
                                 characterName: '정적 테스트 봇',
                                 characterHandle: '@static_bot',
                                 personalityTags: ['테스트', '안정적'],
