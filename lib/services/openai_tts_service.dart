@@ -8,17 +8,23 @@ import 'package:http/http.dart' as http;
 class OpenAiTtsService {
   final String? _apiKey = dotenv.env['OPENAI_API_KEY'];
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final http.Client _httpClient = http.Client();
 
   OpenAiTtsService() {
     if (_apiKey == null || _apiKey.isEmpty) {
       debugPrint('[TTS 서비스] 🚨 OPENAI_API_KEY가 설정되지 않았습니다.');
     }
+    _audioPlayer.setReleaseMode(ReleaseMode.release);
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      debugPrint('[TTS Service] Player State Changed: $state');
+    });
   }
 
   Future<void> speak(String text) async {
     debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text"');
     if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
       debugPrint('[TTS Service] 🚨 API 키가 없거나 텍스트가 비어있어 실행 중단.');
+      return;
     }
 
     if (_audioPlayer.state == PlayerState.playing) {
@@ -42,7 +48,9 @@ class OpenAiTtsService {
       final headers = {'Authorization': 'Bearer $_apiKey', 'Content-Type': 'application/json'};
       final body = jsonEncode({'model': 'tts-1', 'input': text, 'voice': 'alloy'});
 
-      final response = await http.post(url, headers: headers, body: body);
+      final response = await _httpClient.post(url, headers: headers, body: body)
+          .timeout(const Duration(seconds: 15));
+
       debugPrint('[TTS Service] API 응답 코드: ${response.statusCode}');
 
       if (response.statusCode == 200) {
@@ -53,25 +61,31 @@ class OpenAiTtsService {
         debugPrint('[TTS Service] 🚨 API 에러: ${response.body}');
         throw Exception('API Error: ${response.statusCode}');
       }
+    } on TimeoutException catch (e) {
+      debugPrint('[TTS Service] 🚨 API 호출 시간 초과: $e');
+      if (!completer.isCompleted) {
+        subscription?.cancel();
+        completer.complete();
+      }
     } catch (e) {
       debugPrint('[TTS Service] 🚨 speak 함수 실행 중 예외 발생: $e');
       if (!completer.isCompleted) {
-        subscription.cancel();
+        subscription?.cancel();
         completer.complete();
       }
       rethrow;
     }
-    
+
     return completer.future;
   }
 
   Future<void> stop() async {
-    // audioplayers 패키지의 stop() 메서드를 호출합니다.
     await _audioPlayer.stop();
     debugPrint('[TTS Service] 재생이 중단되었습니다.');
   }
 
   void dispose() {
     _audioPlayer.dispose();
+    _httpClient.close();
   }
 }
