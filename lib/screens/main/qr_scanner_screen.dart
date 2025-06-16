@@ -4,6 +4,9 @@ import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/providers/chat_provider.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
+import 'package:provider/provider.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -50,10 +53,19 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
       if (mounted) {
+        // 새로운 ChatProvider를 생성하여 ChatTextScreen으로 이동합니다.
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChatScreen(profile: profile),
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(
+                characterName: profile.aiPersonalityProfile?.name ?? '이름 없음',
+                characterHandle: '@${profile.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
+                personalityTags: profile.aiPersonalityProfile?.coreValues ?? ['친구같은'],
+                greeting: profile.greeting,
+              ),
+              child: const ChatTextScreen(),
+            ),
           ),
         );
       }

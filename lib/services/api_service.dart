@@ -68,15 +68,44 @@ class ApiService {
   /// @param uuid 페르소나의 고유 ID.
   /// @return `PersonalityProfile` 객체.
   Future<PersonalityProfile> loadProfile(String uuid) async {
-    final url = Uri.parse('$_baseUrl/getProfile/$uuid');
+    final url = Uri.parse('$_baseUrl/loadQR/$uuid');
     try {
+      // ---  loadProfile 상세 로깅 START ---
+      print('--- [loadProfile 상세 로그 시작] ---');
+      print('1. 프로필 요청 URL: $url');
+
       final response = await http.get(url);
+
+      print('2. 서버 응답 (가공 전):');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Raw Body: ${response.body}');
+      print('--- [loadProfile 상세 로그 종료] ---');
+      // ---  loadProfile 상세 로깅 END ---
+
       if (response.statusCode == 200) {
-        return PersonalityProfile.fromMap(jsonDecode(response.body));
+        // UTF-8로 디코딩하여 한국어 깨짐 방지
+        final decodedBody = utf8.decode(response.bodyBytes);
+        final jsonData = jsonDecode(decodedBody);
+        
+        print('--- [loadProfile] 서버 응답 ---');
+        print('Raw Body: ${response.body}');
+        print('Decoded JSON: $jsonData');
+        print('-----------------------------');
+
+        // 서버 응답에서 'generatedProfile' 객체를 추출합니다.
+        final profileData = jsonData['generatedProfile'];
+        if (profileData == null) {
+          throw Exception('Server response did not contain "generatedProfile" field.');
+        }
+        
+        // 추출한 프로필 데이터로 Profile 객체를 생성합니다.
+        return PersonalityProfile.fromMap(profileData);
       } else {
-        throw Exception('Failed to load profile from server.');
+        throw Exception(
+            'Failed to load profile from server. Status: ${response.statusCode}');
       }
     } catch (e) {
+      print('🚨 [loadProfile] 네트워크 또는 연결 오류: $e');
       throw Exception('Failed to connect to the server.');
     }
   }
