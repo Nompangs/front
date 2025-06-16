@@ -3,8 +3,6 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:nompangs/main/find_momenti_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
-import 'package:nompangs/models/personality_profile.dart';
-
 
 void main() {
   runApp(MyApp());
@@ -108,10 +106,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   // 스케일 애니메이션 생성 헬퍼 메소드
   Animation<double> _createScaleAnimation(
-    AnimationController controller,
-    double endValue,
-  ) {
-    return Tween<double>(begin: 1.0, end: endValue).animate(
+      AnimationController controller,
+      double startValue,
+      ) {
+    return Tween<double>(begin: startValue, end: 1.0).animate(
       CurvedAnimation(
         parent: controller,
         curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
@@ -298,25 +296,25 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               fit: BoxFit.cover,
                               errorBuilder:
                                   (context, error, stackTrace) => Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.blue[400]!,
-                                          Colors.green[400]!,
-                                          const Color(0xFFFFEE58),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: 24 * scale,
-                                      ),
-                                    ),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.blue[400]!,
+                                      Colors.green[400]!,
+                                      const Color(0xFFFFEE58),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
+                                ),
+                                child: Center(
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.white,
+                                    size: 24 * scale,
+                                  ),
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -388,7 +386,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                         color: Colors.black,
                                                         fontSize: 16 * scale,
                                                         fontWeight:
-                                                            FontWeight.bold,
+                                                        FontWeight.bold,
                                                       ),
                                                       textAlign: TextAlign.left,
                                                     ),
@@ -447,17 +445,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                     ),
                                                     child: Transform.rotate(
                                                       angle:
-                                                          -40 * 3.141592 / 180,
+                                                      -40 * 3.141592 / 180,
                                                       child: Text(
                                                         '새로운\n모멘티\n깨우기\n',
                                                         style: TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16 * scale,
                                                           fontWeight:
-                                                              FontWeight.bold,
+                                                          FontWeight.bold,
                                                         ),
                                                         textAlign:
-                                                            TextAlign.left,
+                                                        TextAlign.left,
                                                       ),
                                                     ),
                                                   ),
@@ -515,17 +513,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                     ),
                                                     child: Transform.rotate(
                                                       angle:
-                                                          -40 * 3.141592 / 180,
+                                                      -40 * 3.141592 / 180,
                                                       child: Text(
                                                         '내주변\n모멘티\n탐색\n',
                                                         style: TextStyle(
                                                           color: Colors.black,
                                                           fontSize: 16 * scale,
                                                           fontWeight:
-                                                              FontWeight.bold,
+                                                          FontWeight.bold,
                                                         ),
                                                         textAlign:
-                                                            TextAlign.left,
+                                                        TextAlign.left,
                                                       ),
                                                     ),
                                                   ),
@@ -557,19 +555,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     padding: EdgeInsets.symmetric(horizontal: 5 * scale),
                     child: Row(
                       children:
-                          filterOptions
-                              .map(
-                                (filter) => FilterChip(
-                                  label: filter,
-                                  selected: selectedFilter == filter,
-                                  onTap:
-                                      () => setState(
-                                        () => selectedFilter = filter,
-                                      ),
-                                  scale: scale,
-                                ),
-                              )
-                              .toList(),
+                      filterOptions
+                          .map(
+                            (filter) => FilterChip(
+                          label: filter,
+                          selected: selectedFilter == filter,
+                          onTap:
+                              () => setState(
+                                () => selectedFilter = filter,
+                          ),
+                          scale: scale,
+                        ),
+                      )
+                          .toList(),
                     ),
                   ),
                 ),
@@ -630,21 +628,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                 (context, index) => SizedBox(width: 12 * scale),
                             itemBuilder:
                                 (context, index) => GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      selectedCardIndex =
-                                          selectedCardIndex == index
-                                              ? null
-                                              : index;
-                                    });
-                                  },
-                                  child: ObjectCard(
-                                    data: filteredObjectData[index],
-                                    scale: scale,
-                                    isSelected: selectedCardIndex == index,
-                                    index: index,
-                                  ),
-                                ),
+                              onTap: () {
+                                setState(() {
+                                  selectedCardIndex =
+                                  selectedCardIndex == index
+                                      ? null
+                                      : index;
+                                });
+                              },
+                              child: ObjectCard(
+                                data: filteredObjectData[index],
+                                scale: scale,
+                                isSelected: selectedCardIndex == index,
+                                index: index,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -703,22 +701,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ChatScreen(
-                              profile: PersonalityProfile(
-                                aiPersonalityProfile: AiPersonalityProfile(
-                                  name: lastChattedObjectName.isNotEmpty
-                                      ? lastChattedObjectName
-                                      : '모멘티',
-                                  objectType: '',
-                                  emotionalRange: 5,
-                                  coreValues: ['친근함', '유머'],
-                                  relationshipStyle: '',
-                                  summary: '',
-                                ),
-                                contradictions: [],
-                                greeting: '안녕하세요! 무엇이 궁금하신가요?',
-                                initialUserMessage: '',
-                              ),
+                            builder:
+                                (context) => ChatScreen(
+                              characterName:
+                              lastChattedObjectName.isNotEmpty
+                                  ? lastChattedObjectName
+                                  : '모멘티',
+                              personalityTags: ['친근함', '유머'],
+                              greeting: '안녕하세요! 무엇이 궁금하신가요?',
+                              initialUserMessage: '',
                             ),
                           ),
                         );
@@ -728,47 +719,47 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         height: 54 * scale,
                         margin: EdgeInsets.only(right: 1 * scale),
                         child:
-                            _notificationIconRotation != null
-                                ? AnimatedBuilder(
-                                  animation: _notificationIconRotation!,
-                                  builder: (context, child) {
-                                    return Transform.rotate(
-                                      angle: _notificationIconRotation!.value,
-                                      child: Stack(
-                                        alignment: Alignment.center,
-                                        children: [
-                                          Image.asset(
-                                            'assets/ui_assets/btn_quickchat.png',
-                                            width: 54 * scale,
-                                            height: 54 * scale,
-                                            fit: BoxFit.contain,
-                                          ),
-                                          Icon(
-                                            Icons.north_east,
-                                            color: Colors.black,
-                                            size: 20 * scale,
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                  },
-                                )
-                                : Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/ui_assets/btn_quickchat.png',
-                                      width: 54 * scale,
-                                      height: 54 * scale,
-                                      fit: BoxFit.contain,
-                                    ),
-                                    Icon(
-                                      Icons.north_east,
-                                      color: Colors.black,
-                                      size: 20 * scale,
-                                    ),
-                                  ],
-                                ),
+                        _notificationIconRotation != null
+                            ? AnimatedBuilder(
+                          animation: _notificationIconRotation!,
+                          builder: (context, child) {
+                            return Transform.rotate(
+                              angle: _notificationIconRotation!.value,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/ui_assets/btn_quickchat.png',
+                                    width: 54 * scale,
+                                    height: 54 * scale,
+                                    fit: BoxFit.contain,
+                                  ),
+                                  Icon(
+                                    Icons.north_east,
+                                    color: Colors.black,
+                                    size: 20 * scale,
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        )
+                            : Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/ui_assets/btn_quickchat.png',
+                              width: 54 * scale,
+                              height: 54 * scale,
+                              fit: BoxFit.contain,
+                            ),
+                            Icon(
+                              Icons.north_east,
+                              color: Colors.black,
+                              size: 20 * scale,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
