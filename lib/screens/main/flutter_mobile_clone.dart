@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:nompangs/main/find_momenti_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
+import 'package:nompangs/models/personality_profile.dart';
+
 
 void main() {
   runApp(MyApp());
@@ -701,16 +703,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (context) => ChatScreen(
-                                  characterName:
-                                      lastChattedObjectName.isNotEmpty
-                                          ? lastChattedObjectName
-                                          : '모멘티',
-                                  personalityTags: ['친근함', '유머'],
-                                  greeting: '안녕하세요! 무엇이 궁금하신가요?',
-                                  initialUserMessage: '',
+                            builder: (context) => ChatScreen(
+                              profile: PersonalityProfile(
+                                aiPersonalityProfile: AiPersonalityProfile(
+                                  name: lastChattedObjectName.isNotEmpty
+                                      ? lastChattedObjectName
+                                      : '모멘티',
+                                  objectType: '',
+                                  emotionalRange: 5,
+                                  coreValues: ['친근함', '유머'],
+                                  relationshipStyle: '',
+                                  summary: '',
                                 ),
+                                contradictions: [],
+                                greeting: '안녕하세요! 무엇이 궁금하신가요?',
+                                initialUserMessage: '',
+                              ),
+                            ),
                           ),
                         );
                       },
