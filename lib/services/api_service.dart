@@ -19,15 +19,35 @@ class ApiService {
   }) async {
     final url = Uri.parse('$_baseUrl/createQR');
     try {
+      // --- uitgebreide logging START ---
+      print('--- [API 상세 로그 시작] ---');
+      print('1. 요청 URL: $url');
+
+      // 1. 요청 데이터 확인
+      print('2. 전송될 데이터 (가공 전):');
+      print('   - generatedProfile: $generatedProfile');
+      print('   - userInput: $userInput');
+
+      // 2. 최종 요청 본문 확인
+      final requestBody = jsonEncode({
+        'generatedProfile': generatedProfile,
+        'userInput': userInput,
+      });
+      print('3. 최종 요청 본문 (JSON 인코딩 후): $requestBody');
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        // 서버의 새로운 API 규격에 맞게 generatedProfile과 userInput을 전송
-        body: jsonEncode({
-          'generatedProfile': generatedProfile,
-          'userInput': userInput,
-        }),
+        body: requestBody,
       );
+
+      // 3. 서버의 순수 응답 확인
+      print('4. 서버 응답 (가공 전):');
+      print('   - Status Code: ${response.statusCode}');
+      print('   - Headers: ${response.headers}');
+      print('   - Raw Body: ${response.body}');
+      print('--- [API 상세 로그 종료] ---');
+      // --- uitgebreide logging EINDE ---
 
       if (response.statusCode == 200) {
         print('✅ API: 새 프로필 생성 및 QR 요청 성공');
@@ -48,27 +68,15 @@ class ApiService {
   /// @param uuid 페르소나의 고유 ID.
   /// @return `PersonalityProfile` 객체.
   Future<PersonalityProfile> loadProfile(String uuid) async {
-    final url = Uri.parse('$_baseUrl/loadQR/$uuid');
+    final url = Uri.parse('$_baseUrl/getProfile/$uuid');
     try {
       final response = await http.get(url);
-
       if (response.statusCode == 200) {
-        print('✅ API: 프로필 로드 성공');
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        // 서버에서 전체 데이터를 받지만, UI에서는 generatedProfile 부분만 사용하므로 해당 부분만 파싱
-        if (data.containsKey('generatedProfile')) {
-           return PersonalityProfile.fromMap(data['generatedProfile'] as Map<String, dynamic>);
-        }
-       
-        // 호환성을 위해 기존 포맷도 지원
-        return PersonalityProfile.fromMap(data);
+        return PersonalityProfile.fromMap(jsonDecode(response.body));
       } else {
-        print('🚨 API Error: ${response.statusCode}');
-        print('🚨 Response Body: ${response.body}');
         throw Exception('Failed to load profile from server.');
       }
     } catch (e) {
-      print('🚨 API Exception: $e');
       throw Exception('Failed to connect to the server.');
     }
   }

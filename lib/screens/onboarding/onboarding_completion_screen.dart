@@ -17,6 +17,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/widgets/qr_code_generator.dart';
+import 'package:nompangs/services/character_manager.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -124,16 +125,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
       provider.setFinalPersonality(finalProfile);
 
-      // 3. 서버에 저장하고 QR 코드 URL 받기
+      // 3. 서버에 저장하고 ID 받기 (ApiService 사용으로 복원)
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
         generatedProfile: finalProfile.toMap(),
         userInput: provider.getUserInputAsMap(),
       );
 
+      // 진단용 로그는 이제 제거
       setState(() {
-        _qrCodeUrl = result['qrUrl'];
-        _qrUuid = result['id']; // 서버에서 받은 ID 저장
+        _qrCodeUrl = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
+        _qrUuid = result['id'] as String?; // 서버가 id를 주진 않지만, 호환성을 위해 유지
         _isLoading = false;
         _message = "페르소나 생성 완료!";
       });
@@ -342,21 +344,16 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 ),
                                 child: Center(
                                   child: Container(
-                                    width: 90, // 80에서 90으로 증가
-                                    height: 90, // 80에서 90으로 증가
-                                    padding: const EdgeInsets.all(
-                                      4,
-                                    ), // 8에서 4로 줄임 (여백 축소)
+                                    width: 90,
+                                    height: 90,
+                                    padding: const EdgeInsets.all(4),
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
                                     ),
                                     child: RepaintBoundary(
                                       key: _qrKey,
-                                      child: QrImageView(
-                                        data: _qrUuid ?? '',
-                                        version: QrVersions.auto,
-                                        backgroundColor: Colors.white,
-                                      ),
+                                      // QrImageView를 Image.memory로 변경
+                                      child: _buildQrImage(),
                                     ),
                                   ),
                                 ),
@@ -1060,11 +1057,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       decoration: const BoxDecoration(color: Colors.white),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: QrImageView(
-                          data: _qrUuid ?? '',
-                          version: QrVersions.auto,
-                          backgroundColor: Colors.white,
-                        ),
+                        // QrImageView를 Image.memory로 변경
+                        child: _buildQrImage(),
                       ),
                     ),
                   ),
@@ -1075,6 +1069,23 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         );
       },
     );
+  }
+
+  // 서버가 보내준 base64 데이터를 이미지로 변환하는 위젯
+  Widget _buildQrImage() {
+    if (_qrCodeUrl == null || !_qrCodeUrl!.startsWith('data:image/png;base64,')) {
+      // 데이터가 없거나 형식이 잘못된 경우 로딩 인디케이터 표시
+      return const Center(child: CircularProgressIndicator());
+    }
+    try {
+      // 'data:image/png;base64,' 부분을 제거하고 순수 base64 데이터만 추출
+      final pureBase64 = _qrCodeUrl!.substring(22);
+      final imageBytes = base64Decode(pureBase64);
+      return Image.memory(imageBytes);
+    } catch (e) {
+      print('🚨 Base64 디코딩 실패: $e');
+      return const Center(child: Icon(Icons.error));
+    }
   }
 
   String _getPersonalityTag1(OnboardingState state) {
