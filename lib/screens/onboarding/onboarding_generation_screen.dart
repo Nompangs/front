@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
+import 'package:nompangs/services/personality_service.dart';
+import 'package:nompangs/models/personality_profile.dart';
 import 'dart:math' as math;
 import 'dart:io';
 import 'dart:async';
@@ -25,6 +27,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
   bool _isTimedOut = false;
   int _remainingSeconds = 6;
   Timer? _countdownTimer;
+  Timer? _longRunningTimer;
 
   final List<GenerationStep> steps = [
     GenerationStep(0.25, '캐릭터 깨우는 중...', '사물의 기본 특성을 분석하고 있어요'),
@@ -32,6 +35,8 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     GenerationStep(0.75, '마음을 열고 있어요', '당신만의 특별한 친구가 탄생하고 있어요'),
     GenerationStep(1.0, '거의 완성되었어요', '마지막 손질을 하고 있어요'),
   ];
+
+  final PersonalityService _personalityService = PersonalityService();
 
   @override
   void initState() {
@@ -57,7 +62,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
     // Provider 상태 확인 후 생성 시작
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _checkAndStartGeneration();
+      _startGeneration();
     });
   }
 
@@ -67,20 +72,21 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     _circleController.dispose();
     _timeoutTimer?.cancel();
     _countdownTimer?.cancel();
+    _longRunningTimer?.cancel();
     super.dispose();
   }
 
   void _checkAndStartGeneration() {
     final provider = Provider.of<OnboardingProvider>(context, listen: false);
 
-    // 사용자 입력이 없는 경우 에러 처리
-    if (provider.state.userInput == null) {
+    // 사용자 입력이 없는 경우 에러 처리 (nickname으로 확인)
+    if (provider.state.nickname.isEmpty) {
       provider.setError('사용자 입력 정보가 없습니다. 이전 단계로 돌아가서 정보를 입력해주세요.');
       return;
     }
 
     // 이미 생성된 캐릭터가 있는 경우 바로 다음 페이지로 이동
-    if (provider.state.generatedCharacter != null) {
+    if (provider.generatedCharacter != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.pushReplacementNamed(context, '/onboarding/personality');
@@ -90,7 +96,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     }
 
     // 생성 중이 아니고 캐릭터가 없는 경우에만 생성 시작
-    if (!provider.state.isGenerating) {
+    if (!provider.isGenerating) {
       _startGeneration();
       _startTimeoutTimer(); // 타임아웃 타이머 시작
     }
@@ -220,14 +226,40 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
     _startTimeoutTimer();
   }
 
-  void _startGeneration() async {
-    final provider = Provider.of<OnboardingProvider>(context, listen: false);
-    await provider.generateCharacter();
+  Future<void> _startGeneration() async {
+    final provider = context.read<OnboardingProvider>();
+    try {
+      // 1단계: AI 초안 생성 API 호출
+      provider.updateGenerationStatus(0.3, 'AI가 당신의 사물을 분석하고 있어요...');
+      final draft = await _personalityService.generateAIPart(provider.state);
+      
+      // 2단계: AI 추천값을 Provider에 저장
+      provider.updateGenerationStatus(0.8, '성격 초안을 완성했어요!');
+      provider.setAiDraft(draft);
 
-    if (mounted && provider.state.generatedCharacter != null && !_isTimedOut) {
-      _timeoutTimer?.cancel(); // 성공 시 타이머 취소
-      _countdownTimer?.cancel();
-      Navigator.pushReplacementNamed(context, '/onboarding/personality');
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      // 3단계: 성격 조정 화면으로 이동
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/onboarding/personality');
+      }
+    } catch (e, stackTrace) {
+      if (mounted) {
+        debugPrint('🚨 페르소나 생성 실패: $e');
+        debugPrint('   - StackTrace: $stackTrace');
+        provider.setErrorMessage('페르소나 생성에 실패했어요: ${e.toString()}');
+      }
+    }
+  }
+
+  void _updateUIForCompletion() {
+    final provider = context.read<OnboardingProvider>();
+    if (mounted) {
+      // 닉네임과 목적을 화면에 표시하기 위해 상태에서 직접 가져옴
+      final nickname = provider.state.nickname;
+      final purpose = provider.state.purpose;
+
+      // ... (관련 UI 업데이트 로직) ...
     }
   }
 
@@ -524,7 +556,7 @@ class _OnboardingGenerationScreenState extends State<OnboardingGenerationScreen>
 
               Consumer<OnboardingProvider>(
                 builder: (context, provider, child) {
-                  final hasUserInput = provider.state.userInput != null;
+                  final hasUserInput = provider.state.nickname.isNotEmpty;
 
                   return Column(
                     children: [

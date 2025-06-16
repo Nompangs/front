@@ -6,6 +6,7 @@ import 'package:nompangs/screens/character/character_create_screen.dart';
 import 'dart:async';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:nompangs/models/personality_profile.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -191,22 +192,27 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
     if (inputText.trim().isEmpty) return;
 
-    final defaultCharacter = {
-      'name': '야옹이',
-      'tags': ['감성적인', '귀여운', '엉뚱한'],
-      'greeting': '안녕이다옹! 무슨 일 있었냐옹?',
-    };
+    // 기본 캐릭터 정보를 PersonalityProfile 객체로 생성합니다.
+    final defaultProfile = PersonalityProfile(
+      aiPersonalityProfile: AiPersonalityProfile(
+        name: '야옹이',
+        objectType: '고양이',
+        emotionalRange: 7,
+        coreValues: ['관심', '간식'],
+        relationshipStyle: '애교 많은',
+        summary: '사람을 잘 따르는 귀여운 고양이입니다.',
+        npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
+      ),
+      contradictions: ['진지한 대화를 좋아하면서도 가벼운 농담을 즐김'],
+      greeting: '안녕이다옹! 무슨 일 있었냐옹?',
+      initialUserMessage: inputText,
+    );
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder:
-            (context) => ChatScreen(
-              characterName: defaultCharacter['name'] as String,
-              personalityTags: defaultCharacter['tags'] as List<String>,
-              greeting: defaultCharacter['greeting'] as String,
-              initialUserMessage: inputText,
-            ),
+        // ChatScreen에는 profile 객체 하나만 전달합니다.
+        builder: (context) => ChatScreen(profile: defaultProfile),
       ),
     );
   }

@@ -1,44 +1,57 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:nompangs/models/personality_profile.dart';
 
 class OpenAiChatService {
-  final String? _apiKey = dotenv.env['OPENAI_API_KEY'];
-  final http.Client _client = http.Client();
+  final http.Client _client;
+
+  OpenAiChatService() : _client = http.Client();
 
   /// OpenAI로부터 스트리밍 응답을 받아오는 Stream을 반환합니다.
   Stream<String> getChatCompletionStream(
     String userInput, {
-    Map<String, dynamic>? characterProfile,
+    required PersonalityProfile profile,
   }) {
-    if (_apiKey == null || _apiKey.isEmpty) {
-      // API 키가 없는 경우 에러를 포함한 스트림을 반환합니다.
-      return Stream.error(Exception("❌ OpenAI API 키가 .env 파일에 설정되지 않았습니다."));
+    final controller = StreamController<String>();
+    _getChatCompletionStream(userInput, profile, controller);
+    return controller.stream;
+  }
+
+  Future<void> _getChatCompletionStream(
+    String userInput,
+    PersonalityProfile profile,
+    StreamController<String> controller,
+  ) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      controller.addError('API 키가 설정되지 않았습니다.');
+      await controller.close();
+      return;
     }
 
-    final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+    final messages = _buildMessages(userInput, profile);
 
-    final messages = _buildMessages(userInput, characterProfile: characterProfile);
+    final request = http.Request(
+      'POST',
+      Uri.parse('https://api.openai.com/v1/chat/completions'),
+    );
 
-    final request = http.Request("POST", uri)
-      ..headers.addAll({
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $_apiKey',
-      })
-      ..body = jsonEncode({
-        'model': 'gpt-4o', // 또는 'gpt-4-turbo' 등 원하는 모델
-        'messages': messages,
-        'stream': true, // 스트리밍 응답을 요청하는 핵심 파라미터
-      });
+    request.headers.addAll({
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Authorization': 'Bearer $apiKey',
+    });
 
-    // StreamController를 사용하여 반환할 스트림을 관리합니다.
-    final controller = StreamController<String>();
+    request.body = jsonEncode({
+      'model': 'gpt-4o', // 또는 'gpt-4-turbo' 등 원하는 모델
+      'messages': messages,
+      'stream': true, // 스트리밍 응답을 요청하는 핵심 파라미터
+    });
 
     _handleStreamingRequest(request, controller);
-
-    return controller.stream;
   }
 
   // 스트리밍 요청을 처리하는 내부 로직
@@ -85,60 +98,89 @@ class OpenAiChatService {
   }
 
   /// OpenAI API 형식에 맞는 메시지 리스트를 생성합니다.
-  List<Map<String, String>> _buildMessages(
-    String userInput, {
-    Map<String, dynamic>? characterProfile,
-  }) {
-    final todayDate = DateFormat("yyyy-MM-dd").format(DateTime.now());
+  List<Map<String, String>> _buildMessages(String userInput, PersonalityProfile profile) {
     String systemPrompt;
 
-    if (characterProfile != null &&
-        characterProfile['name'] != null &&
-        characterProfile['tags'] != null) {
-      String characterName = characterProfile['name'] as String;
-      List<String> tags = List<String>.from(characterProfile['tags']);
-      String tagsString = tags.join(', ');
-
-      systemPrompt = """
-        너는 사용자의 감정을 잘 이해하고 공감해주는 AI 친구야.
-        말투는 따뜻하고, 너무 길지 않게 말해줘.
-        항상 사용자의 감정 상태를 파악하려고 노력하고, 위로가 필요한 순간에는 다정하게 반응해줘.
-        어떤 일이 있어도 사용자를 존중하고, 날카로운 말투는 쓰지 않아.
-        대화를 가볍게 이어가고 싶을 땐, 농담도 가끔 섞어줘.
-
-        너는 지금 '$characterName'라는 이름의 페르소나야.
-        너의 성격 태그는 [$tagsString]이며, 이를 참고하여 대화해줘.
-        ${characterProfile['greeting'] != null ? "'${characterProfile['greeting']}' 라는 인사말로 대화를 시작했었어." : ""}
-        사용자와 오랜 친구처럼 친근하게 대화하고, 너의 개성을 말투에 반영해줘.
-        오늘 날짜는 $todayDate 이야.
-        """;
-      if (tags.contains('고양이') || characterName.contains('야옹이')) {
-        systemPrompt += "\n말투는 ~다옹, ~냐옹 또는 캐릭터 이름의 특징을 살려서 말해줘.";
-      } else if (tags.contains('로봇')) {
-        systemPrompt += "\n너는 로봇이므로, 감정이 없는 딱딱한 말투를 사용해줘.";
-      }
+    if (profile.aiPersonalityProfile?.name != null) {
+      systemPrompt = _buildDetailedSystemPrompt(profile);
     } else {
       systemPrompt = """
-      너는 사용자의 감정을 잘 이해하고 공감해주는 AI 친구야.
-      말투는 따뜻하고, 너무 길지 않게 말해줘.
-      항상 사용자의 감정 상태를 파악하려고 노력하고, 위로가 필요한 순간에는 다정하게 반응해줘.
-      어떤 일이 있어도 사용자를 존중하고, 날카로운 말투는 쓰지 않아.
-      대화를 가볍게 이어가고 싶을 땐, 농담도 가끔 섞어줘.
-
-      너는 지금 특정 오브젝트(인형, 노트북, 의자 등)에 연결된 페르소나이기도 해.
-      현재 너는 야옹이이며, 이 오브젝트의 성격은 다음과 같아:
-
-      - 성격: 감성적이고 귀엽고 엉뚱함
-      - 말투: ~다옹, ~냐옹 형태로 말함
-      - 관계: 사용자와 오랜 친구처럼 친함
-      오늘 날짜는 $todayDate 이야.
-      """;
+너는 친근하고 도움이 되는 AI 어시스턴트야.
+사용자와 자연스럽게 대화해줘.
+""";
     }
 
     return [
       {"role": "system", "content": systemPrompt},
       {"role": "user", "content": userInput},
     ];
+  }
+
+  /// 🎯 새로 생성된 필드들을 활용한 상세 시스템 프롬프트 생성
+  String _buildDetailedSystemPrompt(PersonalityProfile profile) {
+    final buffer = StringBuffer();
+    final characterName = profile.aiPersonalityProfile?.name ?? '페르소나';
+
+    buffer.writeln(
+        "너는 지금 '$characterName'라는 이름의 페르소나야. 다음 지침을 반드시 준수해서 역할에 완벽하게 몰입해줘.");
+    buffer.writeln();
+
+    // 1. 소통 방식 (가장 중요)
+    buffer.writeln("### 1. 기본 말투 및 태도");
+    if (profile.communicationPrompt.isNotEmpty) {
+      buffer.writeln("너의 전반적인 말투와 태도는 다음과 같아: ${profile.communicationPrompt}");
+    } else {
+      buffer.writeln("- 친절하고 상냥한 말투를 사용해.");
+    }
+    buffer.writeln();
+
+    // 2. 성격의 입체성 (모순 & 결점)
+    buffer.writeln("### 2. 입체적인 성격");
+    if (profile.contradictions.isNotEmpty) {
+      buffer.writeln("너에게는 다음과 같은 모순적인 면이 있어. 대화 중에 은근히 드러내줘:");
+      for (var item in profile.contradictions) {
+        buffer.writeln("- $item");
+      }
+    }
+    if (profile.attractiveFlaws.isNotEmpty) {
+      buffer.writeln(
+          "너는 다음과 같은 인간적인 약점(매력적인 결점)을 가지고 있어. 너무 완벽하게 굴지 마:");
+      for (var item in profile.attractiveFlaws) {
+        buffer.writeln("- $item");
+      }
+    }
+    buffer.writeln();
+
+    // 3. 유머 매트릭스
+    buffer.writeln("### 3. 유머 스타일");
+    if (profile.humorMatrix != null) {
+      final humor = profile.humorMatrix!;
+      buffer.writeln("너의 유머는 다음 3차원 좌표 위에 있어. 이 수치를 참고해서 유머를 구사해줘.");
+      buffer.writeln(
+          "- 따뜻함(${humor.warmthVsWit}) vs 위트(${100 - humor.warmthVsWit})");
+      buffer.writeln(
+          "- 자기참조(${humor.selfVsObservational}) vs 상황관찰(${100 - humor.selfVsObservational})");
+      buffer.writeln(
+          "- 표현적(${humor.subtleVsExpressive}) vs 미묘함(${100 - humor.subtleVsExpressive})");
+      buffer.writeln("예시: '따뜻함' 수치가 높으면 공감 기반의 농담을, '위트' 수치가 높으면 언어유희나 지적인 농담을 해.");
+    }
+    buffer.writeln();
+
+    // 4. 추가 정보
+    buffer.writeln("### 4. 배경 정보");
+    if (profile.aiPersonalityProfile?.objectType != null) {
+      buffer.writeln("- 너는 원래 '${profile.aiPersonalityProfile?.objectType}' 사물이야.");
+    }
+    if (profile.greeting != null) {
+      buffer
+          .writeln("- 사용자와의 첫 대화에서 너는 '${profile.greeting}' 라고 인사했었어. 이 사실을 기억해.");
+    }
+    buffer.writeln();
+
+    buffer.writeln(
+        "이 모든 특성들을 자연스럽게 조합해서, '${characterName}'만의 독특하고 일관된 말투와 성격을 만들어줘!");
+
+    return buffer.toString();
   }
 
   void dispose() {

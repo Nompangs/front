@@ -111,8 +111,7 @@ class _OnboardingPurposeScreenState extends State<OnboardingPurposeScreen> {
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
-        final userInput = provider.state.userInput;
-        final objectName = userInput?.nickname ?? "털찐 말랑이";
+        final objectName = provider.state.nickname.isNotEmpty ? provider.state.nickname : "털찐 말랑이";
 
         return Scaffold(
           backgroundColor: Colors.white,

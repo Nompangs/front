@@ -13,9 +13,24 @@ class OnboardingPersonalityScreen extends StatefulWidget {
 
 class _OnboardingPersonalityScreenState
     extends State<OnboardingPersonalityScreen> {
-  double introversionValue = 0.5;
-  double emotionalValue = 0.7;
-  double competenceValue = 0.3;
+  double? introversionValue;
+  double? warmthValue;
+  double? competenceValue;
+
+  @override
+  void initState() {
+    super.initState();
+    // 위젯이 빌드된 후 Provider 값으로 슬라이더 초기화
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final provider = context.read<OnboardingProvider>();
+      setState(() {
+        // 1-10 범위의 int 값을 0.0-1.0 범위의 double로 변환
+        introversionValue = (provider.state.introversion ?? 5) / 10.0;
+        warmthValue = (provider.state.warmth ?? 5) / 10.0;
+        competenceValue = (provider.state.competence ?? 5) / 10.0;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,18 +94,15 @@ class _OnboardingPersonalityScreenState
                   screenWidth: screenWidth,
                   color: const Color(0xFFFFD700),
                   title: '내향성',
-                  value: introversionValue,
+                  value: introversionValue ?? 0.5,
                   leftLabel: '수줍음',
                   rightLabel: '활발함',
                   onChanged: (value) {
                     setState(() => introversionValue = value);
-                    Provider.of<OnboardingProvider>(
-                      context,
-                      listen: false,
-                    ).updatePersonalitySlider(
-                      'introversion',
-                      (value * 10).round(),
-                    );
+                    // 슬라이더를 움직일 때마다 Provider 상태 업데이트
+                    Provider.of<OnboardingProvider>(context, listen: false)
+                        .updatePersonalitySlider(
+                            'introversion', (value * 10).round());
                   },
                 ),
               ),
@@ -100,15 +112,13 @@ class _OnboardingPersonalityScreenState
                   screenWidth: screenWidth,
                   color: const Color(0xFFFF8C42),
                   title: '감정표현',
-                  value: emotionalValue,
+                  value: warmthValue ?? 0.5,
                   leftLabel: '차가운',
                   rightLabel: '따뜻한',
                   onChanged: (value) {
-                    setState(() => emotionalValue = value);
-                    Provider.of<OnboardingProvider>(
-                      context,
-                      listen: false,
-                    ).updatePersonalitySlider('warmth', (value * 10).round());
+                    setState(() => warmthValue = value);
+                    Provider.of<OnboardingProvider>(context, listen: false)
+                        .updatePersonalitySlider('warmth', (value * 10).round());
                   },
                 ),
               ),
@@ -118,18 +128,14 @@ class _OnboardingPersonalityScreenState
                   screenWidth: screenWidth,
                   color: const Color(0xFF90EE90),
                   title: '유능함',
-                  value: competenceValue,
+                  value: competenceValue ?? 0.5,
                   leftLabel: '서툰',
                   rightLabel: '능숙한',
                   onChanged: (value) {
                     setState(() => competenceValue = value);
-                    Provider.of<OnboardingProvider>(
-                      context,
-                      listen: false,
-                    ).updatePersonalitySlider(
-                      'competence',
-                      (value * 10).round(),
-                    );
+                    Provider.of<OnboardingProvider>(context, listen: false)
+                        .updatePersonalitySlider(
+                            'competence', (value * 10).round());
                   },
                 ),
               ),
@@ -153,23 +159,15 @@ class _OnboardingPersonalityScreenState
                 border: Border.all(color: Colors.grey.shade400, width: 1),
               ),
               child: ElevatedButton(
-                onPressed: () async {
+                onPressed: () {
+                  // 현재 슬라이더 값으로 최종 업데이트 보장
                   final provider = context.read<OnboardingProvider>();
-                  provider.updatePersonalitySlider(
-                    'introversion',
-                    (introversionValue * 10).round(),
-                  );
-                  provider.updatePersonalitySlider(
-                    'warmth',
-                    (emotionalValue * 10).round(),
-                  );
-                  provider.updatePersonalitySlider(
-                    'competence',
-                    (competenceValue * 10).round(),
-                  );
-                  if (mounted) {
-                    Navigator.pushNamed(context, '/onboarding/completion');
-                  }
+                  provider.updatePersonalitySlider('introversion', ((introversionValue ?? 0.5) * 10).round());
+                  provider.updatePersonalitySlider('warmth', ((warmthValue ?? 0.5) * 10).round());
+                  provider.updatePersonalitySlider('competence', ((competenceValue ?? 0.5) * 10).round());
+                  
+                  // 최종 완료 화면으로 이동
+                  Navigator.pushNamed(context, '/onboarding/completion');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,

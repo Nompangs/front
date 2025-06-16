@@ -24,6 +24,8 @@ import 'package:nompangs/helpers/deeplink_helper.dart';
 import 'package:nompangs/screens/chat/chat_history_screen.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
+import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/screens/main/chat_screen.dart';
 
 String? pendingRoomId;
 
@@ -153,29 +155,27 @@ class _NompangsAppState extends State<NompangsApp> {
   void _handleDeepLink(Uri uri) async {
     final roomId = uri.queryParameters['roomId'];
     final uuid = uri.queryParameters['id'];
-    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId');
+    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId, uuid: $uuid');
 
-    if (roomId != null) {
-      if (uuid != null) {
-        final chatData = await DeepLinkHelper.processCharacterData(uuid);
+    if (uuid != null) {
+      final chatData = await DeepLinkHelper.processCharacterData(uuid);
 
-        if (chatData != null) {
-          _navigatorKey.currentState?.pushNamed(
-            '/chat/${chatData['personaId']}',
-            arguments: chatData,
-          );
-        } else {
-          DeepLinkHelper.showError(
-            _navigatorKey.currentContext!,
-            '캐릭터 정보를 읽을 수 없습니다.',
-          );
-        }
+      if (chatData != null) {
+        _navigatorKey.currentState?.pushNamed(
+          '/chat/$uuid',
+          arguments: chatData,
+        );
       } else {
         DeepLinkHelper.showError(
           _navigatorKey.currentContext!,
-          '캐릭터 정보가 없는 QR 코드입니다.',
+          '캐릭터 정보를 불러올 수 없습니다.',
         );
       }
+    } else if (roomId != null) {
+      DeepLinkHelper.showError(
+        _navigatorKey.currentContext!,
+        '캐릭터 정보가 없는 QR 코드입니다.',
+      );
     }
   }
 
@@ -209,38 +209,36 @@ class _NompangsAppState extends State<NompangsApp> {
           '/flutter-mobile-clone': (context) => MainScreen(),
         },
         onGenerateRoute: (settings) {
-          final Uri uri = Uri.parse(settings.name ?? '');
+          final uri = Uri.parse(settings.name ?? '');
 
-          if (uri.pathSegments.length == 2 &&
-              uri.pathSegments.first == 'chat') {
+          // '/chat/{characterId}' 형태의 경로를 처리
+          if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'chat') {
             final characterId = uri.pathSegments.last;
-            final args = settings.arguments as Map<String, dynamic>?;
 
-            if (args == null) {
+            // 라우트 인자(arguments)에서 PersonalityProfile 객체를 가져옴
+            final profile = settings.arguments as PersonalityProfile?;
+
+            // profile 객체가 정상적으로 전달되었는지 확인
+            if (profile != null) {
               return MaterialPageRoute(
-                builder:
-                    (_) => Scaffold(body: Center(child: Text('캐릭터 정보 없음'))),
+                builder: (context) {
+                  // ChatScreen은 profile 객체를 직접 인자로 받음
+                  return ChatScreen(profile: profile);
+                },
+              );
+            } else {
+              // 딥링크를 통해 들어왔지만 profile 정보가 없는 경우 등 예외 처리
+              // TODO: characterId를 사용하여 Firestore 등에서 프로필 정보를 가져오는 로직 구현 필요
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  body: Center(
+                    child: Text('캐릭터 정보를 불러올 수 없습니다. (ID: $characterId)'),
+                  ),
+                ),
               );
             }
-            return MaterialPageRoute(
-              builder: (context) {
-                return ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(
-                        characterName: args['characterName'] ?? '이름 없음',
-                        characterHandle:
-                            args['characterHandle'] ?? '@unknown_handle',
-                        personalityTags: List<String>.from(
-                          args['personalityTags'] ?? [],
-                        ),
-                        greeting: args['greeting'],
-                      ),
-                  child: const ChatTextScreen(),
-                );
-              },
-              settings: settings,
-            );
           }
+          // 일치하는 라우트가 없으면 null을 반환
           return null;
         },
       ),

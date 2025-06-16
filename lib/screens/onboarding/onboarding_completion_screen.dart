@@ -14,7 +14,9 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:nompangs/services/character_manager.dart';
+import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/widgets/qr_code_generator.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -35,6 +37,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   bool _isScrolledToBottom = false;
   String? _qrUuid;
   bool _creatingQr = false;
+  final ApiService _apiService = ApiService();
+  final PersonalityService _personalityService = PersonalityService();
+  String? _qrCodeUrl;
+  bool _isLoading = true;
+  String _message = "최종 페르소나를 완성하고 있어요...";
 
   @override
   void initState() {
@@ -68,11 +75,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final provider = context.read<OnboardingProvider>();
-      final character = provider.state.generatedCharacter;
-      if (character != null) {
-        _createQrProfile(character);
-      }
+      _finalizeAndSaveProfile();
     });
   }
 
@@ -99,68 +102,46 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     super.dispose();
   }
 
-  Future<void> _createQrProfile(Character character) async {
-    if (_creatingQr) return;
-    setState(() {
-      _creatingQr = true;
-    });
-    final providerState = context.read<OnboardingProvider>();
-    var profile = providerState.personalityProfile;
-    if (profile.structuredPrompt.isEmpty) {
-      final service = const PersonalityService();
-      profile = await service.generateProfile(providerState.state);
-      providerState.setPersonalityProfile(profile);
+  Future<void> _finalizeAndSaveProfile() async {
+    final provider = context.read<OnboardingProvider>();
+    if (provider.draft == null) {
+      // 비정상적인 접근 처리
+      setState(() {
+        _isLoading = false;
+        _message = "오류: AI 초안 데이터가 없습니다. 처음부터 다시 시도해주세요.";
+      });
+      return;
     }
-    final userInput = providerState.state.userInput;
-    final data = {
-      'personalityProfile': {
-        'aiPersonalityProfile': profile.aiPersonalityProfile,
-        'photoAnalysis': profile.photoAnalysis,
-        'lifeStory': profile.lifeStory,
-        'humorMatrix': profile.humorMatrix,
-        'attractiveFlaws': profile.attractiveFlaws,
-        'contradictions': profile.contradictions,
-        'communicationStyle': profile.communicationStyle,
-        'structuredPrompt': profile.structuredPrompt,
-      },
-    };
+
     try {
-      final result = await CharacterManager.instance.saveCharacterForQR(data);
-      final uuid = result['uuid'] as String;
-      final message = result['message'] as String?;
+      // 1. 최종 프로필 생성
+      setState(() => _message = "당신의 선택을 페르소나에 반영하는 중...");
+      final finalProfile = await _personalityService.finalizeUserProfile(
+        draft: provider.draft!,
+        finalState: provider.state,
+      );
 
-      // 🎯 간소화 정보 로깅
-      if (message != null) {
-        print('✅ $message');
-      }
+      // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
+      provider.setFinalPersonality(finalProfile);
 
-      if (mounted) {
-        setState(() {
-          _qrUuid = uuid;
-        });
-      }
+      // 3. 서버에 저장하고 QR 코드 URL 받기
+      setState(() => _message = "서버에 안전하게 저장하는 중...");
+      final result = await _apiService.createQrProfile(
+        generatedProfile: finalProfile.toMap(),
+        userInput: provider.getUserInputAsMap(),
+      );
+
+      setState(() {
+        _qrCodeUrl = result['qrUrl'];
+        _qrUuid = result['id']; // 서버에서 받은 ID 저장
+        _isLoading = false;
+        _message = "페르소나 생성 완료!";
+      });
     } catch (e) {
-      print('QR 생성 실패: $e');
-      if (mounted) {
-        String message = 'QR 생성 실패';
-        final match = RegExp(r'(\d{3})').firstMatch(e.toString());
-        if (match != null) {
-          message = 'QR 생성 실패 (HTTP ${match.group(1)})';
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(message),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _creatingQr = false;
-        });
-      }
+      setState(() {
+        _isLoading = false;
+        _message = "오류가 발생했어요: ${e.toString()}";
+      });
     }
   }
 
@@ -176,11 +157,26 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
-        final character = provider.state.generatedCharacter;
+        final character = provider.personalityProfile;
+
+        if (_isLoading) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 20),
+                  Text(_message),
+                ],
+              ),
+            ),
+          );
+        }
 
         if (character == null) {
-          return const Scaffold(
-            body: Center(child: Text('캐릭터 정보를 불러올 수 없습니다.')),
+          return Scaffold(
+            body: Center(child: Text(_message)), // 에러 메시지 표시
           );
         }
 
@@ -357,7 +353,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child: RepaintBoundary(
                                       key: _qrKey,
                                       child: QrImageView(
-                                        data: _generateQRData(character),
+                                        data: _qrUuid ?? '',
                                         version: QrVersions.auto,
                                         backgroundColor: Colors.white,
                                       ),
@@ -439,8 +435,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         const Icon(Icons.location_on, size: 16),
                                         const SizedBox(width: 4),
                                         Text(
-                                          provider.state.userInput?.location ??
-                                              '우리집 거실',
+                                          provider.state.location,
                                           style: const TextStyle(
                                             fontFamily: 'Pretendard',
                                             fontSize: 12,
@@ -473,33 +468,33 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                       ),
                                     ),
                                     child:
-                                        provider.state.photoPath != null
+                                        character.photoPath != null
                                             ? ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(10),
-                                              child: Image.file(
-                                                File(provider.state.photoPath!),
-                                                fit: BoxFit.cover,
-                                                width: double.infinity,
-                                                height: 230, // 210에서 230으로 변경
-                                                errorBuilder: (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) {
-                                                  return const Icon(
-                                                    Icons.access_time,
-                                                    size: 60,
-                                                    color: Colors.red,
-                                                  );
-                                                },
-                                              ),
-                                            )
+                                                borderRadius:
+                                                    BorderRadius.circular(10),
+                                                child: Image.file(
+                                                  File(character.photoPath!),
+                                                  fit: BoxFit.cover,
+                                                  width: double.infinity,
+                                                  height: 230, // 210에서 230으로 변경
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    return const Icon(
+                                                      Icons.access_time,
+                                                      size: 60,
+                                                      color: Colors.red,
+                                                    );
+                                                  },
+                                                ),
+                                              )
                                             : const Icon(
-                                              Icons.access_time,
-                                              size: 60,
-                                              color: Colors.red,
-                                            ),
+                                                Icons.access_time,
+                                                size: 60,
+                                                color: Colors.red,
+                                              ),
                                   ),
 
                                   // bubble@2x.png 이미지 (말풍선 상단 오른쪽에 위치) - 40px 위로
@@ -656,11 +651,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                   ),
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/chat/${character.id}',
-                        arguments: character,
-                      );
+                      if (_qrUuid != null && character != null) {
+                        Navigator.pushNamed(
+                          context,
+                          '/chat/$_qrUuid',
+                          arguments: character,
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
@@ -810,7 +807,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     const SizedBox(width: 8),
                                     Flexible(
                                       child: Text(
-                                        '${character.name.isNotEmpty ? character.name : '털찐말랑이'}이 깨어났어요!',
+                                        '${character?.aiPersonalityProfile?.name.isNotEmpty == true ? character!.aiPersonalityProfile!.name : '털찐말랑이'}이 깨어났어요!',
                                         style: const TextStyle(
                                           fontFamily: 'Pretendard',
                                           color: Colors.black,
@@ -860,26 +857,20 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
-  String _generateQRData(Character character) {
+  String _generateQRData(PersonalityProfile character) {
+    if (_qrUuid == null) return '';
     final data = {
-      'characterId': character.id,
-      'name': character.name,
-      'objectType': character.objectType,
-      'personality': {
-        'warmth': character.personality.warmth,
-        'competence': character.personality.competence,
-        'extroversion': character.personality.extroversion,
-      },
+      'characterId': _qrUuid,
+      'name': character.aiPersonalityProfile?.name,
+      'objectType': character.aiPersonalityProfile?.objectType,
       'greeting': character.greeting,
-      'traits': character.traits,
-      'createdAt': character.createdAt?.toIso8601String(),
     };
 
     return 'nompangs://character?data=${base64Url.encode(utf8.encode(jsonEncode(data)))}';
   }
 
   Future<void> _saveQRCode() async {
-    if (_qrUuid == null) return;
+    if (_qrKey.currentContext == null) return;
     try {
       // QR 코드 위젯을 이미지로 캡처
       final RenderRepaintBoundary boundary =
@@ -974,8 +965,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     }
   }
 
-  Future<void> _shareQRCode(Character character) async {
-    if (_qrUuid == null) return;
+  Future<void> _shareQRCode(PersonalityProfile character) async {
+    if (_qrKey.currentContext == null) return;
     try {
       // QR 코드 위젯을 이미지로 캡처
       final RenderRepaintBoundary boundary =
@@ -998,8 +989,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       await Share.shareXFiles(
         [XFile(file.path)],
         text:
-            '${character.name}와 함께하세요! 놈팽쓰 QR 코드입니다 🎉\n\nQR을 스캔하면 ${character.name}과 대화할 수 있어요!',
-        subject: '놈팽쓰 친구 공유 - ${character.name}',
+            '${character.aiPersonalityProfile?.name ?? '내 친구'}와 함께하세요! 놈팽쓰 QR 코드입니다 🎉\n\nQR을 스캔하면 ${character.aiPersonalityProfile?.name ?? '내 친구'}과 대화할 수 있어요!',
+        subject: '놈팽쓰 친구 공유 - ${character.aiPersonalityProfile?.name ?? '친구'}',
       );
 
       // 잠시 후 임시 파일 삭제
@@ -1022,9 +1013,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       print('QR 공유 오류: $e');
       if (mounted) {
         // 실패 시 기본 텍스트 공유
-        final qrData = _generateQRData(character);
+        final qrData = _qrCodeUrl ?? 'QR 데이터 없음';
         await Share.share(
-          '${character.name}와 함께하세요! 놈팽쓰 QR: $qrData',
+          '${character.aiPersonalityProfile?.name ?? '내 친구'}와 함께하세요! 놈팽쓰 QR: $qrData',
           subject: '놈팽쓰 친구 공유',
         );
 
@@ -1040,7 +1031,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   }
 
   // QR 코드 팝업 표시
-  void _showQRPopup(Character character) {
+  void _showQRPopup(PersonalityProfile character) {
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.8),
@@ -1070,7 +1061,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: QrImageView(
-                          data: _generateQRData(character),
+                          data: _qrUuid ?? '',
                           version: QrVersions.auto,
                           backgroundColor: Colors.white,
                         ),

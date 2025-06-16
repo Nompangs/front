@@ -6,42 +6,27 @@ part 'onboarding_state.g.dart';
 @freezed
 class OnboardingState with _$OnboardingState {
   const factory OnboardingState({
-    @Default(0) int currentStep,
-    @Default(null) UserInput? userInput,
-    @Default(null) String? photoPath,
-    @Default(null) Character? generatedCharacter,
+    @Default('') String nickname,
+    @Default('') String humorStyle,
+    @Default('') String purpose,
+    @Default('') String location,
+    @Default('') String duration,
+    @Default('') String objectType,
+    String? photoPath,
     @Default(false) bool isLoading,
     @Default(null) String? errorMessage,
     @Default(false) bool isGenerating,
     @Default(0.0) double generationProgress,
-    @Default("") String generationMessage,
+    @Default('') String generationMessage,
     
-    // 새로운 필드들 추가 (6단계 플로우에 맞춤)
-    @Default("") String purpose,        // Step 3: 사물의 용도
-    @Default("") String humorStyle,     // Step 3: 유머 스타일
-    @Default(null) int? introversion,   // Step 6: 내외향성 (1-10)
-    @Default(null) int? warmth,         // Step 6: 감정표현 (1-10)
-    @Default(null) int? competence,     // Step 6: 유능함 (1-10)
-    @Default(null) String? qrCodeUrl,   // 완료: QR 코드 URL
-    @Default(null) FinalPersonality? finalPersonality, // 최종 성격
+    // personality sliders
+    @Default(5) int warmth,
+    @Default(5) int competence,
+    @Default(5) int introversion,
   }) = _OnboardingState;
 
   factory OnboardingState.fromJson(Map<String, dynamic> json) =>
       _$OnboardingStateFromJson(json);
-}
-
-@freezed
-class UserInput with _$UserInput {
-  const factory UserInput({
-    required String nickname,
-    required String location,
-    required String duration,
-    required String objectType,
-    @Default("") String additionalInfo,
-  }) = _UserInput;
-
-  factory UserInput.fromJson(Map<String, dynamic> json) =>
-      _$UserInputFromJson(json);
 }
 
 @freezed

@@ -106,15 +106,13 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
       final nickname = _nicknameController.text.trim();
       final objectType = _objectTypeController.text.trim();
 
-      final userInput = UserInput(
+      final provider = Provider.of<OnboardingProvider>(context, listen: false);
+      provider.updateUserBasicInfo(
         nickname: nickname,
         location: _selectedLocation!,
         duration: _selectedDuration!,
         objectType: objectType,
       );
-
-      final provider = Provider.of<OnboardingProvider>(context, listen: false);
-      provider.setUserInput(userInput);
 
       Navigator.pushNamed(context, '/onboarding/purpose');
     }

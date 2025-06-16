@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/openai_chat_service.dart';
 import 'package:nompangs/services/openai_tts_service.dart';
+import 'package:nompangs/models/personality_profile.dart';
 
 class ChatMessage {
   String text;
@@ -12,17 +13,11 @@ class ChatMessage {
 }
 
 class ChatScreen extends StatefulWidget {
-  final String characterName;
-  final List<String> personalityTags;
-  final String? greeting;
-  final String? initialUserMessage;
+  final PersonalityProfile profile;
 
   const ChatScreen({
     super.key,
-    required this.characterName,
-    required this.personalityTags,
-    this.greeting,
-    this.initialUserMessage,
+    required this.profile,
   });
 
   @override
@@ -48,12 +43,12 @@ class _ChatScreenState extends State<ChatScreen> {
     _openAiChatService = OpenAiChatService();
     _initSpeech();
 
-    if (widget.greeting != null && widget.greeting!.isNotEmpty) {
-      _addMessage(widget.greeting!, false, speak: true);
+    if (widget.profile.greeting != null && widget.profile.greeting!.isNotEmpty) {
+      _addMessage(widget.profile.greeting!, false, speak: true);
     }
-    if (widget.initialUserMessage != null && widget.initialUserMessage!.isNotEmpty) {
-      _addMessage(widget.initialUserMessage!, true, speak: false);
-      _requestAiResponseStream(widget.initialUserMessage!);
+    if (widget.profile.initialUserMessage != null && widget.profile.initialUserMessage!.isNotEmpty) {
+      _addMessage(widget.profile.initialUserMessage!, true, speak: false);
+      _requestAiResponseStream(widget.profile.initialUserMessage!);
     }
   }
 
@@ -72,14 +67,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _messages.insert(0, ChatMessage(text: '', isUser: false));
     });
 
-    final characterProfile = {
-      'name': widget.characterName,
-      'tags': widget.personalityTags,
-      'greeting': widget.greeting,
-    };
-
     _apiStreamSubscription = _openAiChatService
-        .getChatCompletionStream(userInput, characterProfile: characterProfile)
+        .getChatCompletionStream(userInput, profile: widget.profile)
         .listen(
       (textChunk) {
         if (mounted) {
@@ -177,7 +166,6 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,26 +178,24 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               backgroundColor: Colors.blue[700],
               child: Text(
-                widget.characterName.isNotEmpty ? widget.characterName[0] : 'C',
+                widget.profile.aiPersonalityProfile?.name?.isNotEmpty == true ? widget.profile.aiPersonalityProfile!.name[0] : 'C',
                 style: TextStyle(color: Colors.white),
               ),
             ),
-            SizedBox(width: 10),
+            const SizedBox(width: 8),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.characterName,
-                    style: TextStyle(color: Colors.white),
-                    overflow: TextOverflow.ellipsis,
+                    widget.profile.aiPersonalityProfile?.name ?? '페르소나',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  if (widget.personalityTags.isNotEmpty)
-                    Text(
-                      widget.personalityTags.join(', '),
-                      style: TextStyle(color: Colors.grey, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                  SizedBox(height: 2),
+                  Text(
+                    "다정함",
+                    style: TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
                 ],
               ),
             ),
@@ -229,7 +215,10 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
-                return _buildMessageBubble(message);
+                return _buildMessage(
+                  message,
+                  message.isUser ? "나" : (widget.profile.aiPersonalityProfile?.name ?? "캐릭터"),
+                );
               },
             ),
           ),
@@ -285,7 +274,7 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageBubble(ChatMessage message) {
+  Widget _buildMessage(ChatMessage message, String senderName) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -307,7 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
               message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             Text(
-              message.isUser ? "나" : widget.characterName,
+              senderName,
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 12,
