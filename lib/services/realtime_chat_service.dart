@@ -7,9 +7,9 @@ import 'package:nompangs/providers/chat_provider.dart';
 class RealtimeChatService {
   late final openai_rt.RealtimeClient _client;
 
-  // UI 업데이트용 스트림 (텍스트 조각)
-  final _responseController = StreamController<ChatMessage>.broadcast();
-  Stream<ChatMessage> get responseStream => _responseController.stream;
+  // UI 업데이트용 스트림 (텍스트 조각) - 타입을 String으로 변경
+  final _responseController = StreamController<String>.broadcast();
+  Stream<String> get responseStream => _responseController.stream;
 
   // TTS 재생용 스트림 (완성된 문장)
   final _completionController = StreamController<String>.broadcast();
@@ -31,7 +31,8 @@ class RealtimeChatService {
       final result = (event as openai_rt.RealtimeEventConversationUpdated).result;
       final delta = result.delta;
       if (delta?.transcript != null) {
-        _responseController.add(ChatMessage(text: delta!.transcript!, isUser: false));
+        // ChatMessage 객체 대신 순수 텍스트(String)를 전달
+        _responseController.add(delta!.transcript!);
       }
     });
 

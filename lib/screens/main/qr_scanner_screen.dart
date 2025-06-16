@@ -29,36 +29,35 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   Future<void> _handleQRCode(String code) async {
     if (_isProcessing) return;
 
-    // QR 코드가 감지되면 다시 스캔하지 않도록 즉시 처리 중 상태로 설정
     setState(() {
       _isProcessing = true;
     });
     print('✅ QR Code detected, handling with code: $code');
 
     try {
-      String? uuid;
-      // 딥링크 URL 형식인지 확인하고 파싱합니다.
+      String? parsedUuid;
       if (code.startsWith('nompangs://')) {
         final uri = Uri.parse(code);
-        uuid = uri.queryParameters['id'];
+        parsedUuid = uri.queryParameters['id'];
       } else {
-        // URL 형식이 아니라면, 코드가 UUID 자체라고 가정합니다.
-        uuid = code;
+        parsedUuid = code;
       }
 
-      if (uuid == null) {
+      if (parsedUuid == null || parsedUuid.isEmpty) {
         throw Exception('QR 코드에서 유효한 ID를 찾을 수 없습니다.');
       }
+      
+      final String uuid = parsedUuid;
 
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
       if (mounted) {
-        // 새로운 ChatProvider를 생성하여 ChatTextScreen으로 이동합니다.
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
               create: (_) => ChatProvider(
+                uuid: uuid,
                 characterName: profile.aiPersonalityProfile?.name ?? '이름 없음',
                 characterHandle: '@${profile.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
                 personalityTags: profile.aiPersonalityProfile?.coreValues ?? ['친구같은'],
@@ -73,7 +72,6 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       print('🚨 QR 스캔 처리 실패: $e');
       if (mounted) {
         _showError('프로필을 불러오는데 실패했습니다.');
-        // 에러 발생 시 스캔 재개를 위해 상태 복원
         setState(() {
           _isProcessing = false;
         });
