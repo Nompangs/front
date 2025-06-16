@@ -54,18 +54,20 @@ class ChatProvider extends ChangeNotifier {
     };
     await _realtimeChatService.connect(characterProfile);
 
-    // AI 응답이 완료되었을 때만 이벤트를 받도록 수정
-    _completionSubscription = _realtimeChatService.completionStream.listen((fullText) {
+    _completionSubscription = _realtimeChatService.completionStream.listen((fullText) async { // 1. 리스너를 async로 변경
         if (_messages.isNotEmpty && _messages.first.isLoading) {
-          // 로딩 중인 메시지를 최종 텍스트로 업데이트
+          // 로딩 중인 메시지를 최종 텍스트로 업데이트하고 UI에 먼저 표시
           _messages.first.text = fullText;
           _messages.first.isLoading = false;
+          notifyListeners();
 
           // 텍스트 업데이트와 동시에 음성 재생
           if (fullText.trim().isNotEmpty) {
-            _openAiTtsService.speak(fullText.trim());
+            await _openAiTtsService.speak(fullText.trim()); // 2. TTS 재생이 끝날 때까지 await
           }
         }
+        
+        // 3. TTS 재생이 완료된 후 처리 상태를 false로 변경
         _isProcessing = false;
         notifyListeners();
     },
