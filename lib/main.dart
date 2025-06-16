@@ -26,6 +26,7 @@ import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
+import 'package:nompangs/services/api_service.dart';
 
 String? pendingRoomId;
 
@@ -154,29 +155,43 @@ class _NompangsAppState extends State<NompangsApp> {
   }
 
   void _handleDeepLink(Uri uri) async {
-    final roomId = uri.queryParameters['roomId'];
-    final uuid = uri.queryParameters['id'];
-    print('📦 딥링크 수신됨! URI: $uri, roomId: $roomId, uuid: $uuid');
-
+    final uuid = uri.queryParameters['roomId'] ?? uri.queryParameters['id'];
+    print('📦 딥링크 수신됨! URI: $uri, 추출된 UUID: $uuid');
+    
     if (uuid != null) {
-      final chatData = await DeepLinkHelper.processCharacterData(uuid);
+      try {
+        final apiService = ApiService();
+        final profile = await apiService.loadProfile(uuid);
 
-      if (chatData != null) {
-        _navigatorKey.currentState?.pushNamed(
-          '/chat/$uuid',
-          arguments: chatData,
+        _navigatorKey.currentState?.push(
+          MaterialPageRoute(
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(
+                uuid: uuid,
+                characterName:
+                    profile.aiPersonalityProfile?.name ?? '이름 없음',
+                characterHandle:
+                    '@${profile.aiPersonalityProfile?.name ?? 'unknown'}',
+                personalityTags:
+                    profile.aiPersonalityProfile?.coreValues ?? [],
+                greeting: profile.greeting ??
+                    '안녕하세요! 무엇이 궁금하신가요?',
+              ),
+              child: const ChatTextScreen(),
+            ),
+          ),
         );
-      } else {
-        DeepLinkHelper.showError(
-          _navigatorKey.currentContext!,
-          '캐릭터 정보를 불러올 수 없습니다.',
-        );
+      } catch (e) {
+        print('🚨 딥링크 프로필 로딩 실패: $e');
+        if (_navigatorKey.currentContext != null) {
+          DeepLinkHelper.showError(
+            _navigatorKey.currentContext!,
+            '캐릭터 정보를 불러오는 데 실패했습니다.',
+          );
+        }
       }
-    } else if (roomId != null) {
-      DeepLinkHelper.showError(
-        _navigatorKey.currentContext!,
-        '캐릭터 정보가 없는 QR 코드입니다.',
-      );
+    } else {
+      print('📦 딥링크에 유효한 ID(roomId 또는 id)가 없습니다.');
     }
   }
 

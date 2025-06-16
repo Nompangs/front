@@ -70,7 +70,7 @@ class ChatProvider extends ChangeNotifier {
   }
   
   Future<void> _initializeChat() async {
-    // 1. 데이터베이스에서 과거 대화 기록 불러오기
+    // 1. 데이터베이스에서 과거 대화 기록을 먼저 불러옵니다.
     await _loadHistory();
 
     final characterProfile = {
@@ -80,7 +80,7 @@ class ChatProvider extends ChangeNotifier {
     };
     await _realtimeChatService.connect(characterProfile);
 
-    // 2. 만약 대화 기록이 없다면 (최초 대화) 인사말 추가 및 저장
+    // 2. 기록을 모두 불러온 후, 메시지가 정말 하나도 없을 때만 인사말을 추가합니다.
     if (_messages.isEmpty && greeting != null && greeting!.isNotEmpty) {
       _addMessage(greeting!, false, speak: true);
     }
@@ -123,6 +123,7 @@ class ChatProvider extends ChangeNotifier {
   // DB에서 과거 기록을 불러오는 메서드
   Future<void> _loadHistory() async {
     final history = await _databaseService.getHistory(uuid);
+    _messages.clear(); // 불러오기 전에 기존 메시지 초기화
     _messages.addAll(history.map((msg) => ChatMessage.fromMap(msg)));
     notifyListeners();
   }
