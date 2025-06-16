@@ -85,7 +85,8 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
     }
   }
 
-  String get _qrData => _qrUuid != null ? 'nompangs://character?id=$_qrUuid' : '';
+  String get _qrData =>
+      _qrUuid != null ? 'nompangs://character?id=$_qrUuid' : '';
 
   Future<void> _shareQRCode() async {
     if (_qrUuid == null) return;

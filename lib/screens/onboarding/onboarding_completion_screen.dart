@@ -132,10 +132,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         userInput: provider.getUserInputAsMap(),
       );
 
-      // 진단용 로그는 이제 제거
       setState(() {
-        _qrCodeUrl = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
-        _qrUuid = result['id'] as String?; // 서버가 id를 주진 않지만, 호환성을 위해 유지
+        _qrUuid = result['id'] as String?; // 서버가 보내준 id 저장
         _isLoading = false;
         _message = "페르소나 생성 완료!";
       });
@@ -352,8 +350,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     ),
                                     child: RepaintBoundary(
                                       key: _qrKey,
-                                      // QrImageView를 Image.memory로 변경
-                                      child: _buildQrImage(),
+                                      child: QrImageView(
+                                        data: _qrUuid != null
+                                            ? 'nompangs://character?id=$_qrUuid'
+                                            : '',
+                                        version: QrVersions.auto,
+                                        backgroundColor: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -1057,8 +1060,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       decoration: const BoxDecoration(color: Colors.white),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        // QrImageView를 Image.memory로 변경
-                        child: _buildQrImage(),
+                        child: QrImageView(
+                          data: _qrUuid != null
+                              ? 'nompangs://character?id=$_qrUuid'
+                              : '',
+                          version: QrVersions.auto,
+                          backgroundColor: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -1069,23 +1077,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         );
       },
     );
-  }
-
-  // 서버가 보내준 base64 데이터를 이미지로 변환하는 위젯
-  Widget _buildQrImage() {
-    if (_qrCodeUrl == null || !_qrCodeUrl!.startsWith('data:image/png;base64,')) {
-      // 데이터가 없거나 형식이 잘못된 경우 로딩 인디케이터 표시
-      return const Center(child: CircularProgressIndicator());
-    }
-    try {
-      // 'data:image/png;base64,' 부분을 제거하고 순수 base64 데이터만 추출
-      final pureBase64 = _qrCodeUrl!.substring(22);
-      final imageBytes = base64Decode(pureBase64);
-      return Image.memory(imageBytes);
-    } catch (e) {
-      print('🚨 Base64 디코딩 실패: $e');
-      return const Center(child: Icon(Icons.error));
-    }
   }
 
   String _getPersonalityTag1(OnboardingState state) {
