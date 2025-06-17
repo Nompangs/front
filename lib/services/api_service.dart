@@ -6,7 +6,8 @@ import '../models/personality_profile.dart';
 class ApiService {
   // .env 파일에서 QR_API_BASE_URL을 불러옵니다.
   // 만약 값이 없다면 안드로이드 에뮬레이터 기본 주소를 사용합니다.
-  final String _baseUrl = dotenv.env['QR_API_BASE_URL'] ?? 'http://10.0.2.2:8080';
+  final String _baseUrl =
+      dotenv.env['QR_API_BASE_URL'] ?? 'http://10.0.2.2:8080';
 
   /// 생성된 페르소나 프로필과 사용자 원본 입력값을 서버로 전송하고 QR 코드 URL을 받아옵니다.
   ///
@@ -89,10 +90,32 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        print('✅ [QR 로드 성공] 파싱된 데이터: $data');
-        return PersonalityProfile.fromMap(data);
+
+        // generatedProfile 내부의 aiPersonalityProfile 확인
+        final hasProfile =
+            data.containsKey('generatedProfile') &&
+            data['generatedProfile'] != null &&
+            data['generatedProfile'].containsKey('aiPersonalityProfile') &&
+            data['generatedProfile']['aiPersonalityProfile'] != null;
+
+        if (!hasProfile) {
+          print('🚨 [QR 로드 실패] 필수 프로필 데이터 누락');
+          throw Exception('Invalid profile data: Missing required fields');
+        }
+
+        // 응답 구조를 PersonalityProfile 형식에 맞게 변환
+        final Map<String, dynamic> profileData = {
+          'uuid': data['uuid'],
+          'aiPersonalityProfile':
+              data['generatedProfile']['aiPersonalityProfile'],
+        };
+
+        print('✅ [QR 로드 성공] 파싱된 데이터: $profileData');
+        return PersonalityProfile.fromMap(profileData);
       } else {
-        print('🚨 [QR 로드 실패] 서버 에러: ${response.statusCode}, Body: ${response.body}');
+        print(
+          '🚨 [QR 로드 실패] 서버 에러: ${response.statusCode}, Body: ${response.body}',
+        );
         throw Exception('Failed to load profile from server.');
       }
     } catch (e) {
@@ -101,4 +124,4 @@ class ApiService {
       throw Exception('Failed to connect to the server or parse profile.');
     }
   }
-} 
+}

@@ -59,6 +59,27 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
 
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
+      // 프로필 데이터 검증 및 보완
+      if (profile.aiPersonalityProfile == null) {
+        print('🚨 [QR 스캔] 프로필에 AI 페르소나 정보가 없습니다. 기본값을 사용합니다.');
+        throw Exception('프로필 정보가 올바르지 않습니다.');
+      }
+
+      final aiProfile = profile.aiPersonalityProfile!;
+      final characterName =
+          aiProfile.name.isNotEmpty ? aiProfile.name : '이름 없음';
+      final characterHandle =
+          '@${characterName.toLowerCase().replaceAll(' ', '')}';
+      final personalityTags =
+          aiProfile.coreValues.isNotEmpty ? aiProfile.coreValues : ['친근한'];
+      final greeting = profile.greeting ?? '안녕하세요! 반가워요.';
+
+      print('✅ [QR 스캔] 프로필 데이터 검증 완료:');
+      print('   - 이름: $characterName');
+      print('   - 핸들: $characterHandle');
+      print('   - 성격 태그: $personalityTags');
+      print('   - 인사말: $greeting');
+
       if (mounted) {
         await Navigator.pushReplacement(
           context,
@@ -68,20 +89,16 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   create:
                       (_) => ChatProvider(
                         uuid: uuid,
-                        characterName:
-                            profile.aiPersonalityProfile?.name ?? '이름 없음',
-                        characterHandle:
-                            '@${profile.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
-                        personalityTags:
-                            profile.aiPersonalityProfile?.coreValues ??
-                            ['친구같은'],
-                        greeting: profile.greeting,
+                        characterName: characterName,
+                        characterHandle: characterHandle,
+                        personalityTags: personalityTags,
+                        greeting: greeting,
                       ),
                   child: const ChatTextScreen(),
                 ),
           ),
         );
-        // 채팅방에서 돌아왔을 때만 다시 스캔 가능
+
         if (mounted) {
           setState(() {
             _isProcessing = false;
