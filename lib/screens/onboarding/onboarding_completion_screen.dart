@@ -126,7 +126,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
       // 3. 서버 전송을 위한 데이터 가공 (Base64 인코딩)
       final profileMap = finalProfile.toMap();
-      if (finalProfile.photoPath != null && finalProfile.photoPath!.isNotEmpty) {
+      if (finalProfile.photoPath != null &&
+          finalProfile.photoPath!.isNotEmpty) {
         try {
           final imageFile = File(finalProfile.photoPath!);
           if (await imageFile.exists()) {
@@ -183,7 +184,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
-        final characterName = provider.personalityProfile.aiPersonalityProfile?.name ?? '페르소나';
+        final characterName =
+            provider.personalityProfile.aiPersonalityProfile?.name ?? '페르소나';
         final character = provider.personalityProfile;
         final qrBytes = _decodeQrImage(_qrImageData);
 
@@ -376,18 +378,21 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     decoration: const BoxDecoration(
                                       color: Colors.white,
                                     ),
-                                    child: qrBytes != null
-                                        ? RepaintBoundary(
-                                            key: _qrKey,
-                                            child: Image.memory(
-                                              qrBytes,
-                                              width: 100,
-                                              height: 100,
-                                              fit: BoxFit.contain,
+                                    child:
+                                        qrBytes != null
+                                            ? RepaintBoundary(
+                                              key: _qrKey,
+                                              child: Image.memory(
+                                                qrBytes,
+                                                width: 100,
+                                                height: 100,
+                                                fit: BoxFit.contain,
+                                              ),
+                                            )
+                                            : const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
                                             ),
-                                          )
-                                        : const Center(
-                                            child: CircularProgressIndicator()),
                                   ),
                                 ),
                               ),
@@ -451,7 +456,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                         const Icon(Icons.access_time, size: 16),
                                         const SizedBox(width: 4),
                                         Text(
-                                          character.aiPersonalityProfile?.objectType ?? '멘탈지기',
+                                          character
+                                                  .aiPersonalityProfile
+                                                  ?.objectType ??
+                                              '멘탈지기',
                                           style: const TextStyle(
                                             fontFamily: 'Pretendard',
                                             fontSize: 12,
@@ -500,31 +508,31 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child:
                                         character.photoPath != null
                                             ? ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(10),
-                                                child: Image.file(
-                                                  File(character.photoPath!),
-                                                  fit: BoxFit.cover,
-                                                  width: double.infinity,
-                                                  height: 230, // 210에서 230으로 변경
-                                                  errorBuilder: (
-                                                    context,
-                                                    error,
-                                                    stackTrace,
-                                                  ) {
-                                                    return const Icon(
-                                                      Icons.access_time,
-                                                      size: 60,
-                                                      color: Colors.red,
-                                                    );
-                                                  },
-                                                ),
-                                              )
-                                            : const Icon(
-                                                Icons.access_time,
-                                                size: 60,
-                                                color: Colors.red,
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              child: Image.file(
+                                                File(character.photoPath!),
+                                                fit: BoxFit.cover,
+                                                width: double.infinity,
+                                                height: 230, // 210에서 230으로 변경
+                                                errorBuilder: (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) {
+                                                  return const Icon(
+                                                    Icons.access_time,
+                                                    size: 60,
+                                                    color: Colors.red,
+                                                  );
+                                                },
                                               ),
+                                            )
+                                            : const Icon(
+                                              Icons.access_time,
+                                              size: 60,
+                                              color: Colors.red,
+                                            ),
                                   ),
 
                                   // bubble@2x.png 이미지 (말풍선 상단 오른쪽에 위치) - 40px 위로
@@ -620,19 +628,24 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                             // 성격 차트 추가
                             Builder(
                               builder: (context) {
-                                final personalityData =
-                                    _generatePersonalityData(provider.state!);
-                                final traits =
-                                    personalityData["성격특성"]
-                                        as Map<String, dynamic>;
-
                                 return PersonalityChart(
-                                  warmth: (traits["온기"] as double),
-                                  competence: (traits["능력"] as double),
-                                  extroversion: (traits["외향성"] as double),
-                                  creativity: (traits["창의성"] as double),
-                                  humour: (traits["유머감각"] as double),
-                                  reliability: (traits["신뢰성"] as double),
+                                  // 사용자 조정 지표
+                                  warmth: provider.state!.warmth! * 10,
+                                  competence: provider.state!.competence! * 10,
+                                  extroversion:
+                                      (11 - provider.state!.introversion!) * 10,
+
+                                  // AI 생성 지표
+                                  creativity: _calculateCreativity(character),
+                                  stability: _calculateStability(character),
+                                  conscientiousness:
+                                      _calculateConscientiousness(character),
+
+                                  // PersonalityService에서 실제 생성되는 데이터
+                                  attractiveFlaws: character.attractiveFlaws,
+                                  contradictions: character.contradictions,
+                                  communicationPrompt:
+                                      character.communicationPrompt,
                                 );
                               },
                             ),
@@ -662,21 +675,32 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                   onPressed: () {
                     // 서버 응답에서 실제 uuid를 받아와야 합니다.
                     // 현재는 createQrProfile 응답에 uuid가 없으므로 임시 ID를 사용합니다.
-                    final uuid = _qrImageData ?? 'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
+                    final uuid =
+                        _qrImageData ??
+                        'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
 
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider(
-                          create: (_) => ChatProvider(
-                            uuid: uuid,
-                            characterName: character.aiPersonalityProfile?.name ?? '이름 없음',
-                            characterHandle: '@${character.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
-                            personalityTags: character.aiPersonalityProfile?.coreValues ?? ['친구같은'],
-                            greeting: character.greeting ?? '안녕하세요!',
-                          ),
-                          child: const ChatTextScreen(),
-                        ),
+                        builder:
+                            (context) => ChangeNotifierProvider(
+                              create:
+                                  (_) => ChatProvider(
+                                    uuid: uuid,
+                                    characterName:
+                                        character.aiPersonalityProfile?.name ??
+                                        '이름 없음',
+                                    characterHandle:
+                                        '@${character.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
+                                    personalityTags:
+                                        character
+                                            .aiPersonalityProfile
+                                            ?.coreValues ??
+                                        ['친구같은'],
+                                    greeting: character.greeting ?? '안녕하세요!',
+                                  ),
+                              child: const ChatTextScreen(),
+                            ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
                     );
@@ -1070,9 +1094,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: QrImageView(
-                          data: _qrImageData != null
-                              ? 'https://invitepage.netlify.app/?roomId=${_qrImageData!}'
-                              : '',
+                          data:
+                              _qrImageData != null
+                                  ? 'https://invitepage.netlify.app/?roomId=${_qrImageData!}'
+                                  : '',
                           version: QrVersions.auto,
                           size: 100.0,
                           backgroundColor: Colors.white,
@@ -1142,5 +1167,40 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       "유머스타일": state.humorStyle.isNotEmpty ? state.humorStyle : "따뜻한 유머러스",
       "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안해함", "친구들과 함께 있을 때 더 빛남"],
     };
+  }
+
+  // AI 생성 지표 계산 함수들
+  double _calculateCreativity(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final imagination =
+        character!.aiPersonalityProfile!.npsScores['O01_상상력'] ?? 50;
+    final creativity =
+        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
+    final curiosity =
+        character.aiPersonalityProfile!.npsScores['O02_호기심'] ?? 50;
+
+    return (imagination * 0.4 + creativity * 0.4 + curiosity * 0.2).clamp(
+      0.0,
+      100.0,
+    );
+  }
+
+  double _calculateStability(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final anxiety = character!.aiPersonalityProfile!.npsScores['N01_불안성'] ?? 50;
+    return (100 - anxiety).toDouble().clamp(0.0, 100.0);
+  }
+
+  double _calculateConscientiousness(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final responsibility =
+        character!.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
+    final orderliness =
+        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
+
+    return (responsibility * 0.6 + orderliness * 0.4).clamp(0.0, 100.0);
   }
 }
