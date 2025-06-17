@@ -107,6 +107,13 @@ class TestScreen extends StatelessWidget {
               },
               child: Text('뉴홈 화면 UI'),
             ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              child: const Text('로그인 화면으로 이동'),
+            ),
           ],
         ),
       ),
