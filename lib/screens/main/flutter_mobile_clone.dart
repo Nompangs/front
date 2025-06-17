@@ -111,19 +111,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       _morphController2?.repeat(reverse: true);
     });
 
-    _notificationIconController = AnimationController(
-      duration: const Duration(seconds: 9),
-      vsync: this,
-    )..repeat();
-    _notificationIconRotation = Tween<double>(
-      begin: 0,
-      end: 2 * 3.141592,
-    ).animate(
-      CurvedAnimation(
-        parent: _notificationIconController!,
-        curve: Curves.linear,
-      ),
-    );
+    if (objectData.isNotEmpty) {
+      _notificationIconController = AnimationController(
+        duration: const Duration(seconds: 9),
+        vsync: this,
+      )..repeat();
+      _notificationIconRotation = Tween<double>(
+        begin: 0,
+        end: 2 * 3.141592,
+      ).animate(
+        CurvedAnimation(
+          parent: _notificationIconController!,
+          curve: Curves.linear,
+        ),
+      );
+    } else {
+      _notificationIconController = null;
+      _notificationIconRotation = null;
+    }
   }
 
   Future<void> _fetchDisplayName() async {
@@ -135,7 +140,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             .doc(user.uid)
             .get();
     setState(() {
-      displayName = doc.data()?['displayName'] ?? '사용자';
+      displayName = doc.data()?['displayName'] ?? '게스트';
     });
   }
 
@@ -165,6 +170,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         objectData = objects.map((obj) => ObjectData.fromMap(obj)).toList();
         _isLoading = false;
       });
+      _updateIconAnimation();
     } catch (e) {
       print('🚨 사물 목록 로드 실패: $e');
       if (e.toString().contains('Authentication required')) {
@@ -228,6 +234,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         _isLoading = false;
         _error = '데이터를 불러오는데 실패했습니다. 테스트 데이터를 표시합니다.';
       });
+      _updateIconAnimation();
     }
   }
 
@@ -748,28 +755,43 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     SizedBox(width: 30 * scale),
                     Expanded(
                       child: Center(
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 13 * scale,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: lastChattedObjectName,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: '와 마지막으로 대화했어요.',
-                                style: TextStyle(fontWeight: FontWeight.w300),
-                              ),
-                            ],
-                          ),
-                        ),
+                        child:
+                            (objectData.isEmpty)
+                                ? Text(
+                                  '대화기록이 없어요. 모멘티를 깨워보세요!',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 13 * scale,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                )
+                                : RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 13 * scale,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: lastChattedObjectName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: '와 마지막으로 대화했어요.',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w300,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () {
+                        if (objectData.isEmpty) return;
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -800,7 +822,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         height: 54 * scale,
                         margin: EdgeInsets.only(right: 1 * scale),
                         child:
-                            _notificationIconRotation != null
+                            (objectData.isEmpty)
+                                ? Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/ui_assets/btn_quickchat.png',
+                                      width: 54 * scale,
+                                      height: 54 * scale,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    Icon(
+                                      Icons.north_east,
+                                      color: Colors.black,
+                                      size: 20 * scale,
+                                    ),
+                                  ],
+                                )
+                                : (_notificationIconRotation != null)
                                 ? AnimatedBuilder(
                                   animation: _notificationIconRotation!,
                                   builder: (context, child) {
@@ -903,6 +942,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
       ),
     );
+  }
+
+  void _updateIconAnimation() {
+    if (objectData.isNotEmpty) {
+      if (_notificationIconController == null) {
+        _notificationIconController = AnimationController(
+          duration: const Duration(seconds: 9),
+          vsync: this,
+        )..repeat();
+        _notificationIconRotation = Tween<double>(
+          begin: 0,
+          end: 2 * 3.141592,
+        ).animate(
+          CurvedAnimation(
+            parent: _notificationIconController!,
+            curve: Curves.linear,
+          ),
+        );
+      }
+    } else {
+      _notificationIconController?.stop();
+      _notificationIconController?.reset();
+      _notificationIconRotation = null;
+    }
   }
 }
 
