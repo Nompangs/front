@@ -15,10 +15,7 @@ class ChatMessage {
 class ChatScreen extends StatefulWidget {
   final PersonalityProfile profile;
 
-  const ChatScreen({
-    super.key,
-    required this.profile,
-  });
+  const ChatScreen({super.key, required this.profile});
 
   @override
   _ChatScreenState createState() => _ChatScreenState();
@@ -39,14 +36,17 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    print('[ChatScreen] initState 호출');
     _openAiTtsService = OpenAiTtsService();
     _openAiChatService = OpenAiChatService();
     _initSpeech();
 
-    if (widget.profile.greeting != null && widget.profile.greeting!.isNotEmpty) {
+    if (widget.profile.greeting != null &&
+        widget.profile.greeting!.isNotEmpty) {
       _addMessage(widget.profile.greeting!, false, speak: true);
     }
-    if (widget.profile.initialUserMessage != null && widget.profile.initialUserMessage!.isNotEmpty) {
+    if (widget.profile.initialUserMessage != null &&
+        widget.profile.initialUserMessage!.isNotEmpty) {
       _addMessage(widget.profile.initialUserMessage!, true, speak: false);
       _requestAiResponseStream(widget.profile.initialUserMessage!);
     }
@@ -70,55 +70,60 @@ class _ChatScreenState extends State<ChatScreen> {
     _apiStreamSubscription = _openAiChatService
         .getChatCompletionStream(userInput, profile: widget.profile)
         .listen(
-      (textChunk) {
-        if (mounted) {
-          setState(() => _messages[0].text += textChunk);
-          if (_firstSentencePlaybackFuture == null) {
-            _sentenceBuffer += textChunk;
-            RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-            if (sentenceEnd.hasMatch(_sentenceBuffer)) {
-              final match = sentenceEnd.firstMatch(_sentenceBuffer)!;
-              final firstSentence = _sentenceBuffer.substring(0, match.end).trim();
-              if (firstSentence.isNotEmpty) {
-                _firstSentencePlaybackFuture = _openAiTtsService.speak(firstSentence);
+          (textChunk) {
+            if (mounted) {
+              setState(() => _messages[0].text += textChunk);
+              if (_firstSentencePlaybackFuture == null) {
+                _sentenceBuffer += textChunk;
+                RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
+                if (sentenceEnd.hasMatch(_sentenceBuffer)) {
+                  final match = sentenceEnd.firstMatch(_sentenceBuffer)!;
+                  final firstSentence =
+                      _sentenceBuffer.substring(0, match.end).trim();
+                  if (firstSentence.isNotEmpty) {
+                    _firstSentencePlaybackFuture = _openAiTtsService.speak(
+                      firstSentence,
+                    );
+                  }
+                }
               }
             }
-          }
-        }
-      },
-      onDone: () async {
-        if (mounted) {
-          await _firstSentencePlaybackFuture;
-          String fullText = _messages[0].text;
-          String restOfText = '';
-          if (_firstSentencePlaybackFuture != null) {
-            RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-            final firstMatch = sentenceEnd.firstMatch(fullText);
-            if (firstMatch != null && fullText.length > firstMatch.end) {
-              restOfText = fullText.substring(firstMatch.end).trim();
+          },
+          onDone: () async {
+            if (mounted) {
+              await _firstSentencePlaybackFuture;
+              String fullText = _messages[0].text;
+              String restOfText = '';
+              if (_firstSentencePlaybackFuture != null) {
+                RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
+                final firstMatch = sentenceEnd.firstMatch(fullText);
+                if (firstMatch != null && fullText.length > firstMatch.end) {
+                  restOfText = fullText.substring(firstMatch.end).trim();
+                }
+              } else if (fullText.isNotEmpty) {
+                restOfText = fullText;
+              }
+              if (restOfText.isNotEmpty) {
+                await _openAiTtsService.speak(restOfText);
+              }
+              setState(() => _isProcessing = false);
             }
-          } else if (fullText.isNotEmpty) {
-            restOfText = fullText;
-          }
-          if (restOfText.isNotEmpty) {
-            await _openAiTtsService.speak(restOfText);
-          }
-          setState(() => _isProcessing = false);
-        }
-      },
-      onError: (e) {
-        if (mounted) {
-          setState(() {
-            _messages[0].text = "AI 응답 중 오류 발생";
-            _isProcessing = false;
-          });
-        }
-      },
-    );
+          },
+          onError: (e) {
+            if (mounted) {
+              setState(() {
+                _messages[0].text = "AI 응답 중 오류 발생";
+                _isProcessing = false;
+              });
+            }
+          },
+        );
   }
 
   void _addMessage(String text, bool isUser, {bool speak = false}) {
-    setState(() => _messages.insert(0, ChatMessage(text: text, isUser: isUser)));
+    setState(
+      () => _messages.insert(0, ChatMessage(text: text, isUser: isUser)),
+    );
     if (speak) {
       _openAiTtsService.speak(text);
     }
@@ -151,6 +156,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _stopListening() {
     if (_isListening) {
+      print('[ChatScreen] _stopListening 호출, 음성 인식 중지');
       _speech.stop();
       setState(() => _isListening = false);
     }
@@ -158,11 +164,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    print('[ChatScreen] dispose 호출, 리소스 해제 시작');
     _textController.dispose();
     _speech.stop();
-    _apiStreamSubscription?.cancel(); 
+    _apiStreamSubscription?.cancel();
     _openAiTtsService.dispose();
     _openAiChatService.dispose();
+    print('[ChatScreen] dispose 완료');
     super.dispose();
   }
 
@@ -178,7 +186,9 @@ class _ChatScreenState extends State<ChatScreen> {
             CircleAvatar(
               backgroundColor: Colors.blue[700],
               child: Text(
-                widget.profile.aiPersonalityProfile?.name?.isNotEmpty == true ? widget.profile.aiPersonalityProfile!.name[0] : 'C',
+                widget.profile.aiPersonalityProfile?.name?.isNotEmpty == true
+                    ? widget.profile.aiPersonalityProfile!.name[0]
+                    : 'C',
                 style: TextStyle(color: Colors.white),
               ),
             ),
@@ -217,7 +227,9 @@ class _ChatScreenState extends State<ChatScreen> {
                 final message = _messages[index];
                 return _buildMessage(
                   message,
-                  message.isUser ? "나" : (widget.profile.aiPersonalityProfile?.name ?? "캐릭터"),
+                  message.isUser
+                      ? "나"
+                      : (widget.profile.aiPersonalityProfile?.name ?? "캐릭터"),
                 );
               },
             ),
@@ -226,9 +238,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: LinearProgressIndicator(
-                  backgroundColor: Colors.grey[800],
-                  valueColor:
-                      AlwaysStoppedAnimation<Color>(Colors.purpleAccent)),
+                backgroundColor: Colors.grey[800],
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+              ),
             ),
           Container(
             decoration: BoxDecoration(
@@ -293,7 +305,9 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         child: Column(
           crossAxisAlignment:
-              message.isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              message.isUser
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
           children: [
             Text(
               senderName,
@@ -306,10 +320,7 @@ class _ChatScreenState extends State<ChatScreen> {
             SizedBox(height: 4),
             Text(
               message.text,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: Colors.white, fontSize: 16),
             ),
           ],
         ),

@@ -26,21 +26,26 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
   @override
   void initState() {
     super.initState();
+    print('[OnboardingPhotoScreen] initState 호출');
     _initializeCamera();
   }
 
   @override
   void dispose() {
+    print('[OnboardingPhotoScreen] dispose 호출, 카메라 컨트롤러 해제 시도');
     _controller?.dispose();
+    print('[OnboardingPhotoScreen] dispose 완료');
     super.dispose();
   }
 
   Future<void> _initializeCamera() async {
+    print('[OnboardingPhotoScreen] _initializeCamera 호출');
     try {
       _cameras = await availableCameras();
       if (_cameras.isNotEmpty) {
         _controller = CameraController(_cameras.first, ResolutionPreset.high);
         await _controller!.initialize();
+        print('[OnboardingPhotoScreen] 카메라 컨트롤러 초기화 완료');
         if (mounted) {
           setState(() {
             _isCameraInitialized = true;
@@ -48,7 +53,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
         }
       }
     } catch (e) {
-      print('카메라 초기화 실패: $e');
+      print('[OnboardingPhotoScreen] 카메라 초기화 실패: $e');
     }
   }
 
