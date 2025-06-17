@@ -16,8 +16,8 @@ import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/models/personality_profile.dart';
-import 'package:nompangs/widgets/qr_code_generator.dart';
-import 'package:nompangs/services/character_manager.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
+import 'package:nompangs/providers/chat_provider.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -37,7 +37,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = false;
   String? _qrImageData;
-  bool _creatingQr = false;
   final ApiService _apiService = ApiService();
   final PersonalityService _personalityService = PersonalityService();
   String? _qrCodeUrl;
@@ -123,12 +122,29 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       );
 
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
-      provider.setFinalPersonality(finalProfile);
+      provider.setPersonalityProfile(finalProfile);
 
-      // 3. 서버에 저장하고 ID 받기 (ApiService 사용으로 복원)
+      // 3. 서버 전송을 위한 데이터 가공 (Base64 인코딩)
+      final profileMap = finalProfile.toMap();
+      if (finalProfile.photoPath != null && finalProfile.photoPath!.isNotEmpty) {
+        try {
+          final imageFile = File(finalProfile.photoPath!);
+          if (await imageFile.exists()) {
+            final imageBytes = await imageFile.readAsBytes();
+            final photoBase64 = base64Encode(imageBytes);
+            profileMap['photoBase64'] = photoBase64; // Base64 데이터 추가
+          }
+        } catch (e) {
+          print("이미지 파일을 읽거나 인코딩하는 데 실패했습니다: $e");
+          // 이미지 처리 실패 시에도 프로필 생성은 계속 진행될 수 있도록 오류를 던지지 않음.
+        }
+      }
+      profileMap.remove('photoPath'); // 백엔드에 불필요한 로컬 경로는 제거
+
+      // 4. 서버에 저장하고 ID 받기 (가공된 데이터 사용)
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
-        generatedProfile: finalProfile.toMap(),
+        generatedProfile: profileMap, // 가공된 맵 전달
         userInput: provider.getUserInputAsMap(),
       );
 
@@ -165,13 +181,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 화면 크기에 따른 반응형 높이 계산
-    final greenHeight = screenHeight * 0.25;
-    final pinkHeight = screenHeight * 0.35;
-    final blueHeight = screenHeight * 0.4;
-
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
+        final characterName = provider.personalityProfile.aiPersonalityProfile?.name ?? '페르소나';
         final character = provider.personalityProfile;
         final qrBytes = _decodeQrImage(_qrImageData);
 
@@ -413,7 +425,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '털찐말랑이',
+                                      characterName,
                                       style: const TextStyle(
                                         fontFamily: 'Pretendard',
                                         fontSize: 24,
@@ -434,13 +446,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Row(
+                                    Row(
                                       children: [
-                                        Icon(Icons.access_time, size: 16),
-                                        SizedBox(width: 4),
+                                        const Icon(Icons.access_time, size: 16),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          '멘탈지기',
-                                          style: TextStyle(
+                                          character.aiPersonalityProfile?.objectType ?? '멘탈지기',
+                                          style: const TextStyle(
                                             fontFamily: 'Pretendard',
                                             fontSize: 12,
                                           ),
@@ -582,30 +594,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             const SizedBox(height: 24),
 
                                             // 말풍선 텍스트 (버블 배경 위에)
-                                            const Column(
-                                              children: [
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 18,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 18,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
+                                            Text(
+                                              character.greeting ?? '만나서 반가워!',
+                                              style: const TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                fontSize: 18,
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              textAlign: TextAlign.center,
                                             ),
                                           ],
                                         ),
@@ -624,7 +621,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                             Builder(
                               builder: (context) {
                                 final personalityData =
-                                    _generatePersonalityData(provider.state);
+                                    _generatePersonalityData(provider.state!);
                                 final traits =
                                     personalityData["성격특성"]
                                         as Map<String, dynamic>;
@@ -647,52 +644,46 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                 ),
               ),
 
-              // 플로팅 대화 시작 버튼 (배경없음)
+              // 하단에 고정되는 "지금 바로 대화해요" 버튼
               Positioned(
-                left: screenWidth * 0.06,
-                right: screenWidth * 0.06,
-                bottom: MediaQuery.of(context).padding.bottom + 24,
-                child: Container(
-                  width: double.infinity,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(color: Colors.grey.shade400, width: 1),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                bottom: MediaQuery.of(context).padding.bottom + 20,
+                left: 20,
+                right: 20,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_qrImageData != null && character != null) {
-                        Navigator.pushNamed(
-                          context,
-                          '/chat/$_qrImageData',
-                          arguments: character,
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(28),
+                  onPressed: () {
+                    // 서버 응답에서 실제 uuid를 받아와야 합니다.
+                    // 현재는 createQrProfile 응답에 uuid가 없으므로 임시 ID를 사용합니다.
+                    final uuid = _qrImageData ?? 'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
+
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider(
+                          create: (_) => ChatProvider(
+                            uuid: uuid,
+                            characterName: character.aiPersonalityProfile?.name ?? '이름 없음',
+                            characterHandle: '@${character.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
+                            personalityTags: character.aiPersonalityProfile?.coreValues ?? ['친구같은'],
+                            greeting: character.greeting ?? '안녕하세요!',
+                          ),
+                          child: const ChatTextScreen(),
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      '지금 바로 대화해요',
-                      style: TextStyle(
-                        fontFamily: 'Pretendard',
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                      (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
+                    );
+                  },
+                  child: const Text(
+                    '지금 바로 대화해요',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -1141,12 +1132,12 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     return {
       "성격특성": {
-        "온기": warmth * 10, // 1-10을 10-100으로 변환
+        "온기": warmth * 10,
         "능력": competence * 10,
-        "외향성": (11 - introversion) * 10, // introversion 역변환
-        "유머감각": 75.0, // 백엔드에서는 기본적으로 높음
-        "창의성": 60 + (warmth * 4), // warmth 기반
-        "신뢰성": 50 + (competence * 5), // competence 기반
+        "외향성": (11 - introversion) * 10,
+        "유머감각": 75.0,
+        "창의성": 60 + (warmth * 4),
+        "신뢰성": 50 + (competence * 5),
       },
       "유머스타일": state.humorStyle.isNotEmpty ? state.humorStyle : "따뜻한 유머러스",
       "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안해함", "친구들과 함께 있을 때 더 빛남"],

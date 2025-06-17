@@ -554,40 +554,51 @@ class PersonalityService {
     }
   }
 
-  // 신규: 첫인사 생성 (목표 지정 AI 기반)
+  /// 사용자의 모든 정보를 종합하여 매력적인 첫인사를 생성합니다.
   Future<String> _generateGreeting(
     OnboardingState state,
-    Map<String, int> variables,
+    Map<String, int> npsScores,
     List<String> contradictions,
     List<String> attractiveFlaws,
   ) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) return "API 키가 없어 인사를 할 수 없네요.";
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('API 키가 없습니다.');
+    }
 
-    // AI에게 전달할 캐릭터 정보 요약
-    final summary = """
-    - 내 이름: ${state.nickname ?? '이름 없음'}
-    - 나는 이런 사물이야: ${state.objectType ?? '사물'}
-    - 사용자가 나를 통해 원하는 것: ${state.purpose ?? '특별한 목적 없음'}
-    - 내 성격 요약:
-      - 핵심 특성: 친절함(${variables['W01_친절함']}%), 사교성(${variables['E01_사교성']}%), 전문성(${variables['C02_전문성']}%)
-      - 매력적인 결점: ${attractiveFlaws.join(', ')}
-      - 모순적인 모습: ${contradictions.join(', ')}
-    """;
+    // NPS 점수에서 상위 3개, 하위 2개 특성 추출
+    final sortedScores = npsScores.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    
+    final top3Traits = sortedScores.take(3).map((e) => '${e.key.split('_').last}(${e.value})').join(', ');
+    final bottom2Traits = sortedScores.reversed.take(2).map((e) => '${e.key.split('_').last}(${e.value})').join(', ');
+
 
     final systemPrompt = '''
-    당신은 방금 만들어진 페르소나입니다. 당신의 성격 정보를 바탕으로 사용자에게 건넬 첫인사 메시지를 딱 한 문장으로 생성해주세요.
-    반드시 다음 규칙을 지켜주세요.
-    1. 당신의 이름과 정체성(${state.nickname}, ${state.objectType})이 자연스럽게 드러나게 하세요.
-    2. 사용자에게 친근하고 매력적으로 다가가세요.
-    3. 요약된 성격 특성(결점, 모순 포함)이 은유적으로나 간접적으로 드러나도록 표현하세요.
-    4. 절대로 자기소개를 하듯 정보를 나열하지 마세요. (예: "저는 친절하고 전문적인 컵입니다." -> 금지)
-    5. 오직 한 문장의 인사 메시지만 응답하세요. 다른 설명은 붙이지 마세요.
+당신은 주어진 페르소나 정보를 바탕으로 사용자를 환영하는 매력적인 첫인사를 작성하는 AI 카피라이터입니다.
+다음 정보를 모두 고려하여, 페르소나의 성격이 잘 드러나는 독창적이고 인상적인 첫인사를 생성해주세요.
 
-    좋은 예시:
-    "안녕? 난 네 곁을 지킬 듬직한 머그컵, 머그야. 가끔은 넘칠 듯 뜨거워져도, 네 이야기는 전부 담아줄게."
-    "반가워. 네 책상 위에서 조용히 세상을 탐험하는 탐험가, '필'이라고 해. 조금 느려도 괜찮다면 함께 떠나볼까?"
-    ''';
+--- 페르소나 정보 ---
+- 별명: ${state.nickname}
+- 사물 종류: ${state.objectType}
+- 사용 목적: ${state.purpose}
+- 가장 두드러진 특성 (Top 3): ${top3Traits}
+- 가장 옅은 특성 (Bottom 2): ${bottom2Traits}
+- 매력적인 결함: ${attractiveFlaws.join(', ')}
+- 내면의 모순: ${contradictions.join(', ')}
+- 유머 스타일: ${state.humorStyle}
+----------------------
+
+[지침]
+1. 페르소나의 핵심 성격(가장 두드러진 특성, 가장 옅은 특성, 결함 등)이 자연스럽게 녹아들도록 작성하세요.
+2. 사용자가 처음 만났을 때 흥미를 느끼고 대화를 시작하고 싶게 만드세요.
+3. 전체 문장의 길이는 반드시 20자 이상, 30자 이하여야 합니다.(띄어쓰기, 문장 부호 포함)
+4. 따옴표나 괄호는 사용하지 마세요.
+5. 절대로 자기소개를 하듯 정보를 나열하지 마세요. (예: "저는 친절하고 전문적인 컵입니다." -> 금지)
+6. 매력적인 결함, 내면의 모순, 유머 스타일이 눈에 띄게 드러날 수 있도록 작성해주세요.
+7. 성격에 따라 존댓말을 할 수도, 반말을 할 수도 있습니다.
+
+''';
 
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
     try {
@@ -601,10 +612,8 @@ class PersonalityService {
           'model': 'gpt-4o-mini',
           'messages': [
             {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': summary},
           ],
-          'max_tokens': 100,
-          'temperature': 0.9,
+          'max_tokens': 30,
         }),
       );
 
