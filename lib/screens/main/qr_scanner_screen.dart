@@ -42,7 +42,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         print('✅ [QR 스캔] "nompangs://" 스킴 발견, 파싱된 ID: $parsedUuid');
       } else if (code.startsWith('http')) {
         final uri = Uri.parse(code);
-        parsedUuid = uri.queryParameters['id'];
+        parsedUuid = uri.queryParameters['id'] ?? uri.queryParameters['roomId'];
         print('✅ [QR 스캔] "http" 스킴 발견, 파싱된 ID: $parsedUuid');
       } else {
         parsedUuid = code;
@@ -53,28 +53,40 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         print('🚨 [QR 스캔] 유효한 ID를 파싱하지 못했습니다.');
         throw Exception('QR 코드에서 유효한 ID를 찾을 수 없습니다.');
       }
-      
+
       final String uuid = parsedUuid;
       print('✅ [QR 스캔] 최종 ID 확정: $uuid. 이제 프로필을 로드합니다.');
 
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
       if (mounted) {
-        Navigator.pushReplacement(
+        await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (_) => ChatProvider(
-                uuid: uuid,
-                characterName: profile.aiPersonalityProfile?.name ?? '이름 없음',
-                characterHandle: '@${profile.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
-                personalityTags: profile.aiPersonalityProfile?.coreValues ?? ['친구같은'],
-                greeting: profile.greeting,
-              ),
-              child: const ChatTextScreen(),
-            ),
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create:
+                      (_) => ChatProvider(
+                        uuid: uuid,
+                        characterName:
+                            profile.aiPersonalityProfile?.name ?? '이름 없음',
+                        characterHandle:
+                            '@${profile.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
+                        personalityTags:
+                            profile.aiPersonalityProfile?.coreValues ??
+                            ['친구같은'],
+                        greeting: profile.greeting,
+                      ),
+                  child: const ChatTextScreen(),
+                ),
           ),
         );
+        // 채팅방에서 돌아왔을 때만 다시 스캔 가능
+        if (mounted) {
+          setState(() {
+            _isProcessing = false;
+          });
+        }
       }
     } catch (e) {
       print('🚨 [QR 스캔] 처리 중 에러 발생: $e');
@@ -106,10 +118,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: const Text(
-          'QR 코드 스캔',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('QR 코드 스캔', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -145,10 +154,13 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
                     SizedBox(height: 16),
-                    Text('QR 코드 처리 중...',
-                        style: TextStyle(color: Colors.white, fontSize: 16)),
+                    Text(
+                      'QR 코드 처리 중...',
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
                   ],
                 ),
               ),

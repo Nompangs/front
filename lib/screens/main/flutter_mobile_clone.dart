@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:nompangs/screens/main/find_momenti_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(MyApp());
@@ -280,44 +281,27 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           top: 60 * scale,
                           right: 32 * scale,
                         ),
-                        child: Container(
-                          width: 48 * scale,
-                          height: 48 * scale,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24 * scale),
-                            border: Border.all(
-                              color: const Color.fromARGB(255, 255, 255, 255),
-                              width: 1,
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              backgroundImage: AssetImage(
+                                'assets/profile_1.png',
+                              ),
+                              radius: 28 * scale,
                             ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(22 * scale),
-                            child: Image.asset(
-                              'assets/profile_1.png',
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) => Container(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Colors.blue[400]!,
-                                          Colors.green[400]!,
-                                          const Color(0xFFFFEE58),
-                                        ],
-                                        begin: Alignment.topLeft,
-                                        end: Alignment.bottomRight,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.person,
-                                        color: Colors.white,
-                                        size: 24 * scale,
-                                      ),
-                                    ),
-                                  ),
+                            SizedBox(height: 8 * scale),
+                            IconButton(
+                              icon: Icon(
+                                Icons.qr_code_scanner,
+                                color: Colors.black,
+                                size: 28 * scale,
+                              ),
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/qr-scanner');
+                              },
+                              tooltip: '카메라로 스캔',
                             ),
-                          ),
+                          ],
                         ),
                       ),
                     ],
