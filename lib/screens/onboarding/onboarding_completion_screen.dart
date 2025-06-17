@@ -16,8 +16,6 @@ import 'package:gal/gal.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/models/personality_profile.dart';
-import 'package:nompangs/widgets/qr_code_generator.dart';
-import 'package:nompangs/services/character_manager.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 
@@ -39,7 +37,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledToBottom = false;
   String? _qrImageData;
-  bool _creatingQr = false;
   final ApiService _apiService = ApiService();
   final PersonalityService _personalityService = PersonalityService();
   String? _qrCodeUrl;
@@ -125,12 +122,29 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       );
 
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
-      provider.setFinalPersonality(finalProfile);
+      provider.setPersonalityProfile(finalProfile);
 
-      // 3. 서버에 저장하고 ID 받기 (ApiService 사용으로 복원)
+      // 3. 서버 전송을 위한 데이터 가공 (Base64 인코딩)
+      final profileMap = finalProfile.toMap();
+      if (finalProfile.photoPath != null && finalProfile.photoPath!.isNotEmpty) {
+        try {
+          final imageFile = File(finalProfile.photoPath!);
+          if (await imageFile.exists()) {
+            final imageBytes = await imageFile.readAsBytes();
+            final photoBase64 = base64Encode(imageBytes);
+            profileMap['photoBase64'] = photoBase64; // Base64 데이터 추가
+          }
+        } catch (e) {
+          print("이미지 파일을 읽거나 인코딩하는 데 실패했습니다: $e");
+          // 이미지 처리 실패 시에도 프로필 생성은 계속 진행될 수 있도록 오류를 던지지 않음.
+        }
+      }
+      profileMap.remove('photoPath'); // 백엔드에 불필요한 로컬 경로는 제거
+
+      // 4. 서버에 저장하고 ID 받기 (가공된 데이터 사용)
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
-        generatedProfile: finalProfile.toMap(),
+        generatedProfile: profileMap, // 가공된 맵 전달
         userInput: provider.getUserInputAsMap(),
       );
 
@@ -167,13 +181,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // 화면 크기에 따른 반응형 높이 계산
-    final greenHeight = screenHeight * 0.25;
-    final pinkHeight = screenHeight * 0.35;
-    final blueHeight = screenHeight * 0.4;
-
     return Consumer<OnboardingProvider>(
       builder: (context, provider, child) {
+        final characterName = provider.personalityProfile.aiPersonalityProfile?.name ?? '페르소나';
         final character = provider.personalityProfile;
         final qrBytes = _decodeQrImage(_qrImageData);
 
@@ -415,7 +425,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '털찐말랑이',
+                                      characterName,
                                       style: const TextStyle(
                                         fontFamily: 'Pretendard',
                                         fontSize: 24,
@@ -436,13 +446,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    const Row(
+                                    Row(
                                       children: [
-                                        Icon(Icons.access_time, size: 16),
-                                        SizedBox(width: 4),
+                                        const Icon(Icons.access_time, size: 16),
+                                        const SizedBox(width: 4),
                                         Text(
-                                          '멘탈지기',
-                                          style: TextStyle(
+                                          character.aiPersonalityProfile?.objectType ?? '멘탈지기',
+                                          style: const TextStyle(
                                             fontFamily: 'Pretendard',
                                             fontSize: 12,
                                           ),
