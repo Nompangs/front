@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
           _emailController.text.trim(),
           _passwordController.text.trim(),
         );
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/flutter-mobile-clone');
       } catch (e) {
         setState(() {
           _errorMessage = e.toString();
@@ -49,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _authService.signInWithGoogle();
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/flutter-mobile-clone');
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();

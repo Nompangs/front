@@ -28,7 +28,7 @@ class AuthService {
 
   // Register with email and password
   Future<UserCredential> signUpWithEmailAndPassword(
-      String email, String password) async {
+      String email, String password, String displayName) async {
     try {
       // 1. Firebase Auth에 사용자 생성
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -42,7 +42,7 @@ class AuthService {
           'uid': userCredential.user!.uid,
           'email': email,
           'createdAt': Timestamp.now(), // 현재 시간을 타임스탬프로 저장
-          'displayName': '', // 초기에는 비워둠
+          'displayName': displayName, // 전달받은 displayName 저장
           'photoURL': '', // 초기에는 비워둠
         });
       }
