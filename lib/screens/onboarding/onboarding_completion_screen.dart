@@ -594,30 +594,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                             const SizedBox(height: 24),
 
                                             // 말풍선 텍스트 (버블 배경 위에)
-                                            const Column(
-                                              children: [
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 18,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                                SizedBox(height: 8),
-                                                Text(
-                                                  '가끔 털이 엉킬까봐 걱정돼 :(',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 18,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
+                                            Text(
+                                              character.greeting ?? '만나서 반가워!',
+                                              style: const TextStyle(
+                                                fontFamily: 'Pretendard',
+                                                fontSize: 18,
+                                                color: Colors.black,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              textAlign: TextAlign.center,
                                             ),
                                           ],
                                         ),
