@@ -142,6 +142,10 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> stopTts() async {
+    await _openAiTtsService.stop();
+  }
+
   Future<void> sendMessage(String userInput) async {
     if (userInput.trim().isEmpty || _isProcessing) return;
 
