@@ -7,6 +7,7 @@ import 'package:nompangs/models/personality_profile.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() {
   runApp(MyApp());
@@ -49,6 +50,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   List<ObjectData> objectData = [];
   bool _isLoading = true;
   String? _error;
+  String? displayName;
 
   AnimationController? _morphController1;
   AnimationController? _morphController2;
@@ -66,6 +68,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _fetchDisplayName();
     _initializeData();
 
     // 각 버튼별 애니메이션 컨트롤러 초기화
@@ -121,6 +124,19 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         curve: Curves.linear,
       ),
     );
+  }
+
+  Future<void> _fetchDisplayName() async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+    setState(() {
+      displayName = doc.data()?['displayName'] ?? '사용자';
+    });
   }
 
   Future<void> _initializeData() async {
@@ -289,10 +305,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               ),
                               SizedBox(height: 12 * scale),
                               Text(
-                                '안녕하세요, 씅님',
+                                '안냥,${(displayName != null && displayName!.isNotEmpty) ? displayName : '게스트'}님',
                                 style: TextStyle(
                                   color: Color(0xFF222222),
-                                  fontSize: 30 * scale,
+                                  fontSize: 26 * scale,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 maxLines: 1,
