@@ -18,6 +18,8 @@ class ApiService {
     required Map<String, dynamic> userInput,
   }) async {
     final url = Uri.parse('$_baseUrl/createQR');
+    print('✅ [QR 생성 요청] API Service: createQrProfile 호출됨');
+    print('   - 요청 URL: $url');
     try {
       // --- uitgebreide logging START ---
       print('--- [API 상세 로그 시작] ---');
@@ -59,6 +61,7 @@ class ApiService {
       }
     } catch (e) {
       print('🚨 API Exception: $e');
+      print('   - 요청 URL: $url');
       throw Exception('Failed to connect to the server.');
     }
   }
@@ -69,6 +72,8 @@ class ApiService {
   /// @return `PersonalityProfile` 객체.
   Future<PersonalityProfile> loadProfile(String uuid) async {
     final url = Uri.parse('$_baseUrl/loadQR/$uuid');
+    print('✅ [QR 로드 요청] API Service: loadProfile 호출됨');
+    print('   - 요청 URL: $url');
     try {
       // ---  loadProfile 상세 로깅 START ---
       print('--- [loadProfile 상세 로그 시작] ---');
@@ -83,30 +88,17 @@ class ApiService {
       // ---  loadProfile 상세 로깅 END ---
 
       if (response.statusCode == 200) {
-        // UTF-8로 디코딩하여 한국어 깨짐 방지
-        final decodedBody = utf8.decode(response.bodyBytes);
-        final jsonData = jsonDecode(decodedBody);
-        
-        print('--- [loadProfile] 서버 응답 ---');
-        print('Raw Body: ${response.body}');
-        print('Decoded JSON: $jsonData');
-        print('-----------------------------');
-
-        // 서버 응답에서 'generatedProfile' 객체를 추출합니다.
-        final profileData = jsonData['generatedProfile'];
-        if (profileData == null) {
-          throw Exception('Server response did not contain "generatedProfile" field.');
-        }
-        
-        // 추출한 프로필 데이터로 Profile 객체를 생성합니다.
-        return PersonalityProfile.fromMap(profileData);
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        print('✅ [QR 로드 성공] 파싱된 데이터: $data');
+        return PersonalityProfile.fromMap(data);
       } else {
-        throw Exception(
-            'Failed to load profile from server. Status: ${response.statusCode}');
+        print('🚨 [QR 로드 실패] 서버 에러: ${response.statusCode}, Body: ${response.body}');
+        throw Exception('Failed to load profile from server.');
       }
     } catch (e) {
-      print('🚨 [loadProfile] 네트워크 또는 연결 오류: $e');
-      throw Exception('Failed to connect to the server.');
+      print('🚨 [QR 로드 실패] API Exception: $e');
+      print('   - 요청 URL: $url');
+      throw Exception('Failed to connect to the server or parse profile.');
     }
   }
 } 

@@ -32,22 +32,30 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     setState(() {
       _isProcessing = true;
     });
-    print('✅ QR Code detected, handling with code: $code');
+    print('✅ [QR 스캔] 스캔된 원본 데이터: $code');
 
     try {
       String? parsedUuid;
       if (code.startsWith('nompangs://')) {
         final uri = Uri.parse(code);
         parsedUuid = uri.queryParameters['id'];
+        print('✅ [QR 스캔] "nompangs://" 스킴 발견, 파싱된 ID: $parsedUuid');
+      } else if (code.startsWith('http')) {
+        final uri = Uri.parse(code);
+        parsedUuid = uri.queryParameters['id'];
+        print('✅ [QR 스캔] "http" 스킴 발견, 파싱된 ID: $parsedUuid');
       } else {
         parsedUuid = code;
+        print('✅ [QR 스캔] 스킴 없음, 코드를 ID로 사용: $parsedUuid');
       }
 
       if (parsedUuid == null || parsedUuid.isEmpty) {
+        print('🚨 [QR 스캔] 유효한 ID를 파싱하지 못했습니다.');
         throw Exception('QR 코드에서 유효한 ID를 찾을 수 없습니다.');
       }
       
       final String uuid = parsedUuid;
+      print('✅ [QR 스캔] 최종 ID 확정: $uuid. 이제 프로필을 로드합니다.');
 
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
@@ -69,9 +77,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         );
       }
     } catch (e) {
-      print('🚨 QR 스캔 처리 실패: $e');
+      print('🚨 [QR 스캔] 처리 중 에러 발생: $e');
       if (mounted) {
-        _showError('프로필을 불러오는데 실패했습니다.');
+        _showError('프로필을 불러오는데 실패했습니다. QR코드가 올바른지 확인해주세요.');
         setState(() {
           _isProcessing = false;
         });
@@ -88,6 +96,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         duration: const Duration(seconds: 3),
       ),
     );
+    print('🚨 [QR 스캔] 에러 메시지 표시: $message');
   }
 
   @override
