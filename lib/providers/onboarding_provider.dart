@@ -34,10 +34,10 @@ class OnboardingProvider extends ChangeNotifier {
   }
 
   void _logStatus(String action) {
-    debugPrint('=== Onboarding Status [$action] ===');
-    debugPrint(jsonEncode(_state.toJson()));
-    debugPrint(jsonEncode(_profile.toMap()));
-    debugPrint('===============================');
+    // debugPrint('=== Onboarding Status [$action] ===');
+    // debugPrint(jsonEncode(_state.toJson()));
+    // debugPrint(jsonEncode(_profile.toMap()));
+    // debugPrint('===============================');
   }
   
   void updateUserBasicInfo({
