@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nompangs/services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -12,27 +12,43 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final AuthService _authService = AuthService();
   String? _errorMessage;
+  bool _isLoading = false;
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      String email = _emailController.text.trim();
-      String password = _passwordController.text.trim();
+    if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
 
-      // 이미 등록된 이메일인지 확인
-      if (prefs.containsKey(email)) {
+      try {
+        await _authService.signUpWithEmailAndPassword(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Registration successful! Please log in.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+          Navigator.pop(context);
+        }
+      } catch (e) {
         setState(() {
-          _errorMessage = "This email is already registered.";
+          _errorMessage = e.toString().replaceFirst('Exception: ', '');
         });
-        return;
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
-
-      // 사용자 정보 저장
-      await prefs.setString(email, password);
-
-      // 회원가입 완료 후 로그인 화면으로 이동
-      Navigator.pop(context);
     }
   }
 
@@ -65,11 +81,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   labelText: 'Email',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(color: Colors.grey[700]),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -82,11 +102,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black),
                 decoration: InputDecoration(
                   labelText: 'Password',
-                  labelStyle: TextStyle(color: Colors.white70),
-                  border: OutlineInputBorder(),
+                  labelStyle: TextStyle(color: Colors.grey[700]),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.0),
+                  ),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -106,8 +130,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     backgroundColor: Colors.purpleAccent,
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: _register,
-                  child: Text("Register", style: TextStyle(fontSize: 16)),
+                  onPressed: _isLoading ? null : _register,
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text("Register", style: TextStyle(fontSize: 16)),
                 ),
               ),
             ],
