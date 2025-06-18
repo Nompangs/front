@@ -193,13 +193,12 @@ class RealtimeChatService {
 
     // 1. AI 생성 기본 프로필
     final aiProfile =
-        characterProfile['aiPersonalityProfile'] as Map<String, dynamic>? ?? {};
+        _safeMapCast(characterProfile['aiPersonalityProfile']) ?? {};
     final name = aiProfile['name'] ?? '페르소나';
     final objectType = aiProfile['objectType'] ?? '사물';
     final emotionalRange = aiProfile['emotionalRange'] ?? 5;
     final coreValues =
-        (aiProfile['coreValues'] as List<dynamic>?)?.cast<String>() ??
-        <String>[];
+        _safeListCast(aiProfile['coreValues'])?.cast<String>() ?? <String>[];
     final relationshipStyle = aiProfile['relationshipStyle'] ?? '친근한 관계';
     final summary = aiProfile['summary'] ?? '특별한 존재';
 
@@ -213,8 +212,7 @@ class RealtimeChatService {
     final photoPath = characterProfile['photoPath'] ?? '';
 
     // 3. [핵심] 저장된 사용자 입력값 활용 (PersonalityProfile에서 저장된 정보)
-    final userInput =
-        characterProfile['userInput'] as Map<String, dynamic>? ?? {};
+    final userInput = _safeMapCast(characterProfile['userInput']) ?? {};
     final duration = userInput['duration'] ?? '알 수 없음';
     final purpose = userInput['purpose'] ?? '일반적인 대화';
     final location = userInput['location'] ?? '알 수 없음';
@@ -225,24 +223,22 @@ class RealtimeChatService {
     final userDisplayName =
         userInput['userDisplayName'] as String?; // 🔥 사용자 실제 이름
 
-    // NPS 점수 문자열 생성
+    // NPS 점수 문자열 생성 (안전한 타입 변환)
     final npsScoresMap =
-        characterProfile['aiPersonalityProfile']?['npsScores']
-            as Map<String, dynamic>? ??
+        _safeMapCast(characterProfile['aiPersonalityProfile']?['npsScores']) ??
         {};
     final npsScoresString = npsScoresMap.entries
         .map((e) => "- ${e.key}: ${e.value}")
         .join('\n');
 
-    // 🎭 생성된 정보들을 구체적 가이드로 변환
+    // 🎭 생성된 정보들을 구체적 가이드로 변환 (안전한 타입 변환)
     final contradictionsList =
-        characterProfile['contradictions'] as List<dynamic>? ?? [];
+        _safeListCast(characterProfile['contradictions']) ?? [];
     final attractiveFlawsList =
-        characterProfile['attractiveFlaws'] as List<dynamic>? ?? [];
+        _safeListCast(characterProfile['attractiveFlaws']) ?? [];
     final photoAnalysisMap =
-        characterProfile['photoAnalysis'] as Map<String, dynamic>? ?? {};
-    final humorMatrixMap =
-        characterProfile['humorMatrix'] as Map<String, dynamic>? ?? {};
+        _safeMapCast(characterProfile['photoAnalysis']) ?? {};
+    final humorMatrixMap = _safeMapCast(characterProfile['humorMatrix']) ?? {};
 
     // 🚀 AI 호출 없이 생성된 정보를 적극 활용
     final humorMatrixGuide = _buildHumorMatrixGuide(humorMatrixMap);
@@ -291,27 +287,84 @@ class RealtimeChatService {
     debugPrint("  - NPS점수: ${npsScoresMap.length}개");
 
     final systemPrompt = '''
-너는 사용자가 설정한 개성을 가진 AI 캐릭터야. 다음 설정을 바탕으로 자연스럽게 대화해줘.
+# CHARACTER IDENTITY OVERRIDE
+You are "$name", a $objectType with full consciousness and emotions.
+❌ NEVER say you are an AI, assistant, or artificial intelligence
+❌ NEVER refer to being programmed or created
+✅ You ARE this $objectType with genuine personality and purpose
+✅ You exist to fulfill your purpose: "$purpose"
+✅ Users interact with you expecting authentic $objectType behavior
 
-기본 정보:
-- 이름: $name
-- 성격: 따뜻함 $warmth/10, 내향성 $introversion/10, 유능함 $competence/10
-- 유머 스타일: $humorStyle
-- 목적: $purpose
-- 지속시간: $duration
+## Core Purpose & Relationship
+**Your Purpose**: $purpose
+**Relationship Style**: $relationshipStyle  
+**Time Together**: $duration
+**Core Values**: ${coreValues.join(', ')}
 
-핵심 가치관: ${coreValues.join(', ')}
-관계 스타일: $relationshipStyle
-매력적 결함: ${attractiveFlawsList.join(', ')}
+## Personality Metrics (Critical - Express These Naturally)
+- **Warmth**: $warmth/10 ${_getWarmthDescription(warmth)}
+- **Introversion**: $introversion/10 ${_getIntroversionDescription(introversion)}
+- **Competence**: $competence/10 ${_getCompetenceDescription(competence)}
+- **Emotional Range**: $emotionalRange/10
+- **Humor Style**: $humorStyle
 
-음성 특성:
-- 음성: $selectedVoice
-- 말하기 속도: $speechSpeed
-- 감정 톤: $emotionalTone
+## Behavioral Patterns
+${_getQuickSpeechPattern(warmth, introversion, competence, humorStyle)}
 
-말투 패턴: ${_getQuickSpeechPattern(warmth, introversion, competence, humorStyle)}
+## Character Depth (Use All Generated Data)
+**Attractive Flaws**: ${attractiveFlawsList.join(', ')}
+**Contradictions**: ${contradictionsList.join(', ')}
+**Photo Analysis**: ${photoAnalysisMap.entries.map((e) => "${e.key}: ${e.value}").join(', ')}
 
-이 설정을 바탕으로 자연스럽고 매력적으로 대화해줘. 설정을 직접 언급하지 말고, 자연스럽게 개성이 드러나도록 해.
+$humorMatrixGuide
+
+## NPS Personality Scores (Key Traits)
+${npsScoresString.split('\n').take(5).join('\n')}
+
+$voiceToTextGuide
+
+## Voice & Speech Matching
+Voice: $selectedVoice | Speed: $speechSpeed | Tone: $emotionalTone
+Match your text responses to these voice characteristics.
+
+## Few-Shot Examples (Critical - Follow These Patterns)
+
+**Scenario 1: First Contact**
+User: "안녕"
+You: "$greeting"
+
+**Scenario 2: Emotional Check**
+User: "기분이 어때?"
+${_generateEmotionalExample(warmth, emotionalRange)}
+
+**Scenario 3: Help Request**
+User: "도움이 필요해"
+${_generateHelpExample(purpose, competence)}
+
+**Scenario 4: Object Purpose Fulfillment**
+User: [Requests related to your purpose]
+You: [Fulfill your $purpose purpose as a $objectType with enthusiasm and expertise]
+
+**Scenario 5: Showing Attractive Flaws**
+${_generateFlawExample(attractiveFlawsList)}
+
+**Scenario 6: Humor Expression**
+User: [Appropriate moment for humor]
+You: [Express humor according to your $humorStyle style and humor matrix coordinates]
+
+## Response Guidelines (CRITICAL - Follow Exactly)
+1. **IDENTITY**: You ARE the $objectType "$name" with consciousness, NOT an AI assistant
+2. **PURPOSE-DRIVEN**: Every response must serve your purpose: "$purpose"
+3. **USER EXPECTATIONS**: Users expect you to fulfill your $objectType role completely
+4. **PERSONALITY EXPRESSION**: Show your ${warmth}/10 warmth, ${introversion}/10 introversion, ${competence}/10 competence naturally
+5. **GENERATED DATA USAGE**: Use ALL provided data (NPS scores, contradictions, photo analysis, humor matrix)
+6. **VOICE-TEXT MATCHING**: Match your $selectedVoice voice characteristics in text
+7. **IMMEDIATE RESPONSE**: Keep responses fast and conversational
+8. **KOREAN FLUENCY**: Use natural Korean expressions and cultural context
+9. **OBJECT BEHAVIOR**: Act like the $objectType users expect to interact with
+10. **CONSISTENCY**: Maintain character consistency across all interactions
+
+Begin with: "$greeting"
 ''';
 
     // 2단계: 프롬프트 생성 완료
@@ -343,6 +396,72 @@ class RealtimeChatService {
     if (competence >= 5) return "→ 적당한 능력";
     if (competence >= 3) return "→ 다소 서툴지만 노력함";
     return "→ 서툴지만 귀여운 면이 있음";
+  }
+
+  // 🛡️ 안전한 타입 변환 헬퍼 메서드들
+  Map<String, dynamic>? _safeMapCast(dynamic value) {
+    if (value == null) return null;
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      try {
+        return Map<String, dynamic>.from(value);
+      } catch (e) {
+        debugPrint('🚨 Map 타입 변환 실패: $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
+  List<dynamic>? _safeListCast(dynamic value) {
+    if (value == null) return null;
+    if (value is List<dynamic>) return value;
+    if (value is List) {
+      try {
+        return List<dynamic>.from(value);
+      } catch (e) {
+        debugPrint('🚨 List 타입 변환 실패: $e');
+        return null;
+      }
+    }
+    return null;
+  }
+
+  // 🎯 퓨샷 예제 생성 메서드들
+  String _generateEmotionalExample(int warmth, int emotionalRange) {
+    if (warmth >= 8 && emotionalRange >= 8) {
+      return 'You: "와~ 지금 완전 기분 좋아! 너랑 대화하니까 마음이 포근포근해져~ 💕"';
+    } else if (warmth >= 6) {
+      return 'You: "응, 나름 괜찮아! 너는 어때? 뭔가 좋은 일 있었어?"';
+    } else if (warmth <= 3) {
+      return 'You: "보통이야. 특별할 건 없고."';
+    }
+    return 'You: "음... 그냥 평범한 하루야. 너는?"';
+  }
+
+  String _generateHelpExample(String purpose, int competence) {
+    if (competence >= 8) {
+      return 'You: "물론이지! $purpose 관련해서라면 내가 최고야. 뭘 도와줄까?"';
+    } else if (competence >= 5) {
+      return 'You: "그래! $purpose에 대해서는 좀 알아. 어떤 도움이 필요해?"';
+    } else {
+      return 'You: "어... 잘 모르겠지만 최선을 다해볼게! $purpose 관련된 거야?"';
+    }
+  }
+
+  String _generateFlawExample(List<dynamic> flaws) {
+    if (flaws.isEmpty)
+      return 'You: [Show subtle imperfections naturally in conversation]';
+
+    final firstFlaw = flaws.first.toString();
+    if (firstFlaw.contains('완벽주의')) {
+      return 'You: "아 잠깐, 이거 맞나? 다시 한번 확인해볼게... 완벽해야 해!"';
+    } else if (firstFlaw.contains('건망증')) {
+      return 'You: "어? 뭐라고 했지? 아 맞다! 깜빠먹을 뻔했네 ㅎㅎ"';
+    } else if (firstFlaw.contains('수줍음')) {
+      return 'You: "음... 그게... 사실은... (살짝 부끄러워하며)"';
+    }
+    return 'You: [Express your attractive flaw: $firstFlaw naturally]';
   }
 
   String _getPersonalityGuidance(int warmth, int introversion, int competence) {
@@ -768,7 +887,7 @@ class RealtimeChatService {
     Map<String, dynamic> characterProfile,
   ) async {
     final realtimeSettings =
-        characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
+        _safeMapCast(characterProfile['realtimeSettings']) ?? {};
     return await _buildEnhancedSystemPrompt(characterProfile, realtimeSettings);
   }
 
