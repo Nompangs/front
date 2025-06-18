@@ -689,6 +689,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     // 4. 생성된 태그를 profileMap에 추가합니다.
                     profileMap['personalityTags'] = personalityTags;
 
+                    debugPrint('[OnboardingCompletionScreen] Passing profile to ChatProvider: $profileMap');
+
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(

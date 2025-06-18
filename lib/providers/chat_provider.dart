@@ -68,6 +68,7 @@ class ChatProvider extends ChangeNotifier {
                 .toList() ??
             [],
         greeting = characterProfile['greeting'] as String? {
+    debugPrint('[ChatProvider] Received characterProfile: $characterProfile');
     _initializeChat();
   }
   
