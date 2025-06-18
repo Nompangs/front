@@ -879,7 +879,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         border: Border.all(color: Colors.black, width: 1),
       ),
       child: Text(
-        tag,
+        '#$tag',
         style: const TextStyle(
           fontFamily: 'Pretendard',
           fontSize: 12,
@@ -1118,11 +1118,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     // 첫 번째 태그: 내향성 기반 (수줍음 ↔ 활발함)
     final introversion = state.introversion ?? 5;
     if (introversion <= 3) {
-      return '#수줍음';
+      return '수줍음';
     } else if (introversion >= 7) {
-      return '#활발함';
+      return '활발함';
     } else {
-      return '#반쯤활발';
+      return '반쯤활발';
     }
   }
 
@@ -1132,23 +1132,23 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     final competence = state.competence ?? 5;
 
     if (warmth >= 7 && competence >= 7) {
-      return '#든든다정';
+      return '든든다정';
     } else if (warmth >= 7 && competence >= 4) {
-      return '#포근러';
+      return '포근러';
     } else if (warmth >= 7 && competence < 4) {
-      return '#다정허당';
+      return '다정허당';
     } else if (warmth >= 4 && competence >= 7) {
-      return '#능력자';
+      return '능력자';
     } else if (warmth >= 4 && competence >= 4) {
-      return '#평범러';
+      return '평범러';
     } else if (warmth >= 4 && competence < 4) {
-      return '#허당';
+      return '허당';
     } else if (warmth < 4 && competence >= 7) {
-      return '#시크유능';
+      return '시크유능';
     } else if (warmth < 4  && competence >= 4) {
-      return '#쌀쌀맞은';
+      return '쌀쌀맞은';
     } else {
-      return '#무심엉성';
+      return '무심엉성';
     }
   }
 
