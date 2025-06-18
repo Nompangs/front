@@ -11,6 +11,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
+import 'dart:io';
+import 'package:nompangs/screens/main/object_detail_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -704,13 +706,18 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 index,
                                               ) => GestureDetector(
                                                 onTap: () {
-                                                  setState(() {
-                                                    selectedCardIndex =
-                                                        selectedCardIndex ==
-                                                                index
-                                                            ? null
-                                                            : index;
-                                                  });
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder:
+                                                          (
+                                                            context,
+                                                          ) => ObjectDetailScreen(
+                                                            objectData:
+                                                                filteredObjectData[index],
+                                                          ),
+                                                    ),
+                                                  );
                                                 },
                                                 child: ObjectCard(
                                                   data:
@@ -826,12 +833,14 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => ChangeNotifierProvider(
-                              create: (_) => ChatProvider(
-                                characterProfile: characterProfile,
-                              ),
-                              child: const ChatTextScreen(),
-                            ),
+                            builder:
+                                (context) => ChangeNotifierProvider(
+                                  create:
+                                      (_) => ChatProvider(
+                                        characterProfile: characterProfile,
+                                      ),
+                                  child: const ChatTextScreen(),
+                                ),
                           ),
                         );
                       },
@@ -1068,7 +1077,10 @@ class ObjectCard extends StatelessWidget {
             width: 130 * scale,
             height: 130 * scale,
             child: MaskedImage(
-              image: AssetImage(data.imageUrl!),
+              image:
+                  data.imageUrl != null && data.imageUrl!.startsWith('assets/')
+                      ? AssetImage(data.imageUrl!)
+                      : FileImage(File(data.imageUrl!)) as ImageProvider,
               mask: AssetImage(maskPath),
               width: 130 * scale,
               height: 130 * scale,
