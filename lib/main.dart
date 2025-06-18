@@ -30,6 +30,28 @@ import 'package:nompangs/services/api_service.dart';
 
 String? pendingRoomId;
 
+// 앱 전체에서 사용할 기본/임시 캐릭터 프로필
+final Map<String, dynamic> _defaultCharacterProfile = {
+  'uuid': 'default_character_uuid',
+  'greeting': '안녕하세요! 저와 대화를 시작해 보세요.',
+  'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
+  'initialUserMessage': '기본 페르소나와 대화하고 싶어.',
+  'aiPersonalityProfile': {
+    'name': '기본 페르소나',
+    'objectType': '사물',
+    'npsScores': <String, int>{},
+  },
+  'photoAnalysis': <String, dynamic>{},
+  'attractiveFlaws': <Map<String, String>>[],
+  'contradictions': <Map<String, String>>[],
+  'userInput': {
+    'warmth': 5,
+    'introversion': 5,
+    'competence': 5,
+    'humorStyle': '기본',
+  }
+};
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -67,11 +89,7 @@ class TestScreen extends StatelessWidget {
                         (context) => ChangeNotifierProvider(
                           create:
                               (_) => ChatProvider(
-                                uuid: 'static_test_uuid',
-                                characterName: '정적 테스트 봇',
-                                characterHandle: '@static_bot',
-                                personalityTags: ['테스트', '안정적'],
-                                greeting: '정적 캐릭터 테스트를 시작합니다. 무엇이 궁금하신가요?',
+                                characterProfile: _defaultCharacterProfile,
                               ),
                           child: const ChatTextScreen(),
                         ),
@@ -170,19 +188,20 @@ class _NompangsAppState extends State<NompangsApp> {
         final apiService = ApiService();
         final profile = await apiService.loadProfile(uuid);
 
+        // 불러온 프로필 데이터를 Map으로 변환
+        final characterProfileMap = profile.toMap();
+
+        // ChatTextScreen에서 사용할 태그를 추가합니다.
+        characterProfileMap['personalityTags'] = profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
+            ? profile.aiPersonalityProfile!.coreValues
+            : ['친구'];
+
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
               create: (_) => ChatProvider(
-                uuid: uuid,
-                characterName:
-                    profile.aiPersonalityProfile?.name ?? '이름 없음',
-                characterHandle:
-                    '@${profile.aiPersonalityProfile?.name ?? 'unknown'}',
-                personalityTags:
-                    profile.aiPersonalityProfile?.coreValues ?? [],
-                greeting: profile.greeting ??
-                    '안녕하세요! 무엇이 궁금하신가요?',
+                // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
+                characterProfile: characterProfileMap,
               ),
               child: const ChatTextScreen(),
             ),
@@ -205,7 +224,9 @@ class _NompangsAppState extends State<NompangsApp> {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [ChangeNotifierProvider(create: (_) => OnboardingProvider())],
+      providers: [
+        ChangeNotifierProvider(create: (_) => OnboardingProvider()),
+      ],
       child: MaterialApp(
         navigatorKey: _navigatorKey,
         title: 'Nompangs',

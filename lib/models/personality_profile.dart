@@ -10,6 +10,7 @@ class PersonalityProfile {
   final String? initialUserMessage;
   final String communicationPrompt;
   final String? photoPath;
+  final String? uuid;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -21,7 +22,34 @@ class PersonalityProfile {
     this.initialUserMessage,
     this.communicationPrompt = '',
     this.photoPath,
+    this.uuid,
   });
+
+  PersonalityProfile copyWith({
+    AiPersonalityProfile? aiPersonalityProfile,
+    PhotoAnalysis? photoAnalysis,
+    HumorMatrix? humorMatrix,
+    List<String>? attractiveFlaws,
+    List<String>? contradictions,
+    String? greeting,
+    String? initialUserMessage,
+    String? communicationPrompt,
+    String? photoPath,
+    String? uuid,
+  }) {
+    return PersonalityProfile(
+      aiPersonalityProfile: aiPersonalityProfile ?? this.aiPersonalityProfile,
+      photoAnalysis: photoAnalysis ?? this.photoAnalysis,
+      humorMatrix: humorMatrix ?? this.humorMatrix,
+      attractiveFlaws: attractiveFlaws ?? this.attractiveFlaws,
+      contradictions: contradictions ?? this.contradictions,
+      greeting: greeting ?? this.greeting,
+      initialUserMessage: initialUserMessage ?? this.initialUserMessage,
+      communicationPrompt: communicationPrompt ?? this.communicationPrompt,
+      photoPath: photoPath ?? this.photoPath,
+      uuid: uuid ?? this.uuid,
+    );
+  }
 
   factory PersonalityProfile.empty() => PersonalityProfile(
         aiPersonalityProfile: AiPersonalityProfile.empty(),
@@ -32,6 +60,7 @@ class PersonalityProfile {
         greeting: null,
         initialUserMessage: null,
         photoPath: null,
+        uuid: null,
       );
 
   Map<String, dynamic> toMap() {
@@ -44,6 +73,7 @@ class PersonalityProfile {
       'greeting': greeting,
       'initialUserMessage': initialUserMessage,
       'communicationPrompt': communicationPrompt,
+      'uuid': uuid,
     };
   }
 
@@ -64,6 +94,7 @@ class PersonalityProfile {
       initialUserMessage: map['initialUserMessage'] as String?,
       communicationPrompt: map['communicationPrompt'] as String? ?? '',
       photoPath: map['photoPath'] as String?,
+      uuid: map['uuid'] as String?,
     );
   }
 }

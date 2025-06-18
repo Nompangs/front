@@ -801,24 +801,37 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           return aMinutes < bMinutes ? a : b;
                         });
 
+                        // ChatProvider가 요구하는 새로운 형식에 맞게 프로필 맵을 재조립합니다.
+                        final characterProfile = {
+                          'uuid': lastObject.uuid,
+                          'greeting': lastObject.greeting ?? '다시 만나서 반가워!',
+                          'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
+                          'initialUserMessage': '오랜만이야!',
+                          'aiPersonalityProfile': {
+                            'name': lastObject.title,
+                            'npsScores': {},
+                          },
+                          'photoAnalysis': {},
+                          'attractiveFlaws': [],
+                          'contradictions': [],
+                          // DB에서 불러온 정보에는 userInput이 없을 수 있으므로 기본값을 제공합니다.
+                          'userInput': {
+                            'warmth': 5,
+                            'introversion': 5,
+                            'competence': 5,
+                            'humorStyle': '기본',
+                          },
+                        };
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder:
-                                (context) => ChangeNotifierProvider(
-                                  create:
-                                      (_) => ChatProvider(
-                                        uuid: lastObject.uuid,
-                                        characterName: lastObject.title,
-                                        characterHandle: lastObject.location,
-                                        personalityTags:
-                                            lastObject.personalityTags ??
-                                            ['기본값'],
-                                        greeting:
-                                            lastObject.greeting ?? '기본 인사말',
-                                      ),
-                                  child: ChatTextScreen(),
-                                ),
+                            builder: (context) => ChangeNotifierProvider(
+                              create: (_) => ChatProvider(
+                                characterProfile: characterProfile,
+                              ),
+                              child: const ChatTextScreen(),
+                            ),
                           ),
                         );
                       },

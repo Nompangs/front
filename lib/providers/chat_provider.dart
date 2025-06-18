@@ -49,31 +49,34 @@ class ChatProvider extends ChangeNotifier {
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   bool get isProcessing => _isProcessing;
 
-  final String uuid; 
-  late final String characterName;
-  late final String characterHandle;
-  late final List<String> personalityTags;
+  final String uuid;
+  final String characterName;
+  final String characterHandle;
+  final List<String> personalityTags;
   final String? greeting;
 
+  final Map<String, dynamic> _characterProfile;
+
   ChatProvider({
-    required this.uuid, 
-    required this.characterName,
-    required this.characterHandle,
-    required this.personalityTags,
-    this.greeting,
-  }) {
+    required Map<String, dynamic> characterProfile,
+  })  : _characterProfile = characterProfile,
+        uuid = characterProfile['uuid'] ?? 'temp_uuid_${DateTime.now().millisecondsSinceEpoch}',
+        characterName = characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음',
+        characterHandle = '@${(characterProfile['aiPersonalityProfile']?['name'] ?? 'unknown').toLowerCase().replaceAll(' ', '')}',
+        personalityTags = (characterProfile['personalityTags'] as List<dynamic>?)
+                ?.map((tag) => tag.toString())
+                .toList() ??
+            [],
+        greeting = characterProfile['greeting'] as String? {
+    debugPrint('[ChatProvider] Received characterProfile: $characterProfile');
     _initializeChat();
   }
   
   Future<void> _initializeChat() async {
-    await _loadHistory(); 
+    await _loadHistory();
 
-    final characterProfile = {
-      'name': characterName,
-      'tags': personalityTags,
-      'greeting': greeting,
-    };
-    await _realtimeChatService.connect(characterProfile);
+    // characterProfile 맵 전체를 connect 메서드에 전달합니다.
+    await _realtimeChatService.connect(_characterProfile);
 
     if (_messages.isEmpty && greeting != null && greeting!.isNotEmpty) {
       _addMessage(greeting!, false, speak: true, saveToDb: true);
