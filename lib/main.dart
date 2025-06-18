@@ -197,35 +197,8 @@ class _NompangsAppState extends State<NompangsApp> {
                 ? profile.aiPersonalityProfile!.coreValues
                 : ['친구'];
 
-        // 🎯 userInput이 없는 경우 기본값 제공 (딥링크 진입)
-        if (characterProfileMap['userInput'] == null) {
-          characterProfileMap['userInput'] = {
-            'warmth': 7,
-            'introversion': 5,
-            'competence': 6,
-            'humorStyle': '따뜻한',
-            'duration': '알 수 없음',
-          };
-        }
-
-        // 🎵 realtimeSettings가 없는 경우 기본값 제공
-        if (characterProfileMap['realtimeSettings'] == null) {
-          characterProfileMap['realtimeSettings'] = {
-            'voice': 'alloy',
-            'voiceRationale': '기본 친근한 음성',
-            'temperature': 0.9,
-            'topP': 0.8,
-            'frequencyPenalty': 0.7,
-            'presencePenalty': 0.6,
-            'pronunciation': 'Warm, gentle, and nurturing',
-            'pausePattern': 'Natural, comforting pauses',
-            'speechRhythm': 'Relaxed and flowing',
-            'responseFormat': 'audio+text',
-            'enableVAD': true,
-            'vadThreshold': 0.5,
-            'maxTokens': 300,
-          };
-        }
+        // 🎯 딥링크 진입 시에도 서버에서 받은 실제 데이터 사용
+        // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
 
         _navigatorKey.currentState?.push(
           MaterialPageRoute(

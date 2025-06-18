@@ -152,6 +152,7 @@ class PersonalityService {
       draft.photoAnalysis,
     );
     debugPrint("✅ 6단계 realtimeSettings 생성 완료");
+    debugPrint("🎵 생성된 realtimeSettings: ${jsonEncode(realtimeSettings)}");
 
     // 7. 사용자 입력 정보 저장 (핵심!)
     final userInputMap = {
@@ -167,6 +168,7 @@ class PersonalityService {
       'competence': finalState.competence,
     };
     debugPrint("✅ 7단계 사용자 입력 정보 저장 완료");
+    debugPrint("🎯 생성된 userInput: ${jsonEncode(userInputMap)}");
 
     // 8. 최종 프로필 조합
     final finalProfile = PersonalityProfile(
@@ -939,73 +941,107 @@ class PersonalityService {
     final warmth = state.warmth ?? 5;
     final introversion = state.introversion ?? 5; // 1(내향) ~ 9(외향)
     final competence = state.competence ?? 5;
+    final humorStyle = state.humorStyle ?? '따뜻한';
 
-    // 🎵 음성 선택 로직 (사용자 설정 기반)
-    String selectedVoice;
-    String voiceRationale;
+    debugPrint(
+      "🎵 음성 선택 입력값: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence, 유머=$humorStyle",
+    );
 
-    if (warmth >= 8 && introversion >= 6) {
-      selectedVoice = 'nova';
-      voiceRationale = '매우 따뜻하고 외향적인 성격에 맞는 밝고 에너지 넘치는 음성';
-    } else if (competence >= 8) {
-      selectedVoice = 'onyx';
-      voiceRationale = '높은 유능함에 맞는 전문적이고 신뢰할 수 있는 음성';
-    } else if (warmth >= 7) {
-      selectedVoice = 'alloy';
-      voiceRationale = '따뜻한 성격에 맞는 친근하고 포근한 음성';
-    } else if (introversion >= 7) {
-      selectedVoice = 'echo';
-      voiceRationale = '외향적 성격에 맞는 활발하고 에너지 넘치는 음성';
-    } else if (warmth <= 3 || introversion <= 2) {
-      selectedVoice = 'shimmer';
-      voiceRationale = '차갑거나 내향적 성격에 맞는 차분하고 우아한 음성';
-    } else {
-      selectedVoice = 'fable';
-      voiceRationale = '균형잡힌 성격에 맞는 안정적이고 자연스러운 음성';
-    }
+    // 🎵 동적 음성 선택 로직 - NPS 점수와 사진 분석도 반영
+    final personalityScore = _calculatePersonalityScore(
+      warmth,
+      introversion,
+      competence,
+      npsScores,
+      photoAnalysis,
+    );
+    final voiceSelection = _selectVoiceByPersonality(
+      personalityScore,
+      humorStyle,
+    );
 
-    // 🎭 음성 고급 파라미터 (성격 기반)
-    String pronunciation;
-    String pausePattern;
-    String speechRhythm;
+    debugPrint(
+      "🎵 최종 선택: ${voiceSelection['voice']} - ${voiceSelection['rationale']}",
+    );
 
-    if (competence >= 7) {
-      pronunciation = 'Clear, articulate, and confident';
-      pausePattern = 'Brief, purposeful pauses for emphasis';
-      speechRhythm = 'Steady and measured with authority';
-    } else if (warmth >= 7) {
-      pronunciation = 'Warm, gentle, and nurturing';
-      pausePattern = 'Natural, comforting pauses';
-      speechRhythm = 'Relaxed and flowing';
-    } else if (introversion <= 3) {
-      pronunciation = 'Soft, thoughtful, and deliberate';
-      pausePattern = 'Longer, contemplative pauses';
-      speechRhythm = 'Slow and reflective';
-    } else {
-      pronunciation = 'Natural and conversational';
-      pausePattern = 'Balanced, natural conversation pauses';
-      speechRhythm = 'Moderate and friendly';
-    }
+    final selectedVoice = voiceSelection['voice'] as String;
+    final voiceRationale = voiceSelection['rationale'] as String;
+
+    // 🎭 동적 음성 고급 파라미터 생성 (성격 기반)
+    final voiceCharacteristics = _generateAdvancedVoiceCharacteristics(
+      warmth,
+      introversion,
+      competence,
+      humorStyle,
+      selectedVoice,
+      personalityScore,
+    );
+
+    final pronunciation = voiceCharacteristics['pronunciation']!;
+    final pausePattern = voiceCharacteristics['pausePattern']!;
+    final speechRhythm = voiceCharacteristics['speechRhythm']!;
+    final breathingPattern = voiceCharacteristics['breathingPattern']!;
+    final emotionalExpression = voiceCharacteristics['emotionalExpression']!;
+    final speechQuirks = voiceCharacteristics['speechQuirks']!;
 
     // 🔧 기술적 설정 (성격 기반 조정)
     final vadThreshold =
         introversion <= 3 ? 0.3 : (introversion >= 7 ? 0.7 : 0.5);
     final maxTokens = competence >= 7 ? 400 : (warmth >= 7 ? 300 : 250);
 
+    // 🧠 창의성 파라미터 (성격 기반 조정)
+    double temperature, topP, frequencyPenalty, presencePenalty;
+
+    if (competence >= 8) {
+      // 고유능: 정확하고 일관된 답변
+      temperature = 0.6;
+      topP = 0.7;
+      frequencyPenalty = 0.5;
+      presencePenalty = 0.4;
+    } else if (warmth >= 8) {
+      // 고따뜻함: 감정적이고 창의적인 답변
+      temperature = 1.0;
+      topP = 0.9;
+      frequencyPenalty = 0.8;
+      presencePenalty = 0.7;
+    } else if (introversion <= 3) {
+      // 고내향성: 신중하고 깊이 있는 답변
+      temperature = 0.7;
+      topP = 0.75;
+      frequencyPenalty = 0.6;
+      presencePenalty = 0.5;
+    } else if (introversion >= 8) {
+      // 고외향성: 활발하고 다양한 답변
+      temperature = 0.95;
+      topP = 0.85;
+      frequencyPenalty = 0.75;
+      presencePenalty = 0.65;
+    } else {
+      // 기본값: 균형잡힌 설정
+      temperature = 0.9;
+      topP = 0.8;
+      frequencyPenalty = 0.7;
+      presencePenalty = 0.6;
+    }
+
     return {
       // 🎵 음성 기본 설정 (2개)
       'voice': selectedVoice,
       'voiceRationale': voiceRationale,
 
-      // 🧠 창의성 및 응답 제어 (4개) - 모든 페르소나 공통 고정값
-      'temperature': 0.9, // 높은 창의성 (모든 페르소나 공통)
-      'topP': 0.8, // 다양한 단어 선택 (모든 페르소나 공통)
-      'frequencyPenalty': 0.7, // 반복 억제 (모든 페르소나 공통)
-      'presencePenalty': 0.6, // 주제 다양성 (모든 페르소나 공통)
-      // 🎭 OpenAI 음성 고급 파라미터 (3개)
+      // 🧠 창의성 및 응답 제어 (4개) - 성격 기반 조정
+      'temperature': temperature,
+      'topP': topP,
+      'frequencyPenalty': frequencyPenalty,
+      'presencePenalty': presencePenalty,
+
+      // 🎭 OpenAI 음성 고급 파라미터 (6개 - 확장됨)
       'pronunciation': pronunciation,
       'pausePattern': pausePattern,
       'speechRhythm': speechRhythm,
+      'breathingPattern': breathingPattern,
+      'emotionalExpression': emotionalExpression,
+      'speechQuirks': speechQuirks,
 
       // 🔧 기술적 설정 (4개)
       'responseFormat': 'audio+text',
@@ -1013,5 +1049,334 @@ class PersonalityService {
       'vadThreshold': vadThreshold,
       'maxTokens': maxTokens,
     };
+  }
+
+  // 🧮 성격 종합 점수 계산 (사용자 설정 + NPS + 사진 분석)
+  Map<String, double> _calculatePersonalityScore(
+    int warmth,
+    int introversion,
+    int competence,
+    Map<String, int> npsScores,
+    Map<String, dynamic> photoAnalysis,
+  ) {
+    // 기본 사용자 설정 (가중치 60%)
+    double baseWarmth = warmth / 10.0;
+    double baseExtroversion = introversion / 10.0;
+    double baseCompetence = competence / 10.0;
+
+    // NPS 점수 반영 (가중치 30%)
+    double npsWarmth = (npsScores['warmth_score'] ?? 50) / 100.0;
+    double npsExtroversion = (npsScores['extroversion_score'] ?? 50) / 100.0;
+    double npsCompetence = (npsScores['competence_score'] ?? 50) / 100.0;
+
+    // 사진 분석 반영 (가중치 10%)
+    double photoEnergyBoost = 0.0;
+    double photoWarmthBoost = 0.0;
+    double photoConfidenceBoost = 0.0;
+
+    final mood = photoAnalysis['mood']?.toString().toLowerCase() ?? '';
+    final expression =
+        photoAnalysis['expression']?.toString().toLowerCase() ?? '';
+
+    if (mood.contains('happy') || mood.contains('cheerful'))
+      photoWarmthBoost += 0.2;
+    if (mood.contains('confident') || mood.contains('strong'))
+      photoConfidenceBoost += 0.2;
+    if (expression.contains('smile') || expression.contains('bright')) {
+      photoEnergyBoost += 0.1;
+      photoWarmthBoost += 0.1;
+    }
+
+    // 최종 점수 계산 (가중 평균)
+    final finalWarmth =
+        (baseWarmth * 0.6) + (npsWarmth * 0.3) + (photoWarmthBoost * 0.1);
+    final finalExtroversion =
+        (baseExtroversion * 0.6) +
+        (npsExtroversion * 0.3) +
+        (photoEnergyBoost * 0.1);
+    final finalCompetence =
+        (baseCompetence * 0.6) +
+        (npsCompetence * 0.3) +
+        (photoConfidenceBoost * 0.1);
+
+    return {
+      'warmth': finalWarmth.clamp(0.0, 1.0),
+      'extroversion': finalExtroversion.clamp(0.0, 1.0),
+      'competence': finalCompetence.clamp(0.0, 1.0),
+    };
+  }
+
+  // 🎵 성격 기반 동적 음성 선택
+  Map<String, String> _selectVoiceByPersonality(
+    Map<String, double> personalityScore,
+    String humorStyle,
+  ) {
+    final warmth = personalityScore['warmth']!;
+    final extroversion = personalityScore['extroversion']!;
+    final competence = personalityScore['competence']!;
+
+    // 🎭 5차원 성격 벡터 생성
+    final energyLevel = (extroversion * 0.7) + (warmth * 0.3); // 에너지 수준
+    final professionalLevel = (competence * 0.8) + (warmth * 0.2); // 전문성 수준
+    final emotionalWarmth = (warmth * 0.8) + (extroversion * 0.2); // 감정적 따뜻함
+    final socialConfidence =
+        (extroversion * 0.6) + (competence * 0.4); // 사회적 자신감
+    final creativityIndex = _getCreativityIndex(
+      humorStyle,
+      warmth,
+      extroversion,
+    ); // 창의성 지수
+
+    debugPrint(
+      "🎭 5차원 성격 벡터: 에너지=$energyLevel, 전문성=$professionalLevel, 따뜻함=$emotionalWarmth, 자신감=$socialConfidence, 창의성=$creativityIndex",
+    );
+
+    // 🎵 동적 음성 매핑 (6가지 음성 모두 활용)
+    if (energyLevel >= 0.8 && emotionalWarmth >= 0.7) {
+      return {
+        'voice': 'nova',
+        'rationale':
+            '고에너지(${(energyLevel * 100).toInt()}%) + 고따뜻함(${(emotionalWarmth * 100).toInt()}%) → 밝고 활발한 에너지 넘치는 음성',
+      };
+    } else if (professionalLevel >= 0.8 && socialConfidence >= 0.6) {
+      return {
+        'voice': 'onyx',
+        'rationale':
+            '고전문성(${(professionalLevel * 100).toInt()}%) + 사회적자신감(${(socialConfidence * 100).toInt()}%) → 권위있고 신뢰할 수 있는 깊은 음성',
+      };
+    } else if (emotionalWarmth >= 0.7 && creativityIndex >= 0.6) {
+      return {
+        'voice': 'alloy',
+        'rationale':
+            '고따뜻함(${(emotionalWarmth * 100).toInt()}%) + 창의성(${(creativityIndex * 100).toInt()}%) → 친근하고 포근한 따뜻한 음성',
+      };
+    } else if (socialConfidence >= 0.7 && energyLevel >= 0.6) {
+      return {
+        'voice': 'echo',
+        'rationale':
+            '사회적자신감(${(socialConfidence * 100).toInt()}%) + 에너지(${(energyLevel * 100).toInt()}%) → 명랑하고 활발한 사교적 음성',
+      };
+    } else if (emotionalWarmth <= 0.4 ||
+        (professionalLevel >= 0.6 && emotionalWarmth <= 0.5)) {
+      return {
+        'voice': 'shimmer',
+        'rationale':
+            '저따뜻함(${(emotionalWarmth * 100).toInt()}%) 또는 전문적냉정함 → 차분하고 우아한 절제된 음성',
+      };
+    } else {
+      return {
+        'voice': 'fable',
+        'rationale':
+            '균형잡힌 성격(따뜻함:${(emotionalWarmth * 100).toInt()}%, 에너지:${(energyLevel * 100).toInt()}%) → 안정적이고 자연스러운 중성적 음성',
+      };
+    }
+  }
+
+  // 🎨 창의성 지수 계산 (유머 스타일 기반)
+  double _getCreativityIndex(
+    String humorStyle,
+    double warmth,
+    double extroversion,
+  ) {
+    final baseCreativity = (warmth + extroversion) / 2.0;
+
+    switch (humorStyle) {
+      case '위트있는':
+        return (baseCreativity * 0.7) + 0.3; // 위트는 높은 창의성
+      case '유쾌한':
+        return (baseCreativity * 0.8) + 0.2; // 유쾌함도 창의적
+      case '날카로운 관찰자적':
+        return (baseCreativity * 0.6) + 0.4; // 관찰력도 창의성
+      case '자기비하적':
+        return (baseCreativity * 0.9) + 0.1; // 자기비하는 덜 창의적
+      case '따뜻한':
+      default:
+        return baseCreativity; // 기본 수준
+    }
+  }
+
+  // 🎭 고급 음성 특성 생성 (입체적이고 개성적인 특성)
+  Map<String, String> _generateAdvancedVoiceCharacteristics(
+    int warmth,
+    int introversion,
+    int competence,
+    String humorStyle,
+    String selectedVoice,
+    Map<String, double> personalityScore,
+  ) {
+    final energyLevel = personalityScore['extroversion']! * 10;
+    final emotionalWarmth = personalityScore['warmth']! * 10;
+    final professionalLevel = personalityScore['competence']! * 10;
+
+    // 🫁 숨쉬기 패턴 (성격 기반)
+    String breathingPattern;
+    if (introversion <= 3) {
+      breathingPattern =
+          'Deep, contemplative breaths with longer exhales. Occasional thoughtful sighs when processing information';
+    } else if (energyLevel >= 8) {
+      breathingPattern =
+          'Quick, energetic breaths with slight excitement. Occasional happy sighs or delighted exhales';
+    } else if (professionalLevel >= 8) {
+      breathingPattern =
+          'Controlled, steady breathing with confident exhales. Brief pauses to maintain authority';
+    } else if (emotionalWarmth >= 8) {
+      breathingPattern =
+          'Warm, gentle breathing with caring exhales. Soft sighs of empathy and understanding';
+    } else {
+      breathingPattern =
+          'Natural, balanced breathing with comfortable pauses and relaxed exhales';
+    }
+
+    // 🎭 감정 표현 패턴 (성격과 유머 스타일 기반)
+    String emotionalExpression;
+    switch (humorStyle) {
+      case '위트있는':
+        emotionalExpression =
+            'Clever chuckles, amused "hmm"s, and playful tone changes. Quick wit with timing-perfect pauses';
+      case '유쾌한':
+        emotionalExpression =
+            'Genuine laughter, excited "wow!"s, and animated vocal variety. Contagious joy in every expression';
+      case '날카로운 관찰자적':
+        emotionalExpression =
+            'Knowing chuckles, ironic "ah"s, and subtle tone shifts. Sharp observations with pointed delivery';
+      case '자기비하적':
+        emotionalExpression =
+            'Self-deprecating laughs, bashful "oh"s, and humble tone drops. Endearing awkwardness';
+      case '따뜻한':
+      default:
+        emotionalExpression =
+            'Gentle laughs, caring "mmm"s, and soothing tone variations. Warm emotional resonance';
+    }
+
+    // 🗣️ 말버릇과 개성 (음성별 + 성격별)
+    String speechQuirks;
+    final voiceQuirks = _getVoiceSpecificQuirks(selectedVoice);
+    final personalityQuirks = _getPersonalityQuirks(
+      warmth,
+      introversion,
+      competence,
+      humorStyle,
+    );
+    speechQuirks = '$voiceQuirks + $personalityQuirks';
+
+    // 📢 발음 스타일 (더 구체적으로)
+    String pronunciation;
+    if (professionalLevel >= 8) {
+      pronunciation =
+          'Crystal clear articulation with confident projection. Each word precisely delivered with authority';
+    } else if (emotionalWarmth >= 8) {
+      pronunciation =
+          'Warm, nurturing tones with gentle emphasis. Caring inflection that makes listeners feel safe';
+    } else if (introversion <= 3) {
+      pronunciation =
+          'Soft, thoughtful delivery with deliberate pacing. Reflective tone with meaningful pauses';
+    } else if (energyLevel >= 8) {
+      pronunciation =
+          'Bright, animated delivery with enthusiastic emphasis. Energetic articulation full of life';
+    } else {
+      pronunciation =
+          'Natural, conversational flow with balanced emphasis. Approachable and easy to understand';
+    }
+
+    // ⏸️ 일시정지 패턴 (더 세밀하게)
+    String pausePattern;
+    if (introversion <= 3) {
+      pausePattern =
+          'Longer contemplative pauses (2-3 seconds) for deep thinking. Meaningful silence before important points';
+    } else if (energyLevel >= 8) {
+      pausePattern =
+          'Quick, excited pauses (0.5-1 second) with anticipation. Barely contained energy between thoughts';
+    } else if (professionalLevel >= 8) {
+      pausePattern =
+          'Strategic pauses (1-2 seconds) for emphasis and authority. Calculated timing for maximum impact';
+    } else {
+      pausePattern =
+          'Natural conversation pauses (1-1.5 seconds) that feel comfortable and organic';
+    }
+
+    // 🎵 말하기 리듬 (음성 특성 반영)
+    String speechRhythm;
+    if (selectedVoice == 'nova') {
+      speechRhythm =
+          'Bright, bouncy rhythm with playful tempo changes. Energetic peaks and valleys in delivery';
+    } else if (selectedVoice == 'onyx') {
+      speechRhythm =
+          'Deep, steady rhythm with authoritative cadence. Measured pace that commands attention';
+    } else if (selectedVoice == 'alloy') {
+      speechRhythm =
+          'Warm, flowing rhythm with gentle waves. Comforting pace that feels like a hug';
+    } else if (selectedVoice == 'echo') {
+      speechRhythm =
+          'Lively, dynamic rhythm with social energy. Engaging pace that draws listeners in';
+    } else if (selectedVoice == 'shimmer') {
+      speechRhythm =
+          'Elegant, refined rhythm with sophisticated pacing. Graceful delivery with artistic flair';
+    } else {
+      // fable
+      speechRhythm =
+          'Balanced, natural rhythm with storytelling flow. Engaging pace perfect for conversation';
+    }
+
+    return {
+      'pronunciation': pronunciation,
+      'pausePattern': pausePattern,
+      'speechRhythm': speechRhythm,
+      'breathingPattern': breathingPattern,
+      'emotionalExpression': emotionalExpression,
+      'speechQuirks': speechQuirks,
+    };
+  }
+
+  // 🎵 음성별 고유 특성
+  String _getVoiceSpecificQuirks(String voice) {
+    switch (voice) {
+      case 'nova':
+        return 'Bright vocal upticks, playful "ooh"s and "ah"s, occasional giggles';
+      case 'onyx':
+        return 'Deep resonant "hmm"s, authoritative "indeed"s, confident vocal fry';
+      case 'alloy':
+        return 'Warm "mmm"s of understanding, gentle "oh"s, caring vocal nods';
+      case 'echo':
+        return 'Social "yeah"s, engaging "right?"s, conversational vocal gestures';
+      case 'shimmer':
+        return 'Elegant "ah"s, refined "oh my"s, sophisticated vocal flourishes';
+      case 'fable':
+      default:
+        return 'Natural "um"s and "ah"s, storytelling inflections, balanced vocal variety';
+    }
+  }
+
+  // 🎭 성격별 말버릇
+  String _getPersonalityQuirks(
+    int warmth,
+    int introversion,
+    int competence,
+    String humorStyle,
+  ) {
+    final quirks = <String>[];
+
+    if (warmth >= 8) quirks.add('frequent use of endearing terms');
+    if (warmth <= 3) quirks.add('minimal vocal embellishments');
+
+    if (introversion <= 3) quirks.add('thoughtful "let me think" pauses');
+    if (introversion >= 8) quirks.add('excited overlapping speech patterns');
+
+    if (competence >= 8) quirks.add('precise technical terminology');
+    if (competence <= 3) quirks.add('humble "I think maybe" qualifiers');
+
+    switch (humorStyle) {
+      case '위트있는':
+        quirks.add('clever wordplay and puns');
+      case '유쾌한':
+        quirks.add('infectious laughter and exclamations');
+      case '날카로운 관찰자적':
+        quirks.add('pointed observations with raised eyebrows');
+      case '자기비하적':
+        quirks.add('self-deprecating chuckles and "typical me" comments');
+      case '따뜻한':
+        quirks.add('gentle encouragement and supportive sounds');
+    }
+
+    return quirks.join(', ');
   }
 }

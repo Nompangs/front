@@ -78,34 +78,8 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 ? profile.aiPersonalityProfile!.coreValues
                 : ['친구'];
 
-        // 🎯 QR 진입 시 userInput/realtimeSettings 기본값 제공
-        if (characterProfile['userInput'] == null) {
-          characterProfile['userInput'] = {
-            'warmth': 7,
-            'introversion': 5,
-            'competence': 6,
-            'humorStyle': '따뜻한',
-            'duration': 'QR로 만난 친구',
-          };
-        }
-
-        if (characterProfile['realtimeSettings'] == null) {
-          characterProfile['realtimeSettings'] = {
-            'voice': 'alloy',
-            'voiceRationale': '기본 친근한 음성',
-            'temperature': 0.9,
-            'topP': 0.8,
-            'frequencyPenalty': 0.7,
-            'presencePenalty': 0.6,
-            'pronunciation': 'Warm, gentle, and nurturing',
-            'pausePattern': 'Natural, comforting pauses',
-            'speechRhythm': 'Relaxed and flowing',
-            'responseFormat': 'audio+text',
-            'enableVAD': true,
-            'vadThreshold': 0.5,
-            'maxTokens': 300,
-          };
-        }
+        // 🎯 QR 진입 시에도 서버에서 받은 실제 데이터 사용
+        // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
 
         // 5. 완성된 Map으로 ChatProvider를 생성하고 채팅 화면으로 이동합니다.
         await Navigator.pushReplacement(
