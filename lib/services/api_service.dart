@@ -99,6 +99,21 @@ class ApiService {
         final Map<String, dynamic> data = jsonDecode(response.body);
         print('✅ [QR 로드 성공] 서버 원본 응답 (JSON 파싱 후): $data');
 
+        // 🔍 상세 데이터 분석
+        print('🔍 [API] 상세 데이터 분석:');
+        print('  - UUID: ${data['uuid']}');
+        print(
+          '  - generatedProfile 키들: ${data['generatedProfile']?.keys?.toList()}',
+        );
+        print('  - userInput 키들: ${data['userInput']?.keys?.toList()}');
+        print('  - userInput 내용: ${data['userInput']}');
+        print(
+          '  - aiPersonalityProfile 내용: ${data['generatedProfile']?['aiPersonalityProfile']}',
+        );
+        print(
+          '  - realtimeSettings 내용: ${data['generatedProfile']?['realtimeSettings']}',
+        );
+
         // generatedProfile 내부의 aiPersonalityProfile 확인
         final hasProfile =
             data.containsKey('generatedProfile') &&

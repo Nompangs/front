@@ -73,6 +73,23 @@ class ChatProvider extends ChangeNotifier {
           [],
       greeting = characterProfile['greeting'] as String? {
     debugPrint('[ChatProvider] Received characterProfile: $characterProfile');
+    debugPrint('[ChatProvider] UUID: ${characterProfile['uuid']}');
+    debugPrint(
+      '[ChatProvider] 캐릭터명: ${characterProfile['aiPersonalityProfile']?['name']}',
+    );
+    debugPrint('[ChatProvider] userInput 확인: ${characterProfile['userInput']}');
+    debugPrint(
+      '[ChatProvider] realtimeSettings 확인: ${characterProfile['realtimeSettings']}',
+    );
+    debugPrint(
+      '[ChatProvider] aiPersonalityProfile 확인: ${characterProfile['aiPersonalityProfile']}',
+    );
+    debugPrint(
+      '[ChatProvider] NPS 점수 개수: ${characterProfile['aiPersonalityProfile']?['npsScores']?.length ?? 0}',
+    );
+    debugPrint(
+      '[ChatProvider] 매력적결함 개수: ${characterProfile['attractiveFlaws']?.length ?? 0}',
+    );
     _initializeChat();
   }
 
