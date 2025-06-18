@@ -8,6 +8,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:nompangs/providers/chat_provider.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -792,27 +795,29 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     GestureDetector(
                       onTap: () {
                         if (objectData.isEmpty) return;
+                        final lastObject = objectData.reduce((a, b) {
+                          int aMinutes = _parseDurationToMinutes(a.duration);
+                          int bMinutes = _parseDurationToMinutes(b.duration);
+                          return aMinutes < bMinutes ? a : b;
+                        });
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) => ChatScreen(
-                                  profile: PersonalityProfile(
-                                    aiPersonalityProfile: AiPersonalityProfile(
-                                      name:
-                                          lastChattedObjectName.isNotEmpty
-                                              ? lastChattedObjectName
-                                              : '모멘티',
-                                      objectType: '',
-                                      emotionalRange: 5,
-                                      coreValues: ['친근함', '유머'],
-                                      relationshipStyle: '',
-                                      summary: '',
-                                    ),
-                                    contradictions: [],
-                                    greeting: '안녕하세요! 무엇이 궁금하신가요?',
-                                    initialUserMessage: '',
-                                  ),
+                                (context) => ChangeNotifierProvider(
+                                  create:
+                                      (_) => ChatProvider(
+                                        uuid: lastObject.uuid,
+                                        characterName: lastObject.title,
+                                        characterHandle: lastObject.location,
+                                        personalityTags:
+                                            lastObject.personalityTags ??
+                                            ['기본값'],
+                                        greeting:
+                                            lastObject.greeting ?? '기본 인사말',
+                                      ),
+                                  child: ChatTextScreen(),
                                 ),
                           ),
                         );
@@ -1288,6 +1293,8 @@ class ObjectData {
   final bool isNew;
   final String uuid;
   final String uid;
+  final String? greeting;
+  final List<String>? personalityTags;
 
   ObjectData({
     required this.title,
@@ -1297,6 +1304,8 @@ class ObjectData {
     this.isNew = false,
     required this.uuid,
     required this.uid,
+    this.greeting,
+    this.personalityTags,
   });
 
   factory ObjectData.fromMap(Map<String, dynamic> map) {
@@ -1322,6 +1331,8 @@ class ObjectData {
       duration: duration,
       imageUrl: map['imageUrl'] ?? 'assets/testImg_1.png',
       isNew: difference.inHours < 24,
+      greeting: map['greeting'],
+      personalityTags: (map['personalityTags'] as List?)?.cast<String>(),
     );
   }
 }
