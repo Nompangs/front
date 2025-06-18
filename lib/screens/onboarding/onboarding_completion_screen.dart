@@ -122,9 +122,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       );
 
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
-      provider.setPersonalityProfile(finalProfile);
-
-      // 3. 서버 전송을 위한 데이터 가공 (Base64 인코딩)
       final profileMap = finalProfile.toMap();
       if (finalProfile.photoPath != null &&
           finalProfile.photoPath!.isNotEmpty) {
@@ -142,12 +139,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       }
       profileMap.remove('photoPath'); // 백엔드에 불필요한 로컬 경로는 제거
 
-      // 4. 서버에 저장하고 ID 받기 (가공된 데이터 사용)
+      // 4. 서버에 저장하고 ID와 QR코드 받기
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
         generatedProfile: profileMap, // 가공된 맵 전달
         userInput: provider.getUserInputAsMap(),
       );
+      
+      // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
+      final serverUuid = result['uuid'] as String?;
+      final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
+      provider.setPersonalityProfile(profileWithUuid);
 
       setState(() {
         _qrImageData = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
@@ -685,8 +687,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       context,
                       MaterialPageRoute(
                         builder: (context) => ChangeNotifierProvider(
-                          // 1단계: ChatProvider에 characterProfile 맵 전체를 전달합니다.
-                          // 이 수정으로 인해 ChatProvider 생성자에서 에러가 발생하는 것이 정상입니다.
+                          // ChatProvider에 characterProfile 맵 전체를 전달합니다.
                           create: (_) => ChatProvider(
                             characterProfile: profileMap,
                           ),
