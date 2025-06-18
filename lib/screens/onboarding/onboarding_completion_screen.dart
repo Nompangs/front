@@ -755,7 +755,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   (_) => ChatProvider(
                                     characterProfile: profileMap,
                                   ),
-                              child: const ChatTextScreen(),
+                              child: const ChatTextScreen(
+                                showHomeInsteadOfBack: true,
+                              ),
                             ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
