@@ -5,20 +5,24 @@ import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 
 class ChatTextScreen extends StatelessWidget {
-  const ChatTextScreen({super.key});
+  final bool showHomeInsteadOfBack;
+  const ChatTextScreen({super.key, this.showHomeInsteadOfBack = false});
 
   @override
   Widget build(BuildContext context) {
     return Consumer<ChatProvider>(
       builder: (context, provider, child) {
-        return _ChatTextScreenContent();
+        return _ChatTextScreenContent(
+          showHomeInsteadOfBack: showHomeInsteadOfBack,
+        );
       },
     );
   }
 }
 
 class _ChatTextScreenContent extends StatefulWidget {
-  const _ChatTextScreenContent();
+  final bool showHomeInsteadOfBack;
+  const _ChatTextScreenContent({this.showHomeInsteadOfBack = false});
 
   @override
   State<_ChatTextScreenContent> createState() => __ChatTextScreenContentState();
@@ -42,8 +46,11 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_scrollController.hasClients) {
-        _scrollController.animateTo(0.0,
-            duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
       }
     });
 
@@ -53,8 +60,10 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
         child: Column(
           children: [
             _TopNavigationBar(
-                characterName: chatProvider.characterName,
-                characterHandle: chatProvider.characterHandle),
+              characterName: chatProvider.characterName,
+              characterHandle: chatProvider.characterHandle,
+              showHomeInsteadOfBack: widget.showHomeInsteadOfBack,
+            ),
             Expanded(
               child: Container(
                 color: const Color(0xFFF2F2F2),
@@ -62,9 +71,10 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                   children: [
                     if (!messages.any((msg) => msg.isUser))
                       _ProfileCard(
-                          characterName: chatProvider.characterName,
-                          characterHandle: chatProvider.characterHandle,
-                          personalityTags: chatProvider.personalityTags),
+                        characterName: chatProvider.characterName,
+                        characterHandle: chatProvider.characterHandle,
+                        personalityTags: chatProvider.personalityTags,
+                      ),
                     if (chatProvider.isProcessing)
                       const LinearProgressIndicator(),
                     Expanded(
@@ -77,7 +87,9 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                           itemBuilder: (context, index) {
                             final msg = messages[index];
                             return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
                               child: _ChatBubble(
                                 text: msg.text,
                                 isUser: msg.isUser,
@@ -90,21 +102,24 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                     _ChatInputBar(
                       controller: _inputController,
                       onSend: () {
-                        context.read<ChatProvider>().sendMessage(_inputController.text);
+                        context.read<ChatProvider>().sendMessage(
+                          _inputController.text,
+                        );
                         _inputController.clear();
                       },
                       onSpeakerModePressed: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => ChangeNotifierProvider.value(
-                              value: context.read<ChatProvider>(),
-                              child: const ChatSpeakerScreen(),
-                            ),
+                            builder:
+                                (_) => ChangeNotifierProvider.value(
+                                  value: context.read<ChatProvider>(),
+                                  child: const ChatSpeakerScreen(),
+                                ),
                           ),
                         );
                       },
-                    ),                    
+                    ),
                   ],
                 ),
               ),
@@ -119,10 +134,12 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
 class _TopNavigationBar extends StatelessWidget {
   final String characterName;
   final String characterHandle;
+  final bool showHomeInsteadOfBack;
 
   const _TopNavigationBar({
     required this.characterName,
     required this.characterHandle,
+    this.showHomeInsteadOfBack = false,
   });
 
   @override
@@ -134,16 +151,28 @@ class _TopNavigationBar extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(
-              Icons.arrow_back_ios,
-              size: 24,
-              color: Color(0xFF333333),
-            ),
-            onPressed: () => Navigator.of(context).maybePop(),
-          ),
+          showHomeInsteadOfBack
+              ? IconButton(
+                icon: const Icon(
+                  Icons.home,
+                  size: 28,
+                  color: Color(0xFF333333),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    '/flutter-mobile-clone',
+                    (route) => false,
+                  );
+                },
+              )
+              : IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  size: 24,
+                  color: Color(0xFF333333),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
 
           ClipOval(
             child: Image.asset(
@@ -354,10 +383,7 @@ class _ChatBubble extends StatelessWidget {
   final String text;
   final bool isUser;
 
-  const _ChatBubble({
-    required this.text,
-    required this.isUser,
-  });
+  const _ChatBubble({required this.text, required this.isUser});
 
   @override
   Widget build(BuildContext context) {
@@ -373,10 +399,7 @@ class _ChatBubble extends StatelessWidget {
           color: isUser ? userBgColor : otherBgColor,
           borderRadius: BorderRadius.circular(16),
         ),
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 16,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         constraints: BoxConstraints(
           maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
@@ -446,11 +469,7 @@ class _ChatInputBarState extends State<_ChatInputBar> {
             IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              icon: const Icon(
-                Icons.image,
-                size: 28,
-                color: Color(0xFF777777),
-              ),
+              icon: const Icon(Icons.image, size: 28, color: Color(0xFF777777)),
               onPressed: () {},
             ),
             const SizedBox(width: 12),
