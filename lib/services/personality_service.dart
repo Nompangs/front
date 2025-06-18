@@ -15,14 +15,14 @@ class AIPersonalityDraft {
   final Map<String, int> npsScores;
   // 사용자가 조정할 슬라이더의 AI 추천 초기값 (1-10 스케일)
   final int initialWarmth;
-  final int initialIntroversion;
+  final int initialExtroversion;
   final int initialCompetence;
 
   AIPersonalityDraft({
     required this.photoAnalysis,
     required this.npsScores,
     required this.initialWarmth,
-    required this.initialIntroversion,
+    required this.initialExtroversion,
     required this.initialCompetence,
   });
 }
@@ -91,14 +91,14 @@ class PersonalityService {
     final initialWarmth = ((aiGeneratedVariables['W01_친절함'] ?? 50) / 10)
         .round()
         .clamp(1, 10);
-    final initialIntroversion = (10 -
-            ((aiGeneratedVariables['E01_사교성'] ?? 50) / 10).round())
+    final initialExtroversion = ((aiGeneratedVariables['E01_사교성'] ?? 50) / 10)
+        .round()
         .clamp(1, 10);
     final initialCompetence = ((aiGeneratedVariables['C02_전문성'] ?? 50) / 10)
         .round()
         .clamp(1, 10);
     debugPrint(
-      "  - 슬라이더 초기값 계산 완료 (따뜻함:$initialWarmth, 내향성:$initialIntroversion, 유능함:$initialCompetence)",
+      "  - 슬라이더 초기값 계산 완료 (따뜻함:$initialWarmth, 외향성:$initialExtroversion, 유능함:$initialCompetence)",
     );
 
     debugPrint("✅ 1/2단계: AI 페르소나 초안 생성 완료!");
@@ -106,7 +106,7 @@ class PersonalityService {
       photoAnalysis: photoAnalysisResult,
       npsScores: aiGeneratedVariables,
       initialWarmth: initialWarmth,
-      initialIntroversion: initialIntroversion,
+      initialExtroversion: initialExtroversion,
       initialCompetence: initialCompetence,
     );
   }
@@ -145,7 +145,30 @@ class PersonalityService {
     );
     debugPrint("✅ 5단계 첫인사 생성 완료: $greeting");
 
-    // 5. 최종 프로필 조합
+    // 🆕 6. realtimeSettings 생성 (PERSONA_ENHANCEMENT_PLAN.md 기반)
+    final realtimeSettings = _generateRealtimeSettings(
+      finalState,
+      userAdjustedVariables,
+      draft.photoAnalysis,
+    );
+    debugPrint("✅ 6단계 realtimeSettings 생성 완료");
+
+    // 7. 사용자 입력 정보 저장 (핵심!)
+    final userInputMap = {
+      'photoPath': finalState.photoPath,
+      'objectType': finalState.objectType,
+      'purpose': finalState.purpose,
+      'nickname': finalState.nickname,
+      'location': finalState.location,
+      'duration': finalState.duration,
+      'humorStyle': finalState.humorStyle,
+      'warmth': finalState.warmth,
+      'introversion': finalState.introversion,
+      'competence': finalState.competence,
+    };
+    debugPrint("✅ 7단계 사용자 입력 정보 저장 완료");
+
+    // 8. 최종 프로필 조합
     final finalProfile = PersonalityProfile(
       aiPersonalityProfile: AiPersonalityProfile.fromMap({
         'npsScores': userAdjustedVariables,
@@ -160,6 +183,8 @@ class PersonalityService {
       initialUserMessage: finalState.purpose,
       communicationPrompt: communicationPrompt,
       photoPath: finalState.photoPath,
+      realtimeSettings: realtimeSettings, // 🆕 추가
+      userInput: userInputMap, // 🆕 사용자 입력 정보 저장
     );
     debugPrint("✅ 2/2단계: 최종 프로필 조합 완료!");
     return finalProfile;
@@ -409,7 +434,7 @@ class PersonalityService {
     // 슬라이더 값 (1~9)
     final warmth = state.warmth ?? 5;
     final competence = state.competence ?? 5;
-    final introversion = state.introversion ?? 5; // 외향성은 내향성의 반대로 사용
+    final introversion = state.introversion ?? 5; // 슬라이더 값: 오른쪽으로 갈수록 외향적
 
     // nps_test 방식 적용
     // W (온기) 계열: warmth 슬라이더
@@ -654,38 +679,38 @@ class PersonalityService {
         break;
     }
 
-    String warmth_style;
-    String extraversion_style;
-    String humor_style;
+    String warmthStyle;
+    String extraversionStyle;
+    String humorStyle;
 
     // 온기에 따른 표현 (원본 프롬프트 그대로 복사)
-    if (warmth! > 70) {
-      warmth_style = "따뜻하고 공감적인 말투로 대화하며, ";
+    if (warmth > 70) {
+      warmthStyle = "따뜻하고 공감적인 말투로 대화하며, ";
     } else if (warmth > 40) {
-      warmth_style = "친절하면서도 차분한 어조로 이야기하며, ";
+      warmthStyle = "친절하면서도 차분한 어조로 이야기하며, ";
     } else {
-      warmth_style = "조금 건조하지만 정직한 말투로 소통하며, ";
+      warmthStyle = "조금 건조하지만 정직한 말투로 소통하며, ";
     }
 
     // 외향성에 따른 표현 (원본 프롬프트 그대로 복사)
     if (extraversion > 70) {
-      extraversion_style = "활발하게 대화를 이끌어나가고, ";
+      extraversionStyle = "활발하게 대화를 이끌어나가고, ";
     } else if (extraversion > 40) {
-      extraversion_style = "적당한 대화 속도로 소통하며, ";
+      extraversionStyle = "적당한 대화 속도로 소통하며, ";
     } else {
-      extraversion_style = "말수는 적지만 의미있는 대화를 나누며, ";
+      extraversionStyle = "말수는 적지만 의미있는 대화를 나누며, ";
     }
 
     // 유머감각에 따른 표현 (원본 프롬프트 그대로 복사)
     if (humor > 70) {
-      humor_style = "유머 감각이 뛰어나 대화에 재미를 더합니다.";
+      humorStyle = "유머 감각이 뛰어나 대화에 재미를 더합니다.";
     } else if (humor > 40) {
-      humor_style = "가끔 재치있는 코멘트로 분위기를 밝게 합니다.";
+      humorStyle = "가끔 재치있는 코멘트로 분위기를 밝게 합니다.";
     } else {
-      humor_style = "진중한 태도로 대화에 임합니다.";
+      humorStyle = "진중한 태도로 대화에 임합니다.";
     }
 
-    return warmth_style + extraversion_style + humor_style;
+    return warmthStyle + extraversionStyle + humorStyle;
   }
 
   // 파이썬 로직 이식: 매력적인 결점 생성 (무작위 기반)
@@ -895,12 +920,98 @@ class PersonalityService {
       },
     };
 
-    final style = templates[humorStyle] ?? templates['따뜻한']!; // 기본값
+    final style = templates[humorStyle] ?? templates['따뜻한']!;
 
     return HumorMatrix(
       warmthVsWit: style['warmthVsWit']!,
       selfVsObservational: style['selfVsObservational']!,
       subtleVsExpressive: style['subtleVsExpressive']!,
     );
+  }
+
+  // 🆕 PERSONA_ENHANCEMENT_PLAN.md 기반 realtimeSettings 생성
+  Map<String, dynamic> _generateRealtimeSettings(
+    OnboardingState state,
+    Map<String, int> npsScores,
+    Map<String, dynamic> photoAnalysis,
+  ) {
+    // 🎯 사용자 입력값 기반 음성 선택
+    final warmth = state.warmth ?? 5;
+    final introversion = state.introversion ?? 5; // 1(내향) ~ 9(외향)
+    final competence = state.competence ?? 5;
+
+    // 🎵 음성 선택 로직 (사용자 설정 기반)
+    String selectedVoice;
+    String voiceRationale;
+
+    if (warmth >= 8 && introversion >= 6) {
+      selectedVoice = 'nova';
+      voiceRationale = '매우 따뜻하고 외향적인 성격에 맞는 밝고 에너지 넘치는 음성';
+    } else if (competence >= 8) {
+      selectedVoice = 'onyx';
+      voiceRationale = '높은 유능함에 맞는 전문적이고 신뢰할 수 있는 음성';
+    } else if (warmth >= 7) {
+      selectedVoice = 'alloy';
+      voiceRationale = '따뜻한 성격에 맞는 친근하고 포근한 음성';
+    } else if (introversion >= 7) {
+      selectedVoice = 'echo';
+      voiceRationale = '외향적 성격에 맞는 활발하고 에너지 넘치는 음성';
+    } else if (warmth <= 3 || introversion <= 2) {
+      selectedVoice = 'shimmer';
+      voiceRationale = '차갑거나 내향적 성격에 맞는 차분하고 우아한 음성';
+    } else {
+      selectedVoice = 'fable';
+      voiceRationale = '균형잡힌 성격에 맞는 안정적이고 자연스러운 음성';
+    }
+
+    // 🎭 음성 고급 파라미터 (성격 기반)
+    String pronunciation;
+    String pausePattern;
+    String speechRhythm;
+
+    if (competence >= 7) {
+      pronunciation = 'Clear, articulate, and confident';
+      pausePattern = 'Brief, purposeful pauses for emphasis';
+      speechRhythm = 'Steady and measured with authority';
+    } else if (warmth >= 7) {
+      pronunciation = 'Warm, gentle, and nurturing';
+      pausePattern = 'Natural, comforting pauses';
+      speechRhythm = 'Relaxed and flowing';
+    } else if (introversion <= 3) {
+      pronunciation = 'Soft, thoughtful, and deliberate';
+      pausePattern = 'Longer, contemplative pauses';
+      speechRhythm = 'Slow and reflective';
+    } else {
+      pronunciation = 'Natural and conversational';
+      pausePattern = 'Balanced, natural conversation pauses';
+      speechRhythm = 'Moderate and friendly';
+    }
+
+    // 🔧 기술적 설정 (성격 기반 조정)
+    final vadThreshold =
+        introversion <= 3 ? 0.3 : (introversion >= 7 ? 0.7 : 0.5);
+    final maxTokens = competence >= 7 ? 400 : (warmth >= 7 ? 300 : 250);
+
+    return {
+      // 🎵 음성 기본 설정 (2개)
+      'voice': selectedVoice,
+      'voiceRationale': voiceRationale,
+
+      // 🧠 창의성 및 응답 제어 (4개) - 모든 페르소나 공통 고정값
+      'temperature': 0.9, // 높은 창의성 (모든 페르소나 공통)
+      'topP': 0.8, // 다양한 단어 선택 (모든 페르소나 공통)
+      'frequencyPenalty': 0.7, // 반복 억제 (모든 페르소나 공통)
+      'presencePenalty': 0.6, // 주제 다양성 (모든 페르소나 공통)
+      // 🎭 OpenAI 음성 고급 파라미터 (3개)
+      'pronunciation': pronunciation,
+      'pausePattern': pausePattern,
+      'speechRhythm': speechRhythm,
+
+      // 🔧 기술적 설정 (4개)
+      'responseFormat': 'audio+text',
+      'enableVAD': true,
+      'vadThreshold': vadThreshold,
+      'maxTokens': maxTokens,
+    };
   }
 }

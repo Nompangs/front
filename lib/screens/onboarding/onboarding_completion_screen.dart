@@ -145,7 +145,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         generatedProfile: profileMap, // 가공된 맵 전달
         userInput: provider.getUserInputAsMap(),
       );
-      
+
       // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
       final serverUuid = result['uuid'] as String?;
       final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
@@ -383,18 +383,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child:
                                         qrBytes != null
                                             ? RepaintBoundary(
-                                                key: _qrKey,
-                                                child: Image.memory(
-                                                  qrBytes,
-                                                  width: 100,
-                                                  height: 100,
-                                                  fit: BoxFit.contain,
-                                                ),
-                                              )
-                                            : const Center(
-                                                child:
-                                                    CircularProgressIndicator(),
+                                              key: _qrKey,
+                                              child: Image.memory(
+                                                qrBytes,
+                                                width: 100,
+                                                height: 100,
+                                                fit: BoxFit.contain,
                                               ),
+                                            )
+                                            : const Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
                                   ),
                                 ),
                               ),
@@ -676,7 +676,8 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                   ),
                   onPressed: () {
                     // 1. OnboardingProvider에서 현재 상태(state)를 가져옵니다.
-                    final onboardingState = context.read<OnboardingProvider>().state;
+                    final onboardingState =
+                        context.read<OnboardingProvider>().state;
 
                     // 2. _getPersonalityTag 함수들을 사용하여 태그를 생성합니다.
                     final tag1 = _getPersonalityTag1(onboardingState);
@@ -689,18 +690,22 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     // 4. 생성된 태그를 profileMap에 추가합니다.
                     profileMap['personalityTags'] = personalityTags;
 
-                    debugPrint('[OnboardingCompletionScreen] Passing profile to ChatProvider: $profileMap');
+                    debugPrint(
+                      '[OnboardingCompletionScreen] Passing profile to ChatProvider: $profileMap',
+                    );
 
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ChangeNotifierProvider(
-                          // ChatProvider에 characterProfile 맵 전체를 전달합니다.
-                          create: (_) => ChatProvider(
-                            characterProfile: profileMap,
-                          ),
-                          child: const ChatTextScreen(),
-                        ),
+                        builder:
+                            (context) => ChangeNotifierProvider(
+                              // ChatProvider에 characterProfile 맵 전체를 전달합니다.
+                              create:
+                                  (_) => ChatProvider(
+                                    characterProfile: profileMap,
+                                  ),
+                              child: const ChatTextScreen(),
+                            ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
                     );
@@ -1145,7 +1150,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       return '허당';
     } else if (warmth < 4 && competence >= 7) {
       return '시크유능';
-    } else if (warmth < 4  && competence >= 4) {
+    } else if (warmth < 4 && competence >= 4) {
       return '쌀쌀맞은';
     } else {
       return '무심엉성';

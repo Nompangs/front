@@ -65,7 +65,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         print('🚨 [QR 스캔] 로드된 프로필에 핵심 데이터(uuid, aiProfile)가 없습니다.');
         throw Exception('서버에서 받은 프로필 데이터가 올바르지 않습니다.');
       }
-      
+
       print('✅ [QR 스캔] 프로필 객체 로드 완료. ChatProvider로 전달 준비.');
 
       if (mounted) {
@@ -73,21 +73,50 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         final characterProfile = profile.toMap();
 
         // 4. 온보딩 화면과 마찬가지로, 태그를 생성하여 추가합니다.
-        //    (ChatTextScreen이 이 필드를 기대하고 있으므로 추가해주는 것이 안전합니다.)
-        characterProfile['personalityTags'] = profile.aiPersonalityProfile!.coreValues.isNotEmpty
-            ? profile.aiPersonalityProfile!.coreValues
-            : ['친구'];
+        characterProfile['personalityTags'] =
+            profile.aiPersonalityProfile!.coreValues.isNotEmpty
+                ? profile.aiPersonalityProfile!.coreValues
+                : ['친구'];
+
+        // 🎯 QR 진입 시 userInput/realtimeSettings 기본값 제공
+        if (characterProfile['userInput'] == null) {
+          characterProfile['userInput'] = {
+            'warmth': 7,
+            'introversion': 5,
+            'competence': 6,
+            'humorStyle': '따뜻한',
+            'duration': 'QR로 만난 친구',
+          };
+        }
+
+        if (characterProfile['realtimeSettings'] == null) {
+          characterProfile['realtimeSettings'] = {
+            'voice': 'alloy',
+            'voiceRationale': '기본 친근한 음성',
+            'temperature': 0.9,
+            'topP': 0.8,
+            'frequencyPenalty': 0.7,
+            'presencePenalty': 0.6,
+            'pronunciation': 'Warm, gentle, and nurturing',
+            'pausePattern': 'Natural, comforting pauses',
+            'speechRhythm': 'Relaxed and flowing',
+            'responseFormat': 'audio+text',
+            'enableVAD': true,
+            'vadThreshold': 0.5,
+            'maxTokens': 300,
+          };
+        }
 
         // 5. 완성된 Map으로 ChatProvider를 생성하고 채팅 화면으로 이동합니다.
         await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (_) => ChatProvider(
-                characterProfile: characterProfile,
-              ),
-              child: const ChatTextScreen(),
-            ),
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create:
+                      (_) => ChatProvider(characterProfile: characterProfile),
+                  child: const ChatTextScreen(),
+                ),
           ),
         );
       }
