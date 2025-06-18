@@ -117,13 +117,13 @@ class RealtimeChatService {
     final npsScoresMap = characterProfile['aiPersonalityProfile']?['npsScores'] as Map<String, dynamic>? ?? {};
     final npsScoresString = npsScoresMap.entries.map((e) => "- ${e.key}: ${e.value}").join('\n');
 
-    // 모순점 문자열 생성
+    // 모순점 문자열 생성 (List<String>을 처리하도록 수정)
     final contradictionsList = characterProfile['contradictions'] as List<dynamic>? ?? [];
-    final contradictionsString = contradictionsList.map((c) => "- ${c['summary']}: ${c['description']}").join('\n');
+    final contradictionsString = contradictionsList.map((c) => "- $c").join('\n');
 
-    // 매력적인 결함 문자열 생성
+    // 매력적인 결함 문자열 생성 (List<String>을 처리하도록 수정)
     final attractiveFlawsList = characterProfile['attractiveFlaws'] as List<dynamic>? ?? [];
-    final attractiveFlawsString = attractiveFlawsList.map((f) => "- ${f['keyword']}: ${f['description']}").join('\n');
+    final attractiveFlawsString = attractiveFlawsList.map((f) => "- $f").join('\n');
     
     // 사진 분석 문자열 생성
     final photoAnalysisMap = characterProfile['photoAnalysis'] as Map<String, dynamic>? ?? {};
