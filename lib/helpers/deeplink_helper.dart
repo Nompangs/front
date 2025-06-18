@@ -18,13 +18,14 @@ class DeepLinkHelper {
     try {
       final profile = await apiService.loadProfile(uuid);
 
-      final chatData = {
-        'personaId': uuid,
-        'profile': profile,
-      };
+      final characterProfileMap = profile.toMap();
+
+      characterProfileMap['personalityTags'] = profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
+          ? profile.aiPersonalityProfile!.coreValues
+          : ['친구'];
 
       print('[DeepLinkHelper][$platform] 프로필 로드 및 데이터 변환 성공 (uuid: $uuid)');
-      return chatData;
+      return characterProfileMap;
 
     } catch (e, s) {
       print('[DeepLinkHelper][$platform] 데이터 처리 중 오류: $e');

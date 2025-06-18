@@ -122,9 +122,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       );
 
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
-      provider.setPersonalityProfile(finalProfile);
-
-      // 3. 서버 전송을 위한 데이터 가공 (Base64 인코딩)
       final profileMap = finalProfile.toMap();
       if (finalProfile.photoPath != null &&
           finalProfile.photoPath!.isNotEmpty) {
@@ -142,12 +139,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       }
       profileMap.remove('photoPath'); // 백엔드에 불필요한 로컬 경로는 제거
 
-      // 4. 서버에 저장하고 ID 받기 (가공된 데이터 사용)
+      // 4. 서버에 저장하고 ID와 QR코드 받기
       setState(() => _message = "서버에 안전하게 저장하는 중...");
       final result = await _apiService.createQrProfile(
         generatedProfile: profileMap, // 가공된 맵 전달
         userInput: provider.getUserInputAsMap(),
       );
+      
+      // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
+      final serverUuid = result['uuid'] as String?;
+      final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
+      provider.setPersonalityProfile(profileWithUuid);
 
       setState(() {
         _qrImageData = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
@@ -381,18 +383,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child:
                                         qrBytes != null
                                             ? RepaintBoundary(
-                                              key: _qrKey,
-                                              child: Image.memory(
-                                                qrBytes,
-                                                width: 100,
-                                                height: 100,
-                                                fit: BoxFit.contain,
-                                              ),
-                                            )
+                                                key: _qrKey,
+                                                child: Image.memory(
+                                                  qrBytes,
+                                                  width: 100,
+                                                  height: 100,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              )
                                             : const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
                                   ),
                                 ),
                               ),
@@ -673,34 +675,32 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
-                    // 서버 응답에서 실제 uuid를 받아와야 합니다.
-                    // 현재는 createQrProfile 응답에 uuid가 없으므로 임시 ID를 사용합니다.
-                    final uuid =
-                        _qrImageData ??
-                        'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
+                    // 1. OnboardingProvider에서 현재 상태(state)를 가져옵니다.
+                    final onboardingState = context.read<OnboardingProvider>().state;
+
+                    // 2. _getPersonalityTag 함수들을 사용하여 태그를 생성합니다.
+                    final tag1 = _getPersonalityTag1(onboardingState);
+                    final tag2 = _getPersonalityTag2(onboardingState);
+                    final personalityTags = [tag1, tag2];
+
+                    // 3. ChatProvider에 전달할 최종 프로필 맵을 구성합니다.
+                    final profileMap = character.toMap();
+                    profileMap['userInput'] = provider.getUserInputAsMap();
+                    // 4. 생성된 태그를 profileMap에 추가합니다.
+                    profileMap['personalityTags'] = personalityTags;
+
+                    debugPrint('[OnboardingCompletionScreen] Passing profile to ChatProvider: $profileMap');
 
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                        builder:
-                            (context) => ChangeNotifierProvider(
-                              create:
-                                  (_) => ChatProvider(
-                                    uuid: uuid,
-                                    characterName:
-                                        character.aiPersonalityProfile?.name ??
-                                        '이름 없음',
-                                    characterHandle:
-                                        '@${character.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
-                                    personalityTags:
-                                        character
-                                            .aiPersonalityProfile
-                                            ?.coreValues ??
-                                        ['친구같은'],
-                                    greeting: character.greeting ?? '안녕하세요!',
-                                  ),
-                              child: const ChatTextScreen(),
-                            ),
+                        builder: (context) => ChangeNotifierProvider(
+                          // ChatProvider에 characterProfile 맵 전체를 전달합니다.
+                          create: (_) => ChatProvider(
+                            characterProfile: profileMap,
+                          ),
+                          child: const ChatTextScreen(),
+                        ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
                     );
@@ -879,7 +879,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         border: Border.all(color: Colors.black, width: 1),
       ),
       child: Text(
-        tag,
+        '#$tag',
         style: const TextStyle(
           fontFamily: 'Pretendard',
           fontSize: 12,
@@ -1118,11 +1118,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     // 첫 번째 태그: 내향성 기반 (수줍음 ↔ 활발함)
     final introversion = state.introversion ?? 5;
     if (introversion <= 3) {
-      return '#수줍음';
+      return '수줍음';
     } else if (introversion >= 7) {
-      return '#활발함';
+      return '활발함';
     } else {
-      return '#적당함';
+      return '반쯤활발';
     }
   }
 
@@ -1132,19 +1132,23 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     final competence = state.competence ?? 5;
 
     if (warmth >= 7 && competence >= 7) {
-      return '#따뜻하고능숙';
-    } else if (warmth >= 7) {
-      return '#따뜻함';
-    } else if (competence >= 7) {
-      return '#능숙함';
-    } else if (warmth <= 3 && competence <= 3) {
-      return '#차갑고서툰';
-    } else if (warmth <= 3) {
-      return '#차가움';
-    } else if (competence <= 3) {
-      return '#서툰';
+      return '든든다정';
+    } else if (warmth >= 7 && competence >= 4) {
+      return '포근러';
+    } else if (warmth >= 7 && competence < 4) {
+      return '다정허당';
+    } else if (warmth >= 4 && competence >= 7) {
+      return '능력자';
+    } else if (warmth >= 4 && competence >= 4) {
+      return '평범러';
+    } else if (warmth >= 4 && competence < 4) {
+      return '허당';
+    } else if (warmth < 4 && competence >= 7) {
+      return '시크유능';
+    } else if (warmth < 4  && competence >= 4) {
+      return '쌀쌀맞은';
     } else {
-      return '#균형잡힌';
+      return '무심엉성';
     }
   }
 
