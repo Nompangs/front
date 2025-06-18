@@ -20,7 +20,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   String _currentRecognizedText = "";
   bool _hasHadFirstInteraction = false;
   
-  // [복원] 자체적인 타이머를 다시 사용합니다.
+  
   Timer? _endTurnTimer;
 
   @override
@@ -31,7 +31,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   @override
   void dispose() {
     _speech.stop();
-    // [복원] dispose될 때 타이머를 확실히 취소합니다.
+    
     _endTurnTimer?.cancel();
     super.dispose();
   }
@@ -57,8 +57,8 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
         },
         onStatus: (status) {
             if (status == stt.SpeechToText.notListeningStatus && mounted) {
-                // 이 부분은 listen의 onDone과 유사하게 작동할 수 있으므로,
-                // _sendFinalResult를 여기서 호출하지 않고 타이머와 사용자 입력으로만 관리합니다.
+                
+                
                 if (_isListening) {
                     setState(() => _isListening = false);
                 }
@@ -69,7 +69,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
     if (isInitialized && mounted) {
         setState(() {
             _isListening = true;
-            _isConfirmingEndTurn = false; // 항상 일반 모드로 시작
+            _isConfirmingEndTurn = false; 
             _currentRecognizedText = "";
         });
 
@@ -78,9 +78,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
             if (!mounted) return;
             setState(() { _currentRecognizedText = result.recognizedWords; });
 
-            // [핵심 수정] "회색 자물쇠" 상태가 아닐 때만 자동 종료 타이머를 작동시킵니다.
+            
             if (!_isConfirmingEndTurn) {
-                _endTurnTimer?.cancel(); // 이전 타이머 취소
+                _endTurnTimer?.cancel(); 
                 _endTurnTimer = Timer(const Duration(seconds: 3), () {
                     if (_isListening) {
                         print("⏰ 자동 종료 타이머 실행 (일반 모드)");
@@ -89,7 +89,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
                 });
             }
           },
-          // [변경] 라이브러리의 자동 종료 기능은 비활성화합니다.
+          
           listenFor: const Duration(minutes: 10),
           pauseFor: const Duration(minutes: 10),
           localeId: 'ko_KR',
@@ -122,7 +122,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   void _sendFinalResult() {
     if (!mounted || !_isListening) return;
     
-    // [추가] 턴 종료 시 항상 타이머를 취소하여 중복 실행을 방지합니다.
+    
     _endTurnTimer?.cancel();
     
     final textToSend = _currentRecognizedText.trim();
@@ -152,7 +152,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
         child: GestureDetector(
           onTap: () {
             if (_isConfirmingEndTurn) {
-              // [변경] 회색 자물쇠 상태에서 배경을 탭하면 일반 말하기 모드(빨간 잠금)로 돌아갑니다.
+              
               setState(() => _isConfirmingEndTurn = false);
             }
           },
@@ -237,7 +237,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
       onTap: () {
         setState(() {
           _isConfirmingEndTurn = true;
-          // [추가] 자물쇠 모드로 들어갈 때 타이머를 즉시 취소합니다.
+          
           _endTurnTimer?.cancel(); 
         });
       },
