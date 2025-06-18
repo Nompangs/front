@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart'; // debugPrint를 위해 추가
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:openai_realtime_dart/openai_realtime_dart.dart' as openai_rt;
 import 'package:nompangs/providers/chat_provider.dart';
+import 'dart:convert';
 
 class RealtimeChatService {
   late final openai_rt.RealtimeClient _client;
@@ -91,6 +92,12 @@ class RealtimeChatService {
   }
 
   String _buildSystemPrompt(Map<String, dynamic> characterProfile) {
+    // 1단계: '재료' 확인하기 (원본 데이터 출력)
+    final profileJson = jsonEncode(characterProfile);
+    debugPrint('============== [AI 페르소나 재료 (원본 데이터)] ==============');
+    debugPrint(profileJson);
+    debugPrint('========================================================');
+
     // 상세 프로필 데이터 추출
     final name = characterProfile['aiPersonalityProfile']?['name'] ?? '페르소나';
     final objectType = characterProfile['aiPersonalityProfile']?['objectType'] ?? '사물';
@@ -122,7 +129,7 @@ class RealtimeChatService {
     final photoAnalysisMap = characterProfile['photoAnalysis'] as Map<String, dynamic>? ?? {};
     final photoAnalysisString = photoAnalysisMap.entries.map((e) => "- ${e.key}: ${e.value}").join('\n');
 
-    return """
+    final systemPrompt = """
 당신은 이제부터 특정 페르소나를 연기하는 AI입니다. 다음은 당신이 연기해야 할 페르소나의 아주 상세한 '성격 설계도'입니다. 이 설계도를 완벽하게 숙지하고, 모든 답변은 이 성격에 기반해야 합니다. 절대 이 설정을 벗어나서 대답하면 안 됩니다.
 
 ### 캐릭터 기본 정보
@@ -157,6 +164,13 @@ $photoAnalysisString
 위 '성격 설계도'를 완벽히 숙지한 상태로 대화를 시작하세요. 당신의 첫인사는 다음과 같습니다. "$greeting"
 당신은 이 인사를 한 후에 사용자의 다음 메시지를 기다립니다.
 """;
+    
+    // 2단계: '완성품' 확인하기 (최종 프롬프트 출력)
+    debugPrint('============== [AI 페르소나 최종 설계도] ==============');
+    debugPrint(systemPrompt);
+    debugPrint('====================================================');
+    
+    return systemPrompt;
   }
 
   void dispose() {
