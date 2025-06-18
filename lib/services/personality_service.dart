@@ -33,13 +33,39 @@ class PersonalityService {
   // 127개 변수 목록을 서비스 내에서 직접 관리
   static List<String> getVariableKeys() {
     return [
-      'W01_친절함', 'W02_친근함', 'W03_진실성', 'W04_신뢰성', 'W05_수용성', 'W06_공감능력', 'W07_포용력', 'W08_격려성향', 'W09_친밀감표현', 'W10_무조건적수용',
-      'C01_효율성', 'C02_전문성', 'C03_창의성', 'C04_창의성_중복', 'C05_정확성', 'C06_분석력', 'C07_학습능력', 'C08_통찰력', 'C09_실행력', 'C10_적응력',
-      'E01_사교성', 'E02_활동성', 'E03_자기주장', 'E04_긍정정서', 'E05_자극추구', 'E06_주도성',
+      'W01_친절함',
+      'W02_친근함',
+      'W03_진실성',
+      'W04_신뢰성',
+      'W05_수용성',
+      'W06_공감능력',
+      'W07_포용력',
+      'W08_격려성향',
+      'W09_친밀감표현',
+      'W10_무조건적수용',
+      'C01_효율성',
+      'C02_전문성',
+      'C03_창의성',
+      'C04_창의성_중복',
+      'C05_정확성',
+      'C06_분석력',
+      'C07_학습능력',
+      'C08_통찰력',
+      'C09_실행력',
+      'C10_적응력',
+      'E01_사교성',
+      'E02_활동성',
+      'E03_자기주장',
+      'E04_긍정정서',
+      'E05_자극추구',
+      'E06_주도성',
       'H01_유머감각',
-      'CS01_책임감', 'CS02_질서성',
-      'N01_불안성', 'N02_감정변화',
-      'O01_상상력', 'O02_호기심'
+      'CS01_책임감',
+      'CS02_질서성',
+      'N01_불안성',
+      'N02_감정변화',
+      'O01_상상력',
+      'O02_호기심',
     ];
   }
 
@@ -55,14 +81,25 @@ class PersonalityService {
     debugPrint("  - 이미지 분석 완료: ${photoAnalysisResult['objectType']}");
 
     // 2. 80개 NPS 변수 생성 (AI 기반)
-    final aiGeneratedVariables = await _generateAIBasedVariables(state, photoAnalysisResult['visualDescription'] ?? '');
+    final aiGeneratedVariables = await _generateAIBasedVariables(
+      state,
+      photoAnalysisResult['visualDescription'] ?? '',
+    );
     debugPrint("  - 80개 NPS 변수 생성 완료: ${aiGeneratedVariables.length}개");
 
     // 3. AI 변수 기반으로 슬라이더 초기값 제안 (1-10 스케일)
-    final initialWarmth = ((aiGeneratedVariables['W01_친절함'] ?? 50) / 10).round().clamp(1, 10);
-    final initialIntroversion = (10 - ((aiGeneratedVariables['E01_사교성'] ?? 50) / 10).round()).clamp(1, 10);
-    final initialCompetence = ((aiGeneratedVariables['C02_전문성'] ?? 50) / 10).round().clamp(1, 10);
-    debugPrint("  - 슬라이더 초기값 계산 완료 (따뜻함:$initialWarmth, 내향성:$initialIntroversion, 유능함:$initialCompetence)");
+    final initialWarmth = ((aiGeneratedVariables['W01_친절함'] ?? 50) / 10)
+        .round()
+        .clamp(1, 10);
+    final initialIntroversion = (10 -
+            ((aiGeneratedVariables['E01_사교성'] ?? 50) / 10).round())
+        .clamp(1, 10);
+    final initialCompetence = ((aiGeneratedVariables['C02_전문성'] ?? 50) / 10)
+        .round()
+        .clamp(1, 10);
+    debugPrint(
+      "  - 슬라이더 초기값 계산 완료 (따뜻함:$initialWarmth, 내향성:$initialIntroversion, 유능함:$initialCompetence)",
+    );
 
     debugPrint("✅ 1/2단계: AI 페르소나 초안 생성 완료!");
     return AIPersonalityDraft(
@@ -82,7 +119,10 @@ class PersonalityService {
     debugPrint("✅ 2/2단계: 최종 프로필 완성 시작...");
 
     // 1. 사용자 선호도 적용
-    Map<String, int> userAdjustedVariables = _applyUserPreferences(draft.npsScores, finalState);
+    Map<String, int> userAdjustedVariables = _applyUserPreferences(
+      draft.npsScores,
+      finalState,
+    );
     debugPrint("  - 사용자 선호도 적용 완료");
 
     // 2. 풍부한 자연어 프로필 생성 (하이브리드 방식)
@@ -152,7 +192,10 @@ class PersonalityService {
 ''';
 
       final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
-      final headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer $apiKey'};
+      final headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $apiKey',
+      };
       final body = jsonEncode({
         'model': 'gpt-4o-mini',
         'messages': [
@@ -162,22 +205,30 @@ class PersonalityService {
               {'type': 'text', 'text': systemPrompt},
               {
                 'type': 'image_url',
-                'image_url': {'url': 'data:image/jpeg;base64,$base64Image'}
-              }
-            ]
-          }
+                'image_url': {'url': 'data:image/jpeg;base64,$base64Image'},
+              },
+            ],
+          },
         ],
         'max_tokens': 300,
         'response_format': {'type': 'json_object'},
       });
 
-      final response = await http.post(uri, headers: headers, body: body).timeout(const Duration(seconds: 90));
+      final response = await http
+          .post(uri, headers: headers, body: body)
+          .timeout(const Duration(seconds: 90));
 
       if (response.statusCode == 200) {
-        final contentString = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        final contentString =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
         return jsonDecode(contentString);
       } else {
-        throw Exception('이미지 분석 API 호출 실패: ${response.statusCode}, ${response.body}');
+        throw Exception(
+          '이미지 분석 API 호출 실패: ${response.statusCode}, ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('🚨 1단계 이미지 분석 실패: $e');
@@ -186,7 +237,9 @@ class PersonalityService {
   }
 
   Future<Map<String, int>> _generateAIBasedVariables(
-      OnboardingState state, String? photoAnalysisJson) async {
+    OnboardingState state,
+    String? photoAnalysisJson,
+  ) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       throw Exception('API 키가 없습니다.');
@@ -306,15 +359,22 @@ class PersonalityService {
     });
 
     try {
-      final response = await http.post(uri, headers: headers, body: body)
+      final response = await http
+          .post(uri, headers: headers, body: body)
           .timeout(const Duration(seconds: 90));
       if (response.statusCode == 200) {
-        final contentString = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        final contentString =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
         final decodedJson = jsonDecode(contentString) as Map<String, dynamic>;
 
         // 전체 JSON에서 'npsScores' 맵만 추출하여 반환
         if (decodedJson.containsKey('npsScores')) {
-          final npsScores = Map<String, int>.from(decodedJson['npsScores'] as Map);
+          final npsScores = Map<String, int>.from(
+            decodedJson['npsScores'] as Map,
+          );
           return npsScores;
         } else {
           // 혹시 모를 예외 상황: API 응답에 npsScores가 없는 경우
@@ -327,9 +387,11 @@ class PersonalityService {
         }
       } else {
         debugPrint(
-            '🚨 2단계 AI 변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
+          '🚨 2단계 AI 변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}',
+        );
         throw Exception(
-            '변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}');
+          '변수 생성 API 호출 실패: ${response.statusCode}, ${response.body}',
+        );
       }
     } catch (e) {
       debugPrint('🚨 2단계 AI 변수 생성 실패 (네트워크/타임아웃): $e');
@@ -337,7 +399,10 @@ class PersonalityService {
     }
   }
 
-  Map<String, int> _applyUserPreferences(Map<String, int> aiVariables, OnboardingState state) {
+  Map<String, int> _applyUserPreferences(
+    Map<String, int> aiVariables,
+    OnboardingState state,
+  ) {
     final adjustedVariables = Map<String, int>.from(aiVariables);
     final random = Random();
 
@@ -348,37 +413,193 @@ class PersonalityService {
 
     // nps_test 방식 적용
     // W (온기) 계열: warmth 슬라이더
-    _adjustWithRandomVariation(adjustedVariables, 'W01_친절함', warmth, 10, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W02_친근함', warmth, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W03_진실성', warmth, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W04_신뢰성', warmth, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W05_수용성', warmth, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W06_공감능력', warmth, 10, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W07_포용력', warmth, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W08_격려성향', warmth, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W09_친밀감표현', warmth, 25, random);
-    _adjustWithRandomVariation(adjustedVariables, 'W10_무조건적수용', warmth, 30, random);
-    
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W01_친절함',
+      warmth,
+      10,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W02_친근함',
+      warmth,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W03_진실성',
+      warmth,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W04_신뢰성',
+      warmth,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W05_수용성',
+      warmth,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W06_공감능력',
+      warmth,
+      10,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W07_포용력',
+      warmth,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W08_격려성향',
+      warmth,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W09_친밀감표현',
+      warmth,
+      25,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'W10_무조건적수용',
+      warmth,
+      30,
+      random,
+    );
+
     // C (능력) 계열: competence 슬라이더
-    _adjustWithRandomVariation(adjustedVariables, 'C01_효율성', competence, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C02_전문성', competence, 10, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C03_창의성', competence, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C04_창의성_중복', competence, 25, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C05_정확성', competence, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C06_분석력', competence, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C07_학습능력', competence, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C08_통찰력', competence, 25, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C09_실행력', competence, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'C10_적응력', competence, 15, random);
-    
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C01_효율성',
+      competence,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C02_전문성',
+      competence,
+      10,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C03_창의성',
+      competence,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C04_창의성_중복',
+      competence,
+      25,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C05_정확성',
+      competence,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C06_분석력',
+      competence,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C07_학습능력',
+      competence,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C08_통찰력',
+      competence,
+      25,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C09_실행력',
+      competence,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'C10_적응력',
+      competence,
+      15,
+      random,
+    );
+
     // E (외향성) 계열: introversion 슬라이더 (반대로 적용)
     final extraversion = 10 - introversion; // 1(내향) -> 9(외향), 9(내향) -> 1(외향)
-    _adjustWithRandomVariation(adjustedVariables, 'E01_사교성', extraversion, 15, random);
-    _adjustWithRandomVariation(adjustedVariables, 'E02_활동성', extraversion, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'E03_자기주장', extraversion, 25, random);
-    _adjustWithRandomVariation(adjustedVariables, 'E04_긍정정서', extraversion, 20, random);
-    _adjustWithRandomVariation(adjustedVariables, 'E05_자극추구', extraversion, 30, random);
-    _adjustWithRandomVariation(adjustedVariables, 'E06_주도성', extraversion, 20, random);
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E01_사교성',
+      extraversion,
+      15,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E02_활동성',
+      extraversion,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E03_자기주장',
+      extraversion,
+      25,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E04_긍정정서',
+      extraversion,
+      20,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E05_자극추구',
+      extraversion,
+      30,
+      random,
+    );
+    _adjustWithRandomVariation(
+      adjustedVariables,
+      'E06_주도성',
+      extraversion,
+      20,
+      random,
+    );
 
     // H (유머) 계열은 현재 슬라이더가 없으므로 AI 값 유지
     // 기타 100개 변수도 현재는 AI 값 유지
@@ -388,20 +609,20 @@ class PersonalityService {
 
   /// nps_test의 핵심 로직: AI 생성값에 [슬라이더 영향 + 랜덤 편차] 적용
   void _adjustWithRandomVariation(
-    Map<String, int> variables, 
-    String key, 
+    Map<String, int> variables,
+    String key,
     int sliderValue, // 1~9
     int maxVariation,
-    Random random
+    Random random,
   ) {
     final aiValue = variables[key] ?? 50;
 
     // 슬라이더의 영향력 (-20 ~ +20 범위). 5가 중간.
-    final sliderEffect = (sliderValue - 5) * 4; 
-    
+    final sliderEffect = (sliderValue - 5) * 4;
+
     // 개별 랜덤 편차 (-maxVariation ~ +maxVariation)
     final randomVariation = random.nextInt(maxVariation * 2 + 1) - maxVariation;
-    
+
     // 최종 조정값 적용: AI 기본값에 슬라이더 영향과 랜덤 편차를 더함
     final totalAdjustment = sliderEffect + randomVariation;
     variables[key] = (aiValue + totalAdjustment).clamp(1, 100);
@@ -411,7 +632,7 @@ class PersonalityService {
   String _generateCommunicationPrompt(OnboardingState state) {
     final warmth = state.warmth;
     final extraversion = 100 - state.introversion!;
-    
+
     // 유머 스타일 문자열을 숫자 점수로 변환
     Random random = Random();
     int humor = 75;
@@ -479,14 +700,14 @@ class PersonalityService {
       "주변 정리를 못해서 항상 약간의 혼란스러움이 있음",
       "완벽주의 성향이 있어 작은 결점에도 신경씀",
       "너무 사려깊어서 결정을 내리는 데 시간이 걸림",
-      "호기심이 많아 집중력이 약간 부족함"
+      "호기심이 많아 집중력이 약간 부족함",
     ];
-    
+
     flawsOptions.shuffle();
     final numFlaws = Random().nextInt(2) + 2; // 2 또는 3개
     return flawsOptions.sublist(0, numFlaws);
   }
-  
+
   // 파이썬 로직 이식: 모순점 생성 (목표 지정 AI 기반)
   Future<List<String>> _generateContradictions(
     Map<String, int> variables,
@@ -534,12 +755,18 @@ class PersonalityService {
       );
 
       if (response.statusCode == 200) {
-        final contentString = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        final contentString =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
         // API가 배열을 포함하는 JSON 객체를 반환한다고 가정
         final contentJson = jsonDecode(contentString);
         // "contradictions" 같은 키가 있을 수 있으므로 첫 번째 value를 가져옴
-        if (contentJson is Map && contentJson.values.isNotEmpty && contentJson.values.first is List) {
-           return List<String>.from(contentJson.values.first);
+        if (contentJson is Map &&
+            contentJson.values.isNotEmpty &&
+            contentJson.values.first is List) {
+          return List<String>.from(contentJson.values.first);
         }
         // 또는 API가 직접 리스트를 반환하는 경우
         else if (contentJson is List) {
@@ -567,12 +794,17 @@ class PersonalityService {
     }
 
     // NPS 점수에서 상위 3개, 하위 2개 특성 추출
-    final sortedScores = npsScores.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    
-    final top3Traits = sortedScores.take(3).map((e) => '${e.key.split('_').last}(${e.value})').join(', ');
-    final bottom2Traits = sortedScores.reversed.take(2).map((e) => '${e.key.split('_').last}(${e.value})').join(', ');
+    final sortedScores =
+        npsScores.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
+    final top3Traits = sortedScores
+        .take(3)
+        .map((e) => '${e.key.split('_').last}(${e.value})')
+        .join(', ');
+    final bottom2Traits = sortedScores.reversed
+        .take(2)
+        .map((e) => '${e.key.split('_').last}(${e.value})')
+        .join(', ');
 
     final systemPrompt = '''
 당신은 주어진 페르소나 정보를 바탕으로 사용자를 환영하는 매력적인 첫인사를 작성하는 AI 카피라이터입니다.
@@ -618,7 +850,11 @@ class PersonalityService {
       );
 
       if (response.statusCode == 200) {
-        final content = jsonDecode(utf8.decode(response.bodyBytes))['choices'][0]['message']['content'] as String;
+        final content =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
         return content.trim();
       } else {
         return "AI가 인사를 건네기 곤란한가봐요. (오류: ${response.statusCode})";
@@ -632,11 +868,31 @@ class PersonalityService {
   HumorMatrix _generateHumorMatrix(String humorStyle) {
     // 파이썬 코드의 템플릿을 Dart Map으로 변환
     final templates = {
-      '따뜻한': {'warmthVsWit': 85, 'selfVsObservational': 40, 'subtleVsExpressive': 30},
-      '날카로운 관찰자적': {'warmthVsWit': 20, 'selfVsObservational': 10, 'subtleVsExpressive': 40},
-      '위트있는': {'warmthVsWit': 40, 'selfVsObservational': 30, 'subtleVsExpressive': 60},
-      '자기비하적': {'warmthVsWit': 60, 'selfVsObservational': 90, 'subtleVsExpressive': 50},
-      '유쾌한': {'warmthVsWit': 75, 'selfVsObservational': 50, 'subtleVsExpressive': 70},
+      '따뜻한': {
+        'warmthVsWit': 85,
+        'selfVsObservational': 40,
+        'subtleVsExpressive': 30,
+      },
+      '날카로운 관찰자적': {
+        'warmthVsWit': 20,
+        'selfVsObservational': 10,
+        'subtleVsExpressive': 40,
+      },
+      '위트있는': {
+        'warmthVsWit': 40,
+        'selfVsObservational': 30,
+        'subtleVsExpressive': 60,
+      },
+      '자기비하적': {
+        'warmthVsWit': 60,
+        'selfVsObservational': 90,
+        'subtleVsExpressive': 50,
+      },
+      '유쾌한': {
+        'warmthVsWit': 75,
+        'selfVsObservational': 50,
+        'subtleVsExpressive': 70,
+      },
     };
 
     final style = templates[humorStyle] ?? templates['따뜻한']!; // 기본값
