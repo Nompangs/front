@@ -112,10 +112,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
+                  counterText: '',
                 ),
+                maxLength: 7,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'Please enter your display name.';
+                  }
+                  if (value.length > 7) {
+                    return 'Display name must be 7 characters or less.';
                   }
                   return null;
                 },
@@ -153,9 +158,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: _isLoading ? null : _register,
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Register", style: TextStyle(fontSize: 16)),
+                  child:
+                      _isLoading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                            "Register",
+                            style: TextStyle(fontSize: 16),
+                          ),
                 ),
               ),
             ],

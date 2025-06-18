@@ -35,7 +35,6 @@ class ChatMessage {
   }
 }
 
-
 class ChatProvider extends ChangeNotifier {
   final RealtimeChatService _realtimeChatService = RealtimeChatService();
   final OpenAiTtsService _openAiTtsService = OpenAiTtsService();

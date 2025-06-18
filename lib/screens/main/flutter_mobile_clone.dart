@@ -5,6 +5,12 @@ import 'package:nompangs/screens/main/find_momenti_screen.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nompangs/services/api_service.dart';
+import 'package:nompangs/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:nompangs/providers/chat_provider.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -42,6 +48,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     "단골 카페",
   ];
   int? selectedCardIndex;
+  final ApiService _apiService = ApiService();
+  final AuthService _authService = AuthService();
+  List<ObjectData> objectData = [];
+  bool _isLoading = true;
+  String? _error;
+  String? displayName;
 
   AnimationController? _morphController1;
   AnimationController? _morphController2;
@@ -56,72 +68,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   AnimationController? _notificationIconController;
   Animation<double>? _notificationIconRotation;
 
-  final List<ObjectData> objectData = [
-    ObjectData(
-      title: "디자인 체어",
-      location: "내 방",
-      duration: "42 min",
-      isNew: true,
-      imageUrl: "assets/testImg_1.png",
-    ),
-    ObjectData(
-      title: "제임쓰 카페인쓰",
-      location: "사무실",
-      duration: "5 min",
-      imageUrl: "assets/testImg_2.png",
-    ),
-    ObjectData(
-      title: "빈백",
-      location: "우리집 안방",
-      duration: "139 min",
-      imageUrl: "assets/testImg_3.png",
-    ),
-    // 테스트 카드 1
-    ObjectData(
-      title: "테스트 소파",
-      location: "단골 카페",
-      duration: "12 min",
-      isNew: false,
-      imageUrl: "assets/testImg_4.png",
-    ),
-    // 테스트 카드 2
-    ObjectData(
-      title: "테스트 램프",
-      location: "내 방",
-      duration: "88 min",
-      isNew: true,
-      imageUrl: "assets/testImg_5.png",
-    ),
-  ];
-
-  List<ObjectData> get filteredObjectData {
-    if (selectedFilter == "전체") {
-      return objectData;
-    } else if (selectedFilter == "NEW") {
-      return objectData.where((data) => data.isNew == true).toList();
-    } else {
-      return objectData
-          .where((data) => data.location == selectedFilter)
-          .toList();
-    }
-  }
-
-  // 스케일 애니메이션 생성 헬퍼 메소드
-  Animation<double> _createScaleAnimation(
-    AnimationController controller,
-    double startValue,
-  ) {
-    return Tween<double>(begin: startValue, end: 1.0).animate(
-      CurvedAnimation(
-        parent: controller,
-        curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
-      ),
-    );
-  }
-
   @override
   void initState() {
     super.initState();
+    _fetchDisplayName();
+    _initializeData();
 
     // 각 버튼별 애니메이션 컨트롤러 초기화
     _morphController1 = AnimationController(
@@ -163,19 +114,131 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       _morphController2?.repeat(reverse: true);
     });
 
-    _notificationIconController = AnimationController(
-      duration: const Duration(seconds: 9),
-      vsync: this,
-    )..repeat();
-    _notificationIconRotation = Tween<double>(
-      begin: 0,
-      end: 2 * 3.141592,
-    ).animate(
-      CurvedAnimation(
-        parent: _notificationIconController!,
-        curve: Curves.linear,
-      ),
-    );
+    if (objectData.isNotEmpty) {
+      _notificationIconController = AnimationController(
+        duration: const Duration(seconds: 9),
+        vsync: this,
+      )..repeat();
+      _notificationIconRotation = Tween<double>(
+        begin: 0,
+        end: 2 * 3.141592,
+      ).animate(
+        CurvedAnimation(
+          parent: _notificationIconController!,
+          curve: Curves.linear,
+        ),
+      );
+    } else {
+      _notificationIconController = null;
+      _notificationIconRotation = null;
+    }
+  }
+
+  Future<void> _fetchDisplayName() async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+    setState(() {
+      displayName = doc.data()?['displayName'] ?? '게스트';
+    });
+  }
+
+  Future<void> _initializeData() async {
+    if (_authService.currentUser == null) {
+      setState(() {
+        _error = '로그인이 필요합니다.';
+        _isLoading = false;
+      });
+      // 로그인 화면으로 이동
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
+    await _loadAwokenObjects();
+  }
+
+  Future<void> _loadAwokenObjects() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final objects = await _apiService.getAwokenObjects();
+      setState(() {
+        objectData = objects.map((obj) => ObjectData.fromMap(obj)).toList();
+        _isLoading = false;
+      });
+      _updateIconAnimation();
+    } catch (e) {
+      print('🚨 사물 목록 로드 실패: $e');
+      if (e.toString().contains('Authentication required')) {
+        setState(() {
+          _error = '로그인이 필요합니다.';
+          _isLoading = false;
+        });
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+
+      // 에러 시 기본 테스트 데이터 사용
+      setState(() {
+        objectData = [
+          ObjectData(
+            title: "디자인 체어",
+            location: "내 방",
+            duration: "42 min",
+            isNew: true,
+            imageUrl: "assets/testImg_1.png",
+            uuid: "test-1",
+            uid: "test-1-uid",
+          ),
+          ObjectData(
+            title: "제임쓰 카페인쓰",
+            location: "사무실",
+            duration: "5 min",
+            imageUrl: "assets/testImg_2.png",
+            uuid: "test-2",
+            uid: "test-2-uid",
+          ),
+          ObjectData(
+            title: "빈백",
+            location: "우리집 안방",
+            duration: "139 min",
+            imageUrl: "assets/testImg_3.png",
+            uuid: "test-3",
+            uid: "test-3-uid",
+          ),
+          // 테스트 카드 1
+          ObjectData(
+            title: "테스트 소파",
+            location: "단골 카페",
+            duration: "12 min",
+            isNew: false,
+            imageUrl: "assets/testImg_4.png",
+            uuid: "test-4",
+            uid: "test-4-uid",
+          ),
+          // 테스트 카드 2
+          ObjectData(
+            title: "테스트 램프",
+            location: "내 방",
+            duration: "88 min",
+            isNew: true,
+            imageUrl: "assets/testImg_5.png",
+            uuid: "test-5",
+            uid: "test-5-uid",
+          ),
+        ];
+        _isLoading = false;
+        _error = '데이터를 불러오는데 실패했습니다. 테스트 데이터를 표시합니다.';
+      });
+      _updateIconAnimation();
+    }
   }
 
   // 버튼 클릭 애니메이션 함수들 - 이제 즉시 화면 전환
@@ -252,10 +315,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               ),
                               SizedBox(height: 12 * scale),
                               Text(
-                                '안녕하세요, 씅님',
+                                '안냥,${(displayName != null && displayName!.isNotEmpty) ? displayName : '게스트'}님',
                                 style: TextStyle(
                                   color: Color(0xFF222222),
-                                  fontSize: 30 * scale,
+                                  fontSize: 26 * scale,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 maxLines: 1,
@@ -606,29 +669,63 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         SizedBox(height: 16 * scale),
                         // Horizontal scrollable cards
                         Expanded(
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: filteredObjectData.length,
-                            separatorBuilder:
-                                (context, index) => SizedBox(width: 12 * scale),
-                            itemBuilder:
-                                (context, index) => GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      selectedCardIndex =
-                                          selectedCardIndex == index
-                                              ? null
-                                              : index;
-                                    });
-                                  },
-                                  child: ObjectCard(
-                                    data: filteredObjectData[index],
-                                    scale: scale,
-                                    isSelected: selectedCardIndex == index,
-                                    index: index,
+                          child:
+                              _isLoading
+                                  ? Center(
+                                    child: CircularProgressIndicator(
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF3FCB80),
+                                      ),
+                                    ),
+                                  )
+                                  : Column(
+                                    children: [
+                                      if (_error != null)
+                                        Padding(
+                                          padding: EdgeInsets.all(16 * scale),
+                                          child: Text(
+                                            _error!,
+                                            style: TextStyle(
+                                              color: Colors.red,
+                                              fontSize: 14 * scale,
+                                            ),
+                                          ),
+                                        ),
+                                      Expanded(
+                                        child: ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount: filteredObjectData.length,
+                                          separatorBuilder:
+                                              (context, index) =>
+                                                  SizedBox(width: 12 * scale),
+                                          itemBuilder:
+                                              (
+                                                context,
+                                                index,
+                                              ) => GestureDetector(
+                                                onTap: () {
+                                                  setState(() {
+                                                    selectedCardIndex =
+                                                        selectedCardIndex ==
+                                                                index
+                                                            ? null
+                                                            : index;
+                                                  });
+                                                },
+                                                child: ObjectCard(
+                                                  data:
+                                                      filteredObjectData[index],
+                                                  scale: scale,
+                                                  isSelected:
+                                                      selectedCardIndex ==
+                                                      index,
+                                                  index: index,
+                                                ),
+                                              ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                          ),
                         ),
                       ],
                     ),
@@ -661,49 +758,66 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                     SizedBox(width: 30 * scale),
                     Expanded(
                       child: Center(
-                        child: RichText(
-                          text: TextSpan(
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 13 * scale,
-                            ),
-                            children: [
-                              TextSpan(
-                                text: lastChattedObjectName,
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              TextSpan(
-                                text: '와 마지막으로 대화했어요.',
-                                style: TextStyle(fontWeight: FontWeight.w300),
-                              ),
-                            ],
-                          ),
-                        ),
+                        child:
+                            (objectData.isEmpty)
+                                ? Text(
+                                  '대화기록이 없어요. 모멘티를 깨워보세요!',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 13 * scale,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                )
+                                : RichText(
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 13 * scale,
+                                    ),
+                                    children: [
+                                      TextSpan(
+                                        text: lastChattedObjectName,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: '와 마지막으로 대화했어요.',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w300,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                       ),
                     ),
                     GestureDetector(
                       onTap: () {
+                        if (objectData.isEmpty) return;
+                        final lastObject = objectData.reduce((a, b) {
+                          int aMinutes = _parseDurationToMinutes(a.duration);
+                          int bMinutes = _parseDurationToMinutes(b.duration);
+                          return aMinutes < bMinutes ? a : b;
+                        });
+
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder:
-                                (context) => ChatScreen(
-                                  profile: PersonalityProfile(
-                                    aiPersonalityProfile: AiPersonalityProfile(
-                                      name:
-                                          lastChattedObjectName.isNotEmpty
-                                              ? lastChattedObjectName
-                                              : '모멘티',
-                                      objectType: '',
-                                      emotionalRange: 5,
-                                      coreValues: ['친근함', '유머'],
-                                      relationshipStyle: '',
-                                      summary: '',
-                                    ),
-                                    contradictions: [],
-                                    greeting: '안녕하세요! 무엇이 궁금하신가요?',
-                                    initialUserMessage: '',
-                                  ),
+                                (context) => ChangeNotifierProvider(
+                                  create:
+                                      (_) => ChatProvider(
+                                        uuid: lastObject.uuid,
+                                        characterName: lastObject.title,
+                                        characterHandle: lastObject.location,
+                                        personalityTags:
+                                            lastObject.personalityTags ??
+                                            ['기본값'],
+                                        greeting:
+                                            lastObject.greeting ?? '기본 인사말',
+                                      ),
+                                  child: ChatTextScreen(),
                                 ),
                           ),
                         );
@@ -713,7 +827,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                         height: 54 * scale,
                         margin: EdgeInsets.only(right: 1 * scale),
                         child:
-                            _notificationIconRotation != null
+                            (objectData.isEmpty)
+                                ? Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/ui_assets/btn_quickchat.png',
+                                      width: 54 * scale,
+                                      height: 54 * scale,
+                                      fit: BoxFit.contain,
+                                    ),
+                                    Icon(
+                                      Icons.north_east,
+                                      color: Colors.black,
+                                      size: 20 * scale,
+                                    ),
+                                  ],
+                                )
+                                : (_notificationIconRotation != null)
                                 ? AnimatedBuilder(
                                   animation: _notificationIconRotation!,
                                   builder: (context, child) {
@@ -791,6 +922,55 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       return (int.tryParse(duration.split(' ')[0]) ?? 99999) * 60;
     }
     return 99999;
+  }
+
+  List<ObjectData> get filteredObjectData {
+    if (selectedFilter == "전체") {
+      return objectData;
+    } else if (selectedFilter == "NEW") {
+      return objectData.where((data) => data.isNew == true).toList();
+    } else {
+      return objectData
+          .where((data) => data.location == selectedFilter)
+          .toList();
+    }
+  }
+
+  // 스케일 애니메이션 생성 헬퍼 메소드
+  Animation<double> _createScaleAnimation(
+    AnimationController controller,
+    double startValue,
+  ) {
+    return Tween<double>(begin: startValue, end: 1.0).animate(
+      CurvedAnimation(
+        parent: controller,
+        curve: Interval(0.15, 1.0, curve: Curves.elasticOut),
+      ),
+    );
+  }
+
+  void _updateIconAnimation() {
+    if (objectData.isNotEmpty) {
+      if (_notificationIconController == null) {
+        _notificationIconController = AnimationController(
+          duration: const Duration(seconds: 9),
+          vsync: this,
+        )..repeat();
+        _notificationIconRotation = Tween<double>(
+          begin: 0,
+          end: 2 * 3.141592,
+        ).animate(
+          CurvedAnimation(
+            parent: _notificationIconController!,
+            curve: Curves.linear,
+          ),
+        );
+      }
+    } else {
+      _notificationIconController?.stop();
+      _notificationIconController?.reset();
+      _notificationIconRotation = null;
+    }
   }
 }
 
@@ -1111,6 +1291,10 @@ class ObjectData {
   final String duration;
   final String? imageUrl;
   final bool isNew;
+  final String uuid;
+  final String uid;
+  final String? greeting;
+  final List<String>? personalityTags;
 
   ObjectData({
     required this.title,
@@ -1118,5 +1302,37 @@ class ObjectData {
     required this.duration,
     this.imageUrl,
     this.isNew = false,
+    required this.uuid,
+    required this.uid,
+    this.greeting,
+    this.personalityTags,
   });
+
+  factory ObjectData.fromMap(Map<String, dynamic> map) {
+    final DateTime lastInteraction = DateTime.parse(
+      map['lastInteraction'] ?? DateTime.now().toIso8601String(),
+    );
+    final Duration difference = DateTime.now().difference(lastInteraction);
+
+    String duration;
+    if (difference.inHours > 24) {
+      duration = '${difference.inDays} d';
+    } else if (difference.inMinutes > 60) {
+      duration = '${difference.inHours} h';
+    } else {
+      duration = '${difference.inMinutes} min';
+    }
+
+    return ObjectData(
+      uuid: map['uuid'] ?? '',
+      uid: map['uid'] ?? '',
+      title: map['name'] ?? '알 수 없는 사물',
+      location: map['location'] ?? '위치 없음',
+      duration: duration,
+      imageUrl: map['imageUrl'] ?? 'assets/testImg_1.png',
+      isNew: difference.inHours < 24,
+      greeting: map['greeting'],
+      personalityTags: (map['personalityTags'] as List?)?.cast<String>(),
+    );
+  }
 }
