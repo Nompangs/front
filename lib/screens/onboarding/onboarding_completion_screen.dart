@@ -381,18 +381,18 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                     child:
                                         qrBytes != null
                                             ? RepaintBoundary(
-                                              key: _qrKey,
-                                              child: Image.memory(
-                                                qrBytes,
-                                                width: 100,
-                                                height: 100,
-                                                fit: BoxFit.contain,
-                                              ),
-                                            )
+                                                key: _qrKey,
+                                                child: Image.memory(
+                                                  qrBytes,
+                                                  width: 100,
+                                                  height: 100,
+                                                  fit: BoxFit.contain,
+                                                ),
+                                              )
                                             : const Center(
-                                              child:
-                                                  CircularProgressIndicator(),
-                                            ),
+                                                child:
+                                                    CircularProgressIndicator(),
+                                              ),
                                   ),
                                 ),
                               ),
@@ -673,34 +673,25 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
-                    // 서버 응답에서 실제 uuid를 받아와야 합니다.
-                    // 현재는 createQrProfile 응답에 uuid가 없으므로 임시 ID를 사용합니다.
                     final uuid =
-                        _qrImageData ??
+                        provider.personalityProfile?.uuid ??
                         'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
+
+                    // ChatProvider에 전달할 최종 프로필 맵을 구성합니다.
+                    final profileMap = character.toMap();
+                    profileMap['userInput'] = provider.getUserInputAsMap();
 
                     Navigator.pushAndRemoveUntil(
                       context,
                       MaterialPageRoute(
-                        builder:
-                            (context) => ChangeNotifierProvider(
-                              create:
-                                  (_) => ChatProvider(
-                                    uuid: uuid,
-                                    characterName:
-                                        character.aiPersonalityProfile?.name ??
-                                        '이름 없음',
-                                    characterHandle:
-                                        '@${character.aiPersonalityProfile?.name?.toLowerCase().replaceAll(' ', '') ?? 'unknown'}',
-                                    personalityTags:
-                                        character
-                                            .aiPersonalityProfile
-                                            ?.coreValues ??
-                                        ['친구같은'],
-                                    greeting: character.greeting ?? '안녕하세요!',
-                                  ),
-                              child: const ChatTextScreen(),
-                            ),
+                        builder: (context) => ChangeNotifierProvider(
+                          // 1단계: ChatProvider에 characterProfile 맵 전체를 전달합니다.
+                          // 이 수정으로 인해 ChatProvider 생성자에서 에러가 발생하는 것이 정상입니다.
+                          create: (_) => ChatProvider(
+                            characterProfile: profileMap,
+                          ),
+                          child: const ChatTextScreen(),
+                        ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
                     );
