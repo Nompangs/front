@@ -63,50 +63,14 @@ class ChatProvider extends ChangeNotifier {
         uuid = characterProfile['uuid'] ?? 'temp_uuid_${DateTime.now().millisecondsSinceEpoch}',
         characterName = characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음',
         characterHandle = '@${(characterProfile['aiPersonalityProfile']?['name'] ?? 'unknown').toLowerCase().replaceAll(' ', '')}',
-        // 사용자가 직접 조절한 슬라이더 값을 기반으로 UI 태그를 생성합니다.
-        personalityTags = _generateTagsFromSliders(characterProfile['userInput'] as Map<String, dynamic>?),
+        personalityTags = (characterProfile['personalityTags'] as List<dynamic>?)
+                ?.map((tag) => tag.toString())
+                .toList() ??
+            [],
         greeting = characterProfile['greeting'] as String? {
     _initializeChat();
   }
   
-  // 슬라이더 값에 따라 태그를 생성하는 static helper 메서드
-  static List<String> _generateTagsFromSliders(Map<String, dynamic>? userInput) {
-    if (userInput == null) return [];
-
-    final traits = <String>[];
-    final warmth = userInput['warmth'] as int? ?? 5;
-    final introversion = userInput['introversion'] as int? ?? 5; // 높을수록 내향적
-    final competence = userInput['competence'] as int? ?? 5;
-
-    // 1-10 스케일 기준
-    if (warmth > 7) {
-      traits.add("#따뜻한");
-    } else if (warmth >= 4 && warmth <= 7) {
-      traits.add("#포근한 듯 시크한");
-    } else if (warmth < 4) {
-      traits.add("#냉랭한");
-    }
-
-    if (competence > 7) {
-      traits.add("#유능한");
-    } else if (competence >= 4 && competence <= 7) {
-      traits.add("#허술하지만 해내는");
-    } else if (competence < 4) {
-      traits.add("#조금 모자란");
-    }
-
-    // introversion은 값이 높을수록 '내향적'
-    if (introversion > 7) {
-      traits.add("#내향적인");
-    } else if (introversion >= 4 && introversion <= 7) {
-      traits.add("#필터 있는 외향성");
-    } else if (introversion < 4) {
-      traits.add("#외향적인");
-    }
-    
-    return traits;
-  }
-
   Future<void> _initializeChat() async {
     await _loadHistory();
 

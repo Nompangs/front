@@ -675,13 +675,19 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: () {
-                    final uuid =
-                        provider.personalityProfile?.uuid ??
-                        'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
+                    // 1. OnboardingProvider에서 현재 상태(state)를 가져옵니다.
+                    final onboardingState = context.read<OnboardingProvider>().state;
 
-                    // ChatProvider에 전달할 최종 프로필 맵을 구성합니다.
+                    // 2. _getPersonalityTag 함수들을 사용하여 태그를 생성합니다.
+                    final tag1 = _getPersonalityTag1(onboardingState);
+                    final tag2 = _getPersonalityTag2(onboardingState);
+                    final personalityTags = [tag1, tag2];
+
+                    // 3. ChatProvider에 전달할 최종 프로필 맵을 구성합니다.
                     final profileMap = character.toMap();
                     profileMap['userInput'] = provider.getUserInputAsMap();
+                    // 4. 생성된 태그를 profileMap에 추가합니다.
+                    profileMap['personalityTags'] = personalityTags;
 
                     Navigator.pushAndRemoveUntil(
                       context,
@@ -1114,7 +1120,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     } else if (introversion >= 7) {
       return '#활발함';
     } else {
-      return '#적당함';
+      return '#반쯤활발';
     }
   }
 
@@ -1124,19 +1130,23 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     final competence = state.competence ?? 5;
 
     if (warmth >= 7 && competence >= 7) {
-      return '#따뜻하고능숙';
-    } else if (warmth >= 7) {
-      return '#따뜻함';
-    } else if (competence >= 7) {
-      return '#능숙함';
-    } else if (warmth <= 3 && competence <= 3) {
-      return '#차갑고서툰';
-    } else if (warmth <= 3) {
-      return '#차가움';
-    } else if (competence <= 3) {
-      return '#서툰';
+      return '#든든다정';
+    } else if (warmth >= 7 && competence >= 4) {
+      return '#포근러';
+    } else if (warmth >= 7 && competence < 4) {
+      return '#다정허당';
+    } else if (warmth >= 4 && competence >= 7) {
+      return '#능력자';
+    } else if (warmth >= 4 && competence >= 4) {
+      return '#평범러';
+    } else if (warmth >= 4 && competence < 4) {
+      return '#허당';
+    } else if (warmth < 4 && competence >= 7) {
+      return '#시크유능';
+    } else if (warmth < 4  && competence >= 4) {
+      return '#쌀쌀맞은';
     } else {
-      return '#균형잡힌';
+      return '#무심엉성';
     }
   }
 
