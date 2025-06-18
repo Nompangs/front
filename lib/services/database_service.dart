@@ -46,8 +46,11 @@ class DatabaseService {
   // C: 메시지 저장
   Future<int> saveMessage(Map<String, dynamic> message) async {
     final db = await instance.database;
-    return await db.insert('messages', message,
-        conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'messages',
+      message,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   // R: 특정 uuid의 모든 메시지 기록 조회
@@ -60,4 +63,4 @@ class DatabaseService {
       orderBy: 'timestamp DESC', // ASC를 DESC로 변경하여 최신순으로 정렬
     );
   }
-} 
+}

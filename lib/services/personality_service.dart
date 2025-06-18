@@ -1550,7 +1550,7 @@ $speechPattern
       };
     } else {
       return {
-        'voice': 'fable',
+        'voice': 'alloy',
         'rationale':
             '균형잡힌 성격(따뜻함:${(emotionalWarmth * 100).toInt()}%, 에너지:${(energyLevel * 100).toInt()}%) → 안정적이고 자연스러운 중성적 음성',
       };
