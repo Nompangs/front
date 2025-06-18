@@ -81,21 +81,33 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       print('   - 인사말: $greeting');
 
       if (mounted) {
+        // 프로필 정보를 기반으로 ChatProvider 생성 및 채팅 화면으로 이동
+        final characterProfile = {
+          'uuid': uuid,
+          'greeting': greeting,
+          'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
+          'initialUserMessage': '친구와 대화하고 싶어.',
+          'aiPersonalityProfile': aiProfile,
+          'photoAnalysis': {},
+          'attractiveFlaws': [],
+          'contradictions': [],
+          'userInput': {
+            'warmth': 5,
+            'introversion': 5,
+            'competence': 5,
+            'humorStyle': '기본',
+          },
+        };
+
         await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(
-                        uuid: uuid,
-                        characterName: characterName,
-                        characterHandle: characterHandle,
-                        personalityTags: personalityTags,
-                        greeting: greeting,
-                      ),
-                  child: const ChatTextScreen(),
-                ),
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(
+                characterProfile: characterProfile,
+              ),
+              child: const ChatTextScreen(),
+            ),
           ),
         );
 
