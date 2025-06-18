@@ -188,11 +188,20 @@ class _NompangsAppState extends State<NompangsApp> {
         final apiService = ApiService();
         final profile = await apiService.loadProfile(uuid);
 
+        // 불러온 프로필 데이터를 Map으로 변환
+        final characterProfileMap = profile.toMap();
+
+        // ChatTextScreen에서 사용할 태그를 추가합니다.
+        characterProfileMap['personalityTags'] = profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
+            ? profile.aiPersonalityProfile!.coreValues
+            : ['친구'];
+
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider(
               create: (_) => ChatProvider(
-                characterProfile: _defaultCharacterProfile,
+                // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
+                characterProfile: characterProfileMap,
               ),
               child: const ChatTextScreen(),
             ),

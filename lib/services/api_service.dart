@@ -97,6 +97,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
+        print('✅ [QR 로드 성공] 서버 원본 응답 (JSON 파싱 후): $data');
 
         // generatedProfile 내부의 aiPersonalityProfile 확인
         final hasProfile =
@@ -110,15 +111,14 @@ class ApiService {
           throw Exception('Invalid profile data: Missing required fields');
         }
 
-        // 응답 구조를 PersonalityProfile 형식에 맞게 변환
-        final Map<String, dynamic> profileData = {
+        // 'generatedProfile'의 모든 키-값과 최상위 'uuid'를 합쳐 새 맵을 생성합니다.
+        final profileForFromMap = {
+          ...(data['generatedProfile'] as Map<String, dynamic>),
           'uuid': data['uuid'],
-          'aiPersonalityProfile':
-              data['generatedProfile']['aiPersonalityProfile'],
         };
 
-        print('✅ [QR 로드 성공] 파싱된 데이터: $profileData');
-        return PersonalityProfile.fromMap(profileData);
+        print('✅ [QR 로드 성공] 최종 파싱 데이터: $profileForFromMap');
+        return PersonalityProfile.fromMap(profileForFromMap);
       } else {
         print(
           '🚨 [QR 로드 실패] 서버 에러: ${response.statusCode}, Body: ${response.body}',

@@ -57,48 +57,28 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
       final String uuid = parsedUuid;
       print('✅ [QR 스캔] 최종 ID 확정: $uuid. 이제 프로필을 로드합니다.');
 
+      // 1. api_service에서 완전한 프로필 객체를 불러옵니다.
       final PersonalityProfile profile = await _apiService.loadProfile(uuid);
 
-      // 프로필 데이터 검증 및 보완
-      if (profile.aiPersonalityProfile == null) {
-        print('🚨 [QR 스캔] 프로필에 AI 페르소나 정보가 없습니다. 기본값을 사용합니다.');
-        throw Exception('프로필 정보가 올바르지 않습니다.');
+      // 2. (중요) 불러온 객체가 유효한지 최소한의 검사만 수행합니다.
+      if (profile.aiPersonalityProfile == null || profile.uuid == null) {
+        print('🚨 [QR 스캔] 로드된 프로필에 핵심 데이터(uuid, aiProfile)가 없습니다.');
+        throw Exception('서버에서 받은 프로필 데이터가 올바르지 않습니다.');
       }
-
-      final aiProfile = profile.aiPersonalityProfile!;
-      final characterName =
-          aiProfile.name.isNotEmpty ? aiProfile.name : '이름 없음';
-      final characterHandle =
-          '@${characterName.toLowerCase().replaceAll(' ', '')}';
-      final personalityTags =
-          aiProfile.coreValues.isNotEmpty ? aiProfile.coreValues : ['친근한'];
-      final greeting = profile.greeting ?? '안녕하세요! 반가워요.';
-
-      print('✅ [QR 스캔] 프로필 데이터 검증 완료:');
-      print('   - 이름: $characterName');
-      print('   - 핸들: $characterHandle');
-      print('   - 성격 태그: $personalityTags');
-      print('   - 인사말: $greeting');
+      
+      print('✅ [QR 스캔] 프로필 객체 로드 완료. ChatProvider로 전달 준비.');
 
       if (mounted) {
-        // 프로필 정보를 기반으로 ChatProvider 생성 및 채팅 화면으로 이동
-        final characterProfile = {
-          'uuid': uuid,
-          'greeting': greeting,
-          'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
-          'initialUserMessage': '친구와 대화하고 싶어.',
-          'aiPersonalityProfile': aiProfile,
-          'photoAnalysis': {},
-          'attractiveFlaws': [],
-          'contradictions': [],
-          'userInput': {
-            'warmth': 5,
-            'introversion': 5,
-            'competence': 5,
-            'humorStyle': '기본',
-          },
-        };
+        // 3. 프로필 객체를 그대로 Map으로 변환합니다.
+        final characterProfile = profile.toMap();
 
+        // 4. 온보딩 화면과 마찬가지로, 태그를 생성하여 추가합니다.
+        //    (ChatTextScreen이 이 필드를 기대하고 있으므로 추가해주는 것이 안전합니다.)
+        characterProfile['personalityTags'] = profile.aiPersonalityProfile!.coreValues.isNotEmpty
+            ? profile.aiPersonalityProfile!.coreValues
+            : ['친구'];
+
+        // 5. 완성된 Map으로 ChatProvider를 생성하고 채팅 화면으로 이동합니다.
         await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -110,17 +90,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             ),
           ),
         );
-
-        if (mounted) {
-          setState(() {
-            _isProcessing = false;
-          });
-        }
       }
     } catch (e) {
-      print('🚨 [QR 스캔] 처리 중 에러 발생: $e');
+      print('🚨 [QR 스캔] _handleQRCode 처리 중 최종 에러 발생: $e');
       if (mounted) {
-        _showError('프로필을 불러오는데 실패했습니다. QR코드가 올바른지 확인해주세요.');
+        _showError('프로필을 불러오는데 실패했습니다: ${e.toString()}');
         setState(() {
           _isProcessing = false;
         });
