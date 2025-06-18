@@ -4,6 +4,9 @@ import 'package:nompangs/providers/chat_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'dart:async';
 
+// [제거] permission_handler import를 삭제합니다.
+// import 'package:permission_handler/permission_handler.dart';
+
 class ChatSpeakerScreen extends StatefulWidget {
   const ChatSpeakerScreen({super.key});
 
@@ -24,74 +27,95 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   @override
   void initState() {
     super.initState();
-    _initSpeech();
   }
 
   @override
   void dispose() {
     _speech.stop();
-    _endTurnTimer?.cancel(); // 화면 종료 시 타이머 정리
+    _endTurnTimer?.cancel();
     super.dispose();
-  }
-
-  Future<void> _initSpeech() async {
-    await _speech.initialize(
-      onError: (error) => print('STT Error: $error'),
-      onStatus: (status) {
-        if (status == 'notListening' && mounted) {
-          setState(() => _isListening = false);
-        }
-      },
-    );
   }
 
   void _restartListeningLoop() {
     if (!_hasHadFirstInteraction || !mounted || context.read<ChatProvider>().isProcessing || _isListening) {
       return;
     }
-    Future.delayed(const Duration(milliseconds: 500), () => _startListening());
+    Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && !context.read<ChatProvider>().isProcessing && !_isListening) {
+            _activateMicrophone();
+        }
+    });
   }
   
-  Future<void> _startListening() async {
-    if (_isListening || !mounted || context.read<ChatProvider>().isProcessing) return;
+  // [핵심 수정] 권한 요청 로직을 완전히 제거하고 STT 초기화 및 시작에만 집중합니다.
+  Future<void> _activateMicrophone() async {
+    if (_isListening || !mounted) return;
 
-    _endTurnTimer?.cancel();
-    await _speech.stop();
-
-    setState(() {
-      _isListening = true;
-      _isConfirmingEndTurn = false; 
-    });
-
-    _speech.listen(
-      onResult: (result) {
-        if (!mounted) return;
-        setState(() => _currentRecognizedText = result.recognizedWords);
-
-        // '일반 말하기'(빨간 잠금) 상태일 때만 자동 종료 타이머 작동
-        if (!_isConfirmingEndTurn) {
-          _endTurnTimer?.cancel(); // 새로운 단어가 인식되었으므로 이전 타이머 취소
-          _endTurnTimer = Timer(const Duration(seconds: 3), () {
-            // 3초간 새로운 단어 인식이 없으면 턴 종료
-            print("⏰ 3초 자동 종료 타이머 실행!");
-            if (_isListening && !_isConfirmingEndTurn) {
-              _sendFinalResult();
+    // STT 엔진 초기화
+    bool isInitialized = await _speech.initialize(
+        onError: (error) => print('STT Init Error: $error'),
+        onStatus: (status) {
+            if (status == stt.SpeechToText.notListeningStatus && mounted) {
+                setState(() => _isListening = false);
             }
-          });
-        }
-      },
-      listenFor: const Duration(minutes: 10),
-      pauseFor: const Duration(minutes: 10), // 패키지의 자동종료는 사용하지 않음
-      localeId: 'ko_KR',
-      onSoundLevelChange: (level) {
-        if (mounted) setState(() => _lastSoundLevel = level);
-      },
+        },
+    );
+
+    // 초기화 성공 시 바로 리스닝 시작
+    if (isInitialized && mounted) {
+        setState(() {
+            _isListening = true;
+            _isConfirmingEndTurn = false;
+            _currentRecognizedText = "";
+        });
+
+        _speech.listen(
+          onResult: (result) {
+            if (!mounted) return;
+            setState(() => _currentRecognizedText = result.recognizedWords);
+
+            if (!_isConfirmingEndTurn) {
+              _endTurnTimer?.cancel();
+              _endTurnTimer = Timer(const Duration(seconds: 3), () {
+                if (_isListening && !_isConfirmingEndTurn) {
+                  _sendFinalResult();
+                }
+              });
+            }
+          },
+          listenFor: const Duration(minutes: 10),
+          pauseFor: const Duration(minutes: 10),
+          localeId: 'ko_KR',
+          onSoundLevelChange: (level) {
+            if (mounted) setState(() => _lastSoundLevel = level);
+          },
+        );
+    } else if (mounted) {
+      // 초기화 실패 시 에러 표시
+        _showErrorDialog("음성 인식 엔진을 시작할 수 없습니다.");
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('오류'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
     );
   }
 
   void _sendFinalResult() {
     if (!mounted) return;
-    _endTurnTimer?.cancel(); // 턴 종료 시 항상 타이머 취소
+    _endTurnTimer?.cancel();
     final textToSend = _currentRecognizedText.trim();
     
     if (_isListening) _speech.stop();
@@ -159,7 +183,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
       ),
     );
   }
-
+  
   String _determineStatusText() {
     final chatProvider = context.watch<ChatProvider>();
     if (chatProvider.isProcessing) return "생각중이에요.";
@@ -188,7 +212,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
           setState(() => _hasHadFirstInteraction = true);
         }
         context.read<ChatProvider>().stopTts();
-        _startListening();
+        _activateMicrophone();
       },
       child: Container(
         width: 80, height: 80,
