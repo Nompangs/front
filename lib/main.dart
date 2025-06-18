@@ -226,11 +226,6 @@ class _NompangsAppState extends State<NompangsApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => OnboardingProvider()),
-        ChangeNotifierProvider(
-          create: (_) => ChatProvider(
-            characterProfile: _defaultCharacterProfile,
-          ),
-        ),
       ],
       child: MaterialApp(
         navigatorKey: _navigatorKey,

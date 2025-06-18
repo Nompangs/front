@@ -111,10 +111,15 @@ class ApiService {
           throw Exception('Invalid profile data: Missing required fields');
         }
 
+        final generatedProfileMap = data['generatedProfile'] as Map<String, dynamic>? ?? {};
+        final userInputMap = data['userInput'] as Map<String, dynamic>? ?? {};
+
         // 'generatedProfile'의 모든 키-값과 최상위 'uuid'를 합쳐 새 맵을 생성합니다.
+        // (중요) greeting은 userInput에 있을 수 있으므로 별도로 확인하여 추가합니다.
         final profileForFromMap = {
-          ...(data['generatedProfile'] as Map<String, dynamic>),
+          ...generatedProfileMap,
           'uuid': data['uuid'],
+          'greeting': userInputMap['greeting'] ?? generatedProfileMap['greeting'],
         };
 
         print('✅ [QR 로드 성공] 최종 파싱 데이터: $profileForFromMap');
