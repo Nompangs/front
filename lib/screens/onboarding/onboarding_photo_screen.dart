@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'dart:io';
 import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
 
 /// 온보딩 사물 사진 촬영 화면
 /// onboarding_purpose_screen.dart의 디자인 패턴을 따라 재구현
@@ -27,7 +28,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
   void initState() {
     super.initState();
     print('[OnboardingPhotoScreen] initState 호출');
-    _initializeCamera();
+    _checkAndInitializeCamera();
   }
 
   @override
@@ -38,14 +39,39 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
     super.dispose();
   }
 
+  Future<void> _checkAndInitializeCamera() async {
+    print('[OnboardingPhotoScreen] 카메라 권한 및 초기화 체크 시작');
+    var status = await Permission.camera.status;
+
+    if (status.isGranted) {
+      await _initializeCamera();
+    } else {
+      print('[OnboardingPhotoScreen] 카메라 권한 없음');
+      _showCameraPermissionDialog();
+    }
+  }
+
   Future<void> _initializeCamera() async {
     print('[OnboardingPhotoScreen] _initializeCamera 호출');
+    if (_controller != null) {
+      await _controller!.dispose();
+      _controller = null;
+    }
+
     try {
       _cameras = await availableCameras();
+      print('[OnboardingPhotoScreen] 사용 가능한 카메라: ${_cameras.length}개');
+
       if (_cameras.isNotEmpty) {
-        _controller = CameraController(_cameras.first, ResolutionPreset.high);
+        _controller = CameraController(
+          _cameras.first,
+          ResolutionPreset.high,
+          enableAudio: false,
+        );
+
         await _controller!.initialize();
-        print('[OnboardingPhotoScreen] 카메라 컨트롤러 초기화 완료');
+        print('[OnboardingPhotoScreen] 카메라 초기화 성공');
+
         if (mounted) {
           setState(() {
             _isCameraInitialized = true;
@@ -54,23 +80,32 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
       }
     } catch (e) {
       print('[OnboardingPhotoScreen] 카메라 초기화 실패: $e');
+      _isCameraInitialized = false;
+      _controller?.dispose();
+      _controller = null;
     }
   }
 
   Future<void> _takePicture() async {
-    if (_controller == null || !_controller!.value.isInitialized) {
-      _showCameraPermissionDialog();
+    print('[OnboardingPhotoScreen] 사진 촬영 시도');
+
+    if (!_isCameraInitialized ||
+        _controller == null ||
+        !_controller!.value.isInitialized) {
+      print('[OnboardingPhotoScreen] 카메라 미초기화 상태에서 촬영 시도');
+      await _checkAndInitializeCamera();
       return;
     }
 
     try {
       final image = await _controller!.takePicture();
+      print('[OnboardingPhotoScreen] 사진 촬영 성공: ${image.path}');
       setState(() {
         _capturedImagePath = image.path;
         _validationError = null;
       });
     } catch (e) {
-      print('사진 촬영 실패: $e');
+      print('[OnboardingPhotoScreen] 사진 촬영 실패: $e');
     }
   }
 
@@ -122,7 +157,7 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    '사진을 촬영하여 AI 친구를 만들어보세요.\n카메라 접근 권한이 필요합니다.\n\n설정 > 개인정보 보호 및 보안 > 카메라에서\n앱 권한을 허용해주세요.',
+                    '사진을 촬영하여 AI 친구를 만들어보세요.\n카메라 접근 권한이 필요합니다.',
                     style: TextStyle(
                       fontFamily: 'Pretendard',
                       fontSize: 14,
@@ -130,84 +165,30 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                       color: Colors.black87,
                       height: 1.4,
                     ),
-                    textAlign: TextAlign.left,
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
                   Row(
                     children: [
                       Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 3),
-                          child: GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade50,
-                                border: Border.all(
-                                  color: Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(20),
-                                  bottomLeft: Radius.circular(20),
-                                  topRight: Radius.zero,
-                                  bottomRight: Radius.zero,
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '허용하지 않음',
-                                  style: TextStyle(
-                                    fontFamily: 'Pretendard',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w200,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                              ),
-                            ),
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: Text(
+                            '취소',
+                            style: TextStyle(color: Colors.grey.shade600),
                           ),
                         ),
                       ),
                       Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 3),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                              _initializeCamera();
-                            },
-                            child: Container(
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDAB7FA).withOpacity(0.7),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFFDAB7FA,
-                                  ).withOpacity(0.7),
-                                  width: 1,
-                                ),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.zero,
-                                  bottomLeft: Radius.zero,
-                                  topRight: Radius.circular(20),
-                                  bottomRight: Radius.circular(20),
-                                ),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '허용',
-                                  style: TextStyle(
-                                    fontFamily: 'Pretendard',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w200,
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
+                        child: TextButton(
+                          onPressed: () async {
+                            Navigator.pop(context);
+                            final status = await Permission.camera.request();
+                            if (status.isGranted) {
+                              await _initializeCamera();
+                            }
+                          },
+                          child: const Text('권한 허용'),
                         ),
                       ),
                     ],
@@ -400,6 +381,43 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
                                                   fit: BoxFit.cover,
                                                   width: double.infinity,
                                                   height: double.infinity,
+                                                  errorBuilder: (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) {
+                                                    print('이미지 로드 실패: $error');
+                                                    return Container(
+                                                      color:
+                                                          Colors.grey.shade300,
+                                                      child: Column(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.error_outline,
+                                                            size: 40,
+                                                            color:
+                                                                Colors
+                                                                    .grey
+                                                                    .shade600,
+                                                          ),
+                                                          SizedBox(height: 8),
+                                                          Text(
+                                                            '이미지를 불러올 수 없습니다',
+                                                            style: TextStyle(
+                                                              color:
+                                                                  Colors
+                                                                      .grey
+                                                                      .shade600,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    );
+                                                  },
                                                 ),
                                               )
                                               : _isCameraInitialized &&
