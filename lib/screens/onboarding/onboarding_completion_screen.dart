@@ -190,11 +190,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         debugPrint('QR URL: ${result['qrUrl']}');
         debugPrint('----------------------------------------\n');
 
-        // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
-        final serverUuid = result['uuid'] as String?;
-        final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
-        provider.setPersonalityProfile(profileWithUuid);
-
         setState(() {
           _qrImageData = result['qrUrl'] as String?;
           _isLoading = false;
@@ -211,7 +206,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           _message = "오류가 발생했어요: ${e.toString()}";
         });
       }
-    } catch (e) {
+      catch (e) {
       setState(() {
         _isLoading = false;
         _message = "오류가 발생했어요: ${e.toString()}";
