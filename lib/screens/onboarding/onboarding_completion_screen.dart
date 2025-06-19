@@ -184,37 +184,25 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
       provider.setPersonalityProfile(profileWithUuid);
 
-        debugPrint('\n[API 응답] 성공:');
-        debugPrint('----------------------------------------');
-        debugPrint('UUID: ${result['uuid']}');
-        debugPrint('QR URL: ${result['qrUrl']}');
-        debugPrint('----------------------------------------\n');
+      debugPrint('\n[API 응답] 성공:');
+      debugPrint('----------------------------------------');
+      debugPrint('UUID: [36m${result['uuid']}[0m');
+      debugPrint('QR URL: [36m${result['qrUrl']}[0m');
+      debugPrint('----------------------------------------\n');
 
-        // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
-        final serverUuid = result['uuid'] as String?;
-        final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
-        provider.setPersonalityProfile(profileWithUuid);
-
-        setState(() {
-          _qrImageData = result['qrUrl'] as String?;
-          _isLoading = false;
-          _message = "페르소나 생성 완료!";
-        });
-      } catch (e) {
-        debugPrint('\n[API 오류]:');
-        debugPrint('----------------------------------------');
-        debugPrint(e.toString());
-        debugPrint('----------------------------------------\n');
-
-        setState(() {
-          _isLoading = false;
-          _message = "오류가 발생했어요: ${e.toString()}";
-        });
-      }
+      setState(() {
+        _qrImageData = result['qrUrl'] as String?;
+        _isLoading = false;
+        _message = "페르소나 생성 완료!";
+      });
     } catch (e) {
+      debugPrint('\n[API 오류]:');
+      debugPrint('----------------------------------------');
+      debugPrint(e.toString());
+      debugPrint('----------------------------------------\n');
       setState(() {
         _isLoading = false;
-        _message = "오류가 발생했어요: ${e.toString()}";
+        _message = "오류가 발생했어요: [31m${e.toString()}[0m";
       });
     }
   }
