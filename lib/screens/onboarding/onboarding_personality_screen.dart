@@ -93,14 +93,14 @@ class _OnboardingPersonalityScreenState
                 child: _buildPersonalitySection(
                   screenWidth: screenWidth,
                   color: const Color(0xFFFFD700),
-                  title: '내향성',
+                  title: '외향성',
                   value: introversionValue ?? 0.5,
                   leftLabel: '수줍음',
                   rightLabel: '활발함',
                   onChanged: (value) {
                     setState(() => introversionValue = value);
                     final intValue = (value * 10).round();
-                    debugPrint("🎯 [성격화면] 내향성 슬라이더 변경: $value → $intValue");
+                    debugPrint("🎯 [성격화면] 외향성 슬라이더 변경: $value → $intValue");
                     // 슬라이더를 움직일 때마다 Provider 상태 업데이트
                     Provider.of<OnboardingProvider>(
                       context,
@@ -177,7 +177,7 @@ class _OnboardingPersonalityScreenState
                   final compVal = ((competenceValue ?? 0.5) * 10).round();
 
                   debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
-                  debugPrint("  - 내향성: ${introversionValue} → $introVal");
+                  debugPrint("  - 외향성: ${introversionValue} → $introVal");
                   debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
                   debugPrint("  - 유능함: ${competenceValue} → $compVal");
 

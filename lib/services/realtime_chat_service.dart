@@ -270,7 +270,7 @@ class RealtimeChatService {
     // 🔍 사용자 입력값 로드 디버그
     debugPrint("🔍 [generateSystemPrompt] 사용자 입력값 로드:");
     debugPrint("  userInput 전체: $userInput");
-    debugPrint("  로드된 성격값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
     final userDisplayName =
         userInput['userDisplayName'] as String?; // 🔥 사용자 실제 이름
 
@@ -334,9 +334,7 @@ class RealtimeChatService {
     debugPrint("🎯 모든 설정값 로드 완료:");
     debugPrint("  - 캐릭터: $name ($objectType)");
     debugPrint("  - 사용자: ${userDisplayName ?? '미설정'}");
-    debugPrint(
-      "  - 성격: 따뜻함=$warmth, 내향성=$introversion(외향성=${10 - introversion}), 유능함=$competence",
-    );
+    debugPrint("  - 성격: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
     debugPrint("  - 유머: $humorStyle");
     debugPrint("  - 관계: $relationshipStyle");
     debugPrint("  - 감정범위: $emotionalRange");
@@ -416,12 +414,12 @@ Start with: "$greeting"
     return "→ 매우 차갑고 거리감 있음";
   }
 
-  String _getIntroversionDescription(int introversion) {
-    if (introversion >= 9) return "→ 매우 내향적이고 조용함";
-    if (introversion >= 7) return "→ 내향적이고 신중함";
-    if (introversion >= 5) return "→ 균형잡힌 성향";
-    if (introversion >= 3) return "→ 외향적이고 활발함";
-    return "→ 매우 외향적이고 에너지 넘침";
+  String _getExtroversionDescription(int extroversion) {
+    if (extroversion >= 9) return "→ 매우 외향적이고 에너지 넘침";
+    if (extroversion >= 7) return "→ 외향적이고 활발함";
+    if (extroversion >= 5) return "→ 균형잡힌 성향";
+    if (extroversion >= 3) return "→ 내향적이고 신중함";
+    return "→ 매우 내향적이고 조용함";
   }
 
   String _getCompetenceDescription(int competence) {
@@ -958,7 +956,7 @@ Start with: "$greeting"
     // 🔍 사용자 입력값 로드 디버그
     debugPrint("🔍 [_getOptimalTemperature] 사용자 입력값 로드:");
     debugPrint("  userInput 전체: $userInput");
-    debugPrint("  로드된 성격값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
 
     // 🔥 NPS 점수 기반 심화 분석
     final npsScoresMap =

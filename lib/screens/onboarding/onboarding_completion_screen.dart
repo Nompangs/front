@@ -184,29 +184,28 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
       provider.setPersonalityProfile(profileWithUuid);
 
-        debugPrint('\n[API 응답] 성공:');
-        debugPrint('----------------------------------------');
-        debugPrint('UUID: ${result['uuid']}');
-        debugPrint('QR URL: ${result['qrUrl']}');
-        debugPrint('----------------------------------------\n');
+      debugPrint('\n[API 응답] 성공:');
+      debugPrint('----------------------------------------');
+      debugPrint('UUID: ${result['uuid']}');
+      debugPrint('QR URL: ${result['qrUrl']}');
+      debugPrint('----------------------------------------\n');
 
-        setState(() {
-          _qrImageData = result['qrUrl'] as String?;
-          _isLoading = false;
-          _message = "페르소나 생성 완료!";
-        });
-      } catch (e) {
-        debugPrint('\n[API 오류]:');
-        debugPrint('----------------------------------------');
-        debugPrint(e.toString());
-        debugPrint('----------------------------------------\n');
+      setState(() {
+        _qrImageData = result['qrUrl'] as String?;
+        _isLoading = false;
+        _message = "페르소나 생성 완료!";
+      });
+    } catch (e) {
+      debugPrint('\n[API 오류]:');
+      debugPrint('----------------------------------------');
+      debugPrint(e.toString());
+      debugPrint('----------------------------------------\n');
 
-        setState(() {
-          _isLoading = false;
-          _message = "오류가 발생했어요: ${e.toString()}";
-        });
-      }
-      catch (e) {
+      setState(() {
+        _isLoading = false;
+        _message = "오류가 발생했어요: ${e.toString()}";
+      });
+    } catch (e) {
       setState(() {
         _isLoading = false;
         _message = "오류가 발생했어요: ${e.toString()}";
@@ -1170,7 +1169,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   }
 
   String _getPersonalityTag1(OnboardingState state) {
-    // 첫 번째 태그: 내향성 기반 (수줍음 ↔ 활발함)
+    // 첫 번째 태그: 외향성 기반 (수줍음 ↔ 활발함)
     final introversion = state.introversion ?? 5;
     if (introversion <= 3) {
       return '수줍음';
