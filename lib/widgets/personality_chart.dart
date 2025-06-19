@@ -12,6 +12,9 @@ class PersonalityChart extends StatefulWidget {
   final List<String>? attractiveFlaws;
   final List<String>? contradictions;
   final String? communicationPrompt;
+  // 🆕 AI 생성 추가 필드들
+  final List<String>? coreTraits;
+  final String? personalityDescription;
 
   const PersonalityChart({
     super.key,
@@ -25,6 +28,9 @@ class PersonalityChart extends StatefulWidget {
     this.attractiveFlaws,
     this.contradictions,
     this.communicationPrompt,
+    // 🆕 AI 생성 추가 필드들
+    this.coreTraits,
+    this.personalityDescription,
   });
 
   @override
@@ -208,14 +214,14 @@ class _PersonalityChartState extends State<PersonalityChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 첫 번째 섹션: 성격 분석
+        // A. 성격 요약
         _buildSectionDivider(),
         const SizedBox(height: 30),
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: const Text(
-            '성격 분석',
+            '성격 요약',
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -226,7 +232,6 @@ class _PersonalityChartState extends State<PersonalityChart> {
 
         const SizedBox(height: 24),
 
-        // 성격 설명
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(20),
@@ -244,14 +249,14 @@ class _PersonalityChartState extends State<PersonalityChart> {
 
         const SizedBox(height: 32),
 
-        // 두 번째 섹션: 페르소나의 5가지 핵심특성
+        // B. 말투 (커뮤니케이션 스타일)
         _buildSectionDivider(),
         const SizedBox(height: 30),
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: const Text(
-            '페르소나의 5가지 핵심특성',
+            '말투 (커뮤니케이션 스타일)',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -261,11 +266,32 @@ class _PersonalityChartState extends State<PersonalityChart> {
         ),
 
         const SizedBox(height: 20),
-        _buildCoreTraits(),
+        _buildCommunicationSection(),
 
         const SizedBox(height: 32),
 
-        // 세 번째 섹션: 모순적 특성
+        // C. 매력적 특성
+        _buildSectionDivider(),
+        const SizedBox(height: 30),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Text(
+            '매력적 특성',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        _buildAttractiveSection(),
+
+        const SizedBox(height: 32),
+
+        // D. 모순적 특성
         _buildSectionDivider(),
         const SizedBox(height: 30),
 
@@ -283,71 +309,6 @@ class _PersonalityChartState extends State<PersonalityChart> {
 
         const SizedBox(height: 20),
         _buildContradictoryTraits(),
-
-        const SizedBox(height: 32),
-
-        // 네 번째 섹션: 매력적인 특징
-        _buildSectionDivider(),
-        const SizedBox(height: 30),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: const Text(
-            '매력적인 특징',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-        ),
-
-        const SizedBox(height: 20),
-        _buildCharmingTraits(),
-
-        // 다섯 번째 섹션: 음성 특성 (realtimeSettings가 있을 때만 표시)
-        if (widget.realtimeSettings != null) ...[
-          const SizedBox(height: 32),
-          _buildSectionDivider(),
-          const SizedBox(height: 30),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Text(
-              '음성 & 소통 특성',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          _buildVoiceCharacteristics(),
-        ],
-
-        // 여섯 번째 섹션: 소통 방식 (communicationPrompt가 있을 때만 표시)
-        if (widget.communicationPrompt?.isNotEmpty == true) ...[
-          const SizedBox(height: 32),
-          _buildSectionDivider(),
-          const SizedBox(height: 30),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Text(
-              '소통 스타일',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-          _buildCommunicationStyle(),
-        ],
       ],
     );
   }
@@ -425,7 +386,7 @@ class _PersonalityChartState extends State<PersonalityChart> {
   }
 
   Widget _buildContradictoryTraits() {
-    // 실제 데이터가 있으면 사용, 없으면 생성된 데이터 사용
+    // 🔥 최우선: AI가 생성한 모순적 특성 사용
     List<String> traits =
         widget.contradictions?.isNotEmpty == true
             ? widget.contradictions!
@@ -440,32 +401,26 @@ class _PersonalityChartState extends State<PersonalityChart> {
               String trait = entry.value;
 
               return Container(
-                padding: const EdgeInsets.symmetric(vertical: 2),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 20,
-                      height: 20,
-                      margin: const EdgeInsets.only(top: 1),
-                      child: const Text(
-                        '•',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(right: 12, top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
-                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         trait,
                         style: const TextStyle(
                           fontSize: 16,
+                          height: 1.5,
                           color: Colors.black,
-                          height: 1.4,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ),
@@ -617,28 +572,113 @@ class _PersonalityChartState extends State<PersonalityChart> {
     );
   }
 
-  Widget _buildCommunicationStyle() {
-    if (widget.communicationPrompt?.isEmpty != false)
+  Widget _buildCommunicationSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 전반적인 소통 방식 (communicationPrompt)
+        if (widget.communicationPrompt?.isNotEmpty == true) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              widget.communicationPrompt!,
+              style: const TextStyle(
+                fontSize: 16,
+                height: 1.6,
+                color: Colors.black,
+              ),
+              textAlign: TextAlign.left,
+            ),
+          ),
+        ],
+
+        // 폴백: 정보가 없을 때
+        if (widget.communicationPrompt?.isEmpty ?? true) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              '말투 정보가 생성되지 않았습니다.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAttractiveSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 매력적 결함 (attractiveFlaws)
+        if (widget.attractiveFlaws?.isNotEmpty == true) ...[
+          _buildAttractiveFlaws(),
+        ],
+
+        // 폴백: 정보가 없을 때
+        if (widget.attractiveFlaws?.isEmpty ?? true) ...[
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              '매력적 특성 정보가 생성되지 않았습니다.',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildAttractiveFlaws() {
+    if (widget.attractiveFlaws?.isEmpty ?? true) {
       return const SizedBox.shrink();
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
-        ),
-        child: Text(
-          widget.communicationPrompt!,
-          style: const TextStyle(
-            fontSize: 16,
-            color: Colors.black,
-            height: 1.5,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+      child: Column(
+        children:
+            widget.attractiveFlaws!.asMap().entries.map((entry) {
+              int index = entry.key;
+              String flaw = entry.value;
+
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(right: 12, top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        flaw,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          height: 1.5,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -675,6 +715,17 @@ class _PersonalityChartState extends State<PersonalityChart> {
   }
 
   String _generatePersonalityDescription() {
+    // 🔥 최우선: AI가 생성한 성격 설명 사용
+    if (widget.personalityDescription?.isNotEmpty == true) {
+      return widget.personalityDescription!;
+    }
+
+    // 🔥 차선: 소통 스타일 프롬프트 사용
+    if (widget.communicationPrompt?.isNotEmpty == true) {
+      return widget.communicationPrompt!;
+    }
+
+    // 🔥 폴백: 기존 로직 사용
     if (widget.warmth >= 70 && widget.extroversion >= 70) {
       return "따뜻하고 활발한 성격으로, 주변 사람들에게 긍정적인 에너지를 전달해요. 새로운 사람들과도 쉽게 친해지며, 항상 밝은 분위기를 만들어가는 분위기 메이커예요.";
     } else if (widget.warmth >= 70 && widget.extroversion < 40) {
@@ -691,6 +742,12 @@ class _PersonalityChartState extends State<PersonalityChart> {
   }
 
   List<String> _generateCoreTraits() {
+    // 🔥 최우선: AI가 생성한 핵심 특성 사용
+    if (widget.coreTraits?.isNotEmpty == true) {
+      return widget.coreTraits!;
+    }
+
+    // 🔥 차선: 기존 로직으로 폴백
     List<String> traits = [];
 
     if (widget.warmth >= 60) {

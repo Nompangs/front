@@ -691,14 +691,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   humour: _calculateHumour(character),
                                   reliability: _calculateReliability(character),
 
-                                  // realtimeSettings 정보 추가
+                                  // 🆕 AI 생성 실제 데이터 전달
                                   realtimeSettings: character.realtimeSettings,
-
-                                  // PersonalityService에서 실제 생성되는 매력적인 특성들
                                   attractiveFlaws: character.attractiveFlaws,
                                   contradictions: character.contradictions,
                                   communicationPrompt:
                                       character.communicationPrompt,
+
+                                  // 🆕 새로운 AI 생성 필드들 추가
+                                  coreTraits: character.coreTraits,
+                                  personalityDescription:
+                                      character.personalityDescription,
                                 );
                               },
                             ),

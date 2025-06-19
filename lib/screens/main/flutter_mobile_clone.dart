@@ -822,6 +822,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
                         // 🚨 문제: DB에서 불러온 데이터는 PersonalityProfile 구조가 아님
                         // 임시 해결책: 기본값 제공하되 실제 데이터를 활용할 수 있도록 개선 필요
+
+                        // Firestore에서 displayName을 읽어옵니다.
+                        String displayName = 'unknown';
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          final doc =
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .get();
+                          final data = doc.data();
+                          if (data != null) {
+                            displayName = data['displayName'] ?? 'unknown';
+                          }
+                        }
+
+                        // ChatProvider가 요구하는 새로운 형식에 맞게 프로필 맵을 재조립합니다.
                         final characterProfile = {
                           'uuid': lastObject.uuid,
                           'greeting': lastObject.greeting ?? '다시 만나서 반가워!',
@@ -837,7 +854,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           // ⚠️ TODO: DB 스키마 개선 필요 - PersonalityProfile 전체 저장하도록
                           'userInput': {
                             'warmth': 7, // 기본값을 조금 더 따뜻하게
-                            'extroversion': 5,
+                            'introversion': 5,
                             'competence': 6,
                             'humorStyle': '따뜻한',
                             'duration': '오래된 친구',

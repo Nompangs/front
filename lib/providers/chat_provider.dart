@@ -73,23 +73,6 @@ class ChatProvider extends ChangeNotifier {
           [],
       greeting = characterProfile['greeting'] as String? {
     debugPrint('[ChatProvider] Received characterProfile: $characterProfile');
-    debugPrint('[ChatProvider] UUID: ${characterProfile['uuid']}');
-    debugPrint(
-      '[ChatProvider] 캐릭터명: ${characterProfile['aiPersonalityProfile']?['name']}',
-    );
-    debugPrint('[ChatProvider] userInput 확인: ${characterProfile['userInput']}');
-    debugPrint(
-      '[ChatProvider] realtimeSettings 확인: ${characterProfile['realtimeSettings']}',
-    );
-    debugPrint(
-      '[ChatProvider] aiPersonalityProfile 확인: ${characterProfile['aiPersonalityProfile']}',
-    );
-    debugPrint(
-      '[ChatProvider] NPS 점수 개수: ${characterProfile['aiPersonalityProfile']?['npsScores']?.length ?? 0}',
-    );
-    debugPrint(
-      '[ChatProvider] 매력적결함 개수: ${characterProfile['attractiveFlaws']?.length ?? 0}',
-    );
     _initializeChat();
   }
 
@@ -113,12 +96,7 @@ class ChatProvider extends ChangeNotifier {
         }
 
         if (fullText.trim().isNotEmpty) {
-          final realtimeSettings =
-              _characterProfile['realtimeSettings'] as Map<String, dynamic>? ??
-              {};
-          final voice = realtimeSettings['voice'] as String? ?? 'alloy';
-          // speak 함수에 voice 파라미터를 전달합니다.
-          await _openAiTtsService.speak(fullText.trim(), voice: voice);
+          await _openAiTtsService.speak(fullText.trim());
         }
 
         _isProcessing = false;
@@ -156,10 +134,7 @@ class ChatProvider extends ChangeNotifier {
     }
 
     if (speak) {
-      final realtimeSettings =
-          _characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
-      final voice = realtimeSettings['voice'] as String? ?? 'alloy';
-      _openAiTtsService.speak(text, voice: voice);
+      _openAiTtsService.speak(text);
     }
     notifyListeners();
   }

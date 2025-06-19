@@ -13,6 +13,9 @@ class PersonalityProfile {
   final String? uuid;
   final Map<String, dynamic>? realtimeSettings;
   final Map<String, dynamic>? userInput;
+  // 🆕 AI 생성 추가 필드들
+  final List<String> coreTraits;
+  final String personalityDescription;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -27,6 +30,9 @@ class PersonalityProfile {
     this.uuid,
     this.realtimeSettings,
     this.userInput,
+    // 🆕 AI 생성 추가 필드들
+    this.coreTraits = const [],
+    this.personalityDescription = '',
   });
 
   PersonalityProfile copyWith({
@@ -42,6 +48,8 @@ class PersonalityProfile {
     String? uuid,
     Map<String, dynamic>? realtimeSettings,
     Map<String, dynamic>? userInput,
+    List<String>? coreTraits,
+    String? personalityDescription,
   }) {
     return PersonalityProfile(
       aiPersonalityProfile: aiPersonalityProfile ?? this.aiPersonalityProfile,
@@ -56,6 +64,9 @@ class PersonalityProfile {
       uuid: uuid ?? this.uuid,
       realtimeSettings: realtimeSettings ?? this.realtimeSettings,
       userInput: userInput ?? this.userInput,
+      coreTraits: coreTraits ?? this.coreTraits,
+      personalityDescription:
+          personalityDescription ?? this.personalityDescription,
     );
   }
 
@@ -71,6 +82,8 @@ class PersonalityProfile {
     uuid: null,
     realtimeSettings: null,
     userInput: null,
+    coreTraits: [],
+    personalityDescription: '',
   );
 
   Map<String, dynamic> toMap() {
@@ -86,6 +99,8 @@ class PersonalityProfile {
       'uuid': uuid,
       'realtimeSettings': realtimeSettings,
       'userInput': userInput,
+      'coreTraits': coreTraits,
+      'personalityDescription': personalityDescription,
     };
   }
 
@@ -124,6 +139,10 @@ class PersonalityProfile {
       uuid: map['uuid'] as String?,
       realtimeSettings: map['realtimeSettings'] as Map<String, dynamic>?,
       userInput: map['userInput'] as Map<String, dynamic>?,
+      coreTraits: List<String>.from(
+        (map['coreTraits'] as List<dynamic>? ?? []).map((e) => e.toString()),
+      ),
+      personalityDescription: map['personalityDescription'] as String? ?? '',
     );
   }
 }

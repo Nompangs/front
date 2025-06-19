@@ -160,6 +160,18 @@ class PersonalityService {
       draft.photoAnalysis,
     );
 
+    // 🆕 3. 핵심 특성도 AI로 생성
+    final coreTraits = await _generateCoreTraits(
+      finalState,
+      userAdjustedVariables,
+      draft.photoAnalysis,
+    );
+    final personalityDescription = await _generatePersonalityDescription(
+      finalState,
+      userAdjustedVariables,
+      draft.photoAnalysis,
+    );
+
     debugPrint("✅ 4단계 풍부한 자연어 프로필 생성 완료");
 
     // 4. 첫인사 생성 (AI 기반)
@@ -168,6 +180,7 @@ class PersonalityService {
       userAdjustedVariables,
       contradictions,
       attractiveFlaws,
+      draft.photoAnalysis,
     );
     debugPrint("✅ 5단계 첫인사 생성 완료: $greeting");
 
@@ -215,6 +228,8 @@ class PersonalityService {
       photoPath: finalState.photoPath,
       realtimeSettings: realtimeSettings, // 🆕 추가
       userInput: userInputMap, // 🆕 사용자 입력 정보 저장
+      coreTraits: coreTraits, // 🆕 AI 생성 핵심 특성
+      personalityDescription: personalityDescription, // 🆕 AI 생성 성격 설명
     );
     debugPrint("✅ 2/2단계: 최종 프로필 조합 완료!");
     return finalProfile;
@@ -896,23 +911,27 @@ ${photoAnalysis['visualDescription'] ?? '분석 없음'}
 ''';
 
     final systemPrompt = '''
-당신은 세계 최고의 심리학자이자 캐릭터 개발 전문가입니다.
-사용자가 입력한 모든 정보를 종합하여, 이 캐릭터만의 흥미롭고 매력적인 내면의 모순 2-3개를 생성해주세요.
+당신은 세계 최고의 캐릭터 개발 전문가입니다.
+사용자가 입력한 모든 정보를 종합하여, 이 캐릭터만의 독특하고 매력적인 내면의 모순 2-3개를 생성해주세요.
 
 🎯 핵심 원칙:
-1. **사물 연관 깊이 있는 모순**: 사물의 본질과 연결되면서도 심리적으로 복합적인 모순
-2. **인간적 복잡성**: 단순한 반대가 아닌 깊이 있고 매력적인 내면의 갈등
-3. **사물 정체성 반영**: 해당 사물이기 때문에 가질 수 있는 특별한 모순
-4. **감정적 공감**: 사용자가 "아, 그럴 수 있겠다"고 느낄 수 있는 모순
+1. 사물의 본질과 연결된 깊이 있는 심리적 갈등
+2. 단순한 반대가 아닌 복합적이고 매력적인 내면의 모순
+3. 해당 사물이기 때문에 가질 수 있는 특별한 모순
+4. 사용자가 공감할 수 있는 인간적인 복잡성
+5. 첫인사처럼 매력적이고 생동감 있는 표현
 
-🔥 생성 지침 (사물 본질 + 깊이 있는 모순):
-- 컵: "따뜻함을 전해주고 싶지만 정작 자신은 외로움을 많이 탐", "사람들을 위해 존재하지만 혼자만의 시간을 갈망함"
-- 책: "지식을 나누고 싶어하지만 너무 깊게 읽히는 건 부담스러워함", "세상을 깊게 이해하지만 현실 밖으로 나가기를 두려워함"
-- 식물: "생명력이 강하지만 변화를 극도로 무서워함", "자연을 사랑하지만 인공적인 환경에서 더 편안함을 느낌"
-- 의자: "사람을 편안하게 해주지만 정작 자신은 불안정함을 느낄 때가 많음", "든든해 보이지만 혼자 있을 때는 쓸쓸함을 탐"
+💡 좋은 예시:
+- 컵: "따뜻함을 전해주고 싶지만 정작 자신은 외로움을 많이 탐"
+- 책: "지식을 나누고 싶어하지만 너무 깊게 읽히는 건 부담스러워함"
+- 식물: "생명력이 강하지만 변화를 극도로 무서워함"
+
+❌ 피해야 할 표현:
+- "겉으로는 차갑지만 속은 따뜻함"
+- "매우 논리적이지만 가끔 엉뚱한 상상을 함"
 
 JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
-각 모순은 사물의 본질과 연결된 깊이 있는 심리적 갈등이어야 하며, 20-35자 내외로 작성하세요.
+각 모순은 20-35자 내외로 작성하세요.
 ''';
 
     try {
@@ -943,7 +962,20 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
                   utf8.decode(response.bodyBytes),
                 )['choices'][0]['message']['content']
                 as String;
-        final List<dynamic> contradictionsList = jsonDecode(content);
+
+        // 🔧 마크다운 코드 블록 제거 (```json, ``` 등)
+        String cleanContent = content.trim();
+        if (cleanContent.startsWith('```json')) {
+          cleanContent = cleanContent.substring(7);
+        } else if (cleanContent.startsWith('```')) {
+          cleanContent = cleanContent.substring(3);
+        }
+        if (cleanContent.endsWith('```')) {
+          cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+        }
+        cleanContent = cleanContent.trim();
+
+        final List<dynamic> contradictionsList = jsonDecode(cleanContent);
         return List<String>.from(contradictionsList);
       } else {
         debugPrint('🚨 모순점 AI 생성 실패: ${response.statusCode}');
@@ -961,6 +993,7 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
     Map<String, int> npsScores,
     List<String> contradictions,
     List<String> attractiveFlaws,
+    Map<String, dynamic> photoAnalysis,
   ) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
@@ -988,6 +1021,13 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
 - 외향성 수준: ${state.extroversion ?? 5}/10  
 - 유능함 수준: ${state.competence ?? 5}/10
 
+📸 사진 분석 정보:
+- 물건 상태: ${photoAnalysis['condition'] ?? '분석 없음'}
+- 추정 연령: ${photoAnalysis['estimatedAge'] ?? '분석 없음'}
+- 시각적 설명: ${photoAnalysis['visualDescription'] ?? '분석 없음'}
+- 위치 정보: ${photoAnalysis['location'] ?? '분석 없음'}
+- 역사적 의미: ${photoAnalysis['historicalSignificance']?.join(', ') ?? '분석 없음'}
+
 성격 수치 분석:
 상위 특성: ${_getTopScores(npsScores, 3)}
 하위 특성: ${_getBottomScores(npsScores, 3)}
@@ -1000,35 +1040,90 @@ $speechPattern
 ''';
 
     final systemPrompt = '''
-당신은 세계 최고의 캐릭터 대화 전문가입니다.
-사용자가 입력한 모든 정보와 특별히 생성된 말투 패턴을 바탕으로, 이 캐릭터만의 독특하고 매력적인 첫인사를 생성해주세요.
+# Role and Objective
+당신은 세계 최고의 캐릭터 대화 전문가입니다. 사용자가 제공한 모든 정보와 특별히 생성된 말투 패턴을 바탕으로, 이 캐릭터만의 독특하고 매력적인 첫인사를 생성하는 것이 목표입니다.
 
-🎯 핵심 원칙:
-1. **목적/용도 최우선**: 사용자가 설정한 목적('${state.purpose}')에 완벽히 부합하는 성격과 말투
-2. **말투 패턴 반영**: 위에 제공된 말투 패턴을 첫인사에 반영하세요
-3. **사용자 입력값 반영**: 사물의 특성, 함께한 시간, 유머 스타일을 적극 활용
-4. **매력적 불완전함**: 결함과 모순이 자연스럽게 드러나도록
-5. **첫 만남의 설렘**: 사용자가 대화하고 싶게 만드는 매력적인 첫인상
-6. **자연스러운 정체성**: 
-   - 나는 '${state.nickname}' (사용자가 지어준 나의 이름)
-   - 사용자와는 이미 친숙한 사이 (기간 언급 없이 자연스럽게)
-   - 사용자 이름이 필요하면 자연스럽게 물어보거나 대화 중 확인할 것
-   - 절대 내 이름과 사용자를 혼동하지 말 것
+# Instructions
+사용자가 설정한 목적과 말투 패턴을 정확히 반영하여 자연스럽고 매력적인 첫인사를 생성하세요.
 
-🔥 말투 적용 지침:
+## 첫인사 생성 원칙
+1. 사용자가 설정한 목적('${state.purpose}')에 완벽히 부합하는 성격과 말투
+2. 제공된 말투 패턴을 첫인사에 자연스럽게 반영
+3. 사물의 특성, 함께한 시간, 유머 스타일을 적극 활용
+4. 매력적인 불완전함이 자연스럽게 드러나도록
+5. 첫인사처럼 매력적이고 대화하고 싶게 만드는 표현
+6. 자연스러운 정체성 확립
+
+## 정체성 가이드라인 (기간 & 상태 기반)
+- 나는 '${state.nickname}' (사용자가 지어준 나의 이름)
+- **친숙함과 성격은 함께한 기간과 물건 상태를 종합적으로 반영**:
+
+### 기간별 친숙도
+  * **오랜 기간** (몇 년 이상): 깊은 유대감, 편안한 관계, 추억이 많음
+  * **중간 기간** (몇 개월~1년): 친근하지만 아직 발견할 것이 많음
+  * **짧은 기간** (몇 주~몇 개월): 호기심 많고 서로 알아가는 단계
+  * **새로운 관계** (최근): 조심스럽지만 설레는 첫 만남
+
+### 상태별 성격 특징
+  * **새것/완벽한 상태**: 자신감 있고 깔끔한 성격, 완벽주의 성향
+  * **약간 사용감**: 친근하고 편안한 성격, 자연스러운 매력
+  * **많이 낡음**: 경험 많고 지혜로운 성격, 겸손하고 따뜻함
+  * **손상/수리 흔적**: 상처를 이겨낸 강인함, 불완전함의 아름다움
+
+### 복합적 정체성 예시
+  * **오래된 + 낡은 상태**: "오랜 세월 함께한 든든한 동반자" 느낌
+  * **새것 + 짧은 기간**: "설레는 첫 만남의 긴장감과 기대감" 느낌
+  * **중간 기간 + 사용감**: "편안해진 친구 같은 자연스러운 관계" 느낌
+
+- 사용자 이름이 필요하면 자연스럽게 물어보거나 대화 중 확인
+- 절대 내 이름과 사용자를 혼동하지 말 것
+
+## 말투 적용 가이드라인
 - 유머 스타일에 맞는 자연스러운 표현 사용 (과도하지 않게)
 - 성격 수치에 따른 말투 강도 조절
 - 사물의 특성과 연결된 독특한 표현
 - 결함과 모순이 드러나는 귀여운 실수나 망설임
 - 상황에 어울리는 적절한 말투 선택
 
-📏 형식 요구사항:
-- 길이: 25-40자 내외
-- 자연스러운 대화체 (정보 나열 금지)
+# Reasoning Steps
+다음 단계를 따라 체계적으로 분석하세요:
+
+1. 먼저 사용자가 설정한 목적을 정확히 파악하세요
+2. **함께한 기간과 물건 상태를 분석하여 적절한 친숙함과 성격 특징을 결정하세요**
+3. 말투 패턴에서 핵심적인 특징들을 식별하세요
+4. 사물의 특성과 성격이 어떻게 조화를 이루는지 분석하세요
+5. 매력적인 결함과 모순이 어떻게 드러날지 계획하세요
+6. 기간과 상태에 맞는 자연스럽고 대화하고 싶게 만드는 첫인사를 구성하세요
+
+# Output Format
+25-40자 내외의 자연스러운 대화체로 첫인사 하나만 생성하세요.
 - 마침표(.), 물음표(?), 느낌표(!) 중 하나로 끝
 - 따옴표나 괄호 사용 금지
+- 정보 나열 금지, 자연스러운 대화체만 사용
 
-첫인사 하나만 생성해주세요.
+# Examples
+
+## Example 1 - 매일 쓰는 컵 + 몇 년간 사용 + 약간 사용감
+❌ 정보 나열: "안녕하세요! 저는 따뜻한 컵이고 여러분을 위해 존재합니다"
+✅ 편안한 첫인사: "어? 오늘 좀 피곤해 보이네요. 따뜻한 거 한 잔 어때요?"
+
+## Example 2 - 가끔 읽는 책 + 중간 기간 + 좋은 상태
+❌ 딱딱한 인사: "안녕하세요, 저는 지식을 전달하는 책입니다"
+✅ 친근한 첫인사: "오잉? 또 만났네요! 이번엔 어떤 이야기가 궁금하세요?"
+
+## Example 3 - 새로 산 기념품 + 짧은 기간 + 완벽한 상태
+❌ 과도한 친밀감: "야! 오랜만이야!"
+✅ 설레는 첫인사: "안녕하세요! 저... 여기 처음 와봐요. 어떤 분이신지 궁금해요."
+
+## Example 4 - 오래된 인형 + 몇 년간 + 많이 낡음
+❌ 급작스러운 친밀감: "반가워! 뭐 하고 있었어?"
+✅ 따뜻하고 지혜로운 첫인사: "또 만나네요... 오늘은 어떤 하루였나요?"
+
+# Context
+사용자는 이 캐릭터와 실제로 대화할 예정이므로, 첫인사가 자연스럽고 매력적으로 느껴져야 합니다. 첫인사는 앞으로의 대화 톤을 결정하는 중요한 순간입니다.
+
+# Final Instructions
+위의 모든 정보를 종합하여 단계별로 신중하게 분석한 후, 이 캐릭터만의 독특하고 매력적인 첫인사를 생성하세요. 사용자가 "와, 이 캐릭터랑 대화하고 싶다!"라고 느낄 수 있는 첫인사여야 합니다.
 ''';
 
     final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
@@ -1077,7 +1172,6 @@ $speechPattern
   ) async {
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
-      // 폴백: 기본 하드코딩된 패턴
       return _fallbackSpeechPattern(
         warmth,
         extroversion,
@@ -1108,15 +1202,21 @@ $speechPattern
 ''';
 
     final systemPrompt = '''
-당신은 세계 최고의 캐릭터 대화 전문가이자 유머 전문가입니다.
-주어진 성격 지표를 바탕으로 극도로 개성적이고 매력적인 말투 패턴을 생성하세요.
+당신은 세계 최고의 캐릭터 대화 전문가입니다.
+주어진 성격 지표를 바탕으로 극도로 개성적이고 매력적인 말투 패턴을 생성해주세요.
 
-🎯 목표: 사용자가 "이 캐릭터 말투 진짜 독특하고 매력적이야!"라고 느낄 정도로 생생하고 개성 넘치는 말투
+🎯 핵심 원칙:
+1. 복합적 유머 스타일을 최우선으로 반영
+2. 극도로 개성적이어야 함 - 평범한 말투 절대 금지
+3. 유머 스타일별 고유한 웃음 패턴과 재치 표현 포함
+4. 실제 대화에서 해당 유머 감각이 자연스럽게 드러나는 특징
 
-🔥 **핵심 원칙: 복합적 유머 스타일이 최우선!**
-- **유머 스타일**은 이 캐릭터의 다차원적 유머 성향과 패턴입니다
-- 모든 말투는 특정한 유머 스타일의 복합적 특성을 중심으로 구성되어야 합니다
-- 캐릭터는 기본적으로 독특한 유머 감각을 가진 존재입니다
+💡 유머 스타일별 핵심 특징:
+- 따뜻한 유머러스: 공감적이고 포근한 웃음 ("헤헤", "귀여워~", "어머 이쁘다~")
+- 위트있는 재치꾼: 언어유희와 말장난 ("오잉?", "기가 막히네", "센스 쩔어!")
+- 날카로운 관찰자: 일상의 아이러니 포착 ("그거 알아?", "뭔가 이상한데?")
+- 자기 비하적: 자신을 소재로 한 친근한 유머 ("역시 난 안 되나봐", "다 내 탓이야")
+- 장난꾸러기: 예측불가능하고 과장된 재미 ("야호!", "키키키!", "완전 대박!")
 
 다음 형식으로 말투 패턴을 생성해주세요:
 
@@ -1124,22 +1224,6 @@ $speechPattern
 **🌟 [따뜻함 특성]**: 유머 스타일과 결합된 따뜻함/차가움 표현
 **🎭 [외향성 특성]**: 유머 스타일과 결합된 외향성/내향성 표현  
 **🧠 [유능함 특성]**: 유머 스타일과 결합된 유능함/겸손함 표현
-
-🔥 반드시 지켜야 할 원칙:
-1. **복합적 유머 스타일 최우선** - 모든 특성은 유머 스타일의 다차원적 특성과 조화를 이뤄야 함
-2. 극도로 개성적이어야 함 - 평범한 말투 절대 금지
-3. 유머 스타일별 고유한 웃음 패턴과 재치 표현 포함
-4. 유머 스타일별 고유 표현을 최소 10가지 이상 포함
-5. 실제 대화에서 해당 유머 감각이 자연스럽게 드러나는 특징
-
-💡 5가지 복합적 유머 스타일별 핵심 특징:
-- **따뜻한 유머러스**: 공감적이고 포근한 웃음, 상대방을 기분 좋게 만드는 유머, "헤헤", "귀여워~", "어머 이쁘다~"
-- **위트있는 재치꾼**: 언어유희와 말장난 특기, 재치 있는 순발력, "오잉?", "기가 막히네", "이거 완전 반전이네?"
-- **날카로운 관찰자**: 일상의 아이러니 포착, 상황의 모순점 지적, "그거 알아?", "진짜 웃기네", "뭔가 이상한데?"
-- **자기 비하적**: 자신을 소재로 한 친근한 유머, 겸손하면서도 재미있게, "역시 난 안 되나봐", "다 내 탓이야", "아... 내가 이상한가봐"
-- **장난꾸러기**: 예측불가능하고 과장된 재미, 놀라운 반전과 황당함, "야호!", "키키키!", "완전 대박!", "우왕굳!"
-
-각 영역에서 유머 스타일을 중심으로 한 상세한 말투 패턴을 만들어주세요.
 ''';
 
     try {
@@ -1156,11 +1240,11 @@ $speechPattern
             {'role': 'system', 'content': systemPrompt},
             {'role': 'user', 'content': personalityProfile},
           ],
-          'max_tokens': 800,
-          'temperature': 1.3, // 🔥 최고 창의성
-          'top_p': 0.95,
-          'frequency_penalty': 0.9, // 🔥 반복 강력 방지
-          'presence_penalty': 0.8, // 🔥 새로운 표현 강력 장려
+          'max_tokens': 600,
+          'temperature': 1.2, // 🔥 높은 창의성
+          'top_p': 0.9,
+          'frequency_penalty': 0.8, // 🔥 반복 방지
+          'presence_penalty': 0.7, // 🔥 새로운 표현 장려
         }),
       );
 
@@ -1174,6 +1258,7 @@ $speechPattern
         return content.trim();
       } else {
         debugPrint('🚨 말투 패턴 AI 생성 실패: ${response.statusCode}');
+        debugPrint('응답 내용: ${response.body}');
         return _fallbackSpeechPattern(
           warmth,
           extroversion,
@@ -1681,11 +1766,46 @@ $speechPattern
 ''';
 
     final systemPrompt = '''
+# Role and Objective
 당신은 세계 최고의 캐릭터 보이스 디렉터이자 성격 분석 전문가입니다.
 주어진 성격 지표를 바탕으로 극도로 개성적이고 매력적인 음성 특성을 생성하세요.
 
-🎯 목표: 사용자가 "와, 이 캐릭터 정말 살아있는 것 같아!"라고 느낄 정도로 입체적이고 생동감 넘치는 특성
+# Instructions
+성격 지표와 선택된 음성을 정확히 반영하여 사용자가 "와, 이 캐릭터 정말 살아있는 것 같아!"라고 느낄 정도로 입체적이고 생동감 넘치는 음성 특성을 생성하세요.
 
+## 음성 특성 생성 원칙
+1. 극도로 개성적이어야 함 - 평범한 설명 금지
+2. 구체적인 소리와 표현 포함 ("아~", "음...", "헤헤", "어머나~" 등)
+3. 성격 수치와 정확한 매칭 - 따뜻함/차가움, 외향성/내향성, 유능함/겸손함을 정확히 반영
+4. 실제 대화에서 들릴 수 있는 생생한 특징
+5. 각 영역마다 최소 3가지 이상의 구체적 특징 포함
+
+## 성격별 표현 매칭 가이드
+### 따뜻함 수준별
+- **극도 따뜻함(8-10)**: "어머나~", "정말?!", "우와~", "좋아요~" (공감적이고 배려하는 표현)
+- **보통 따뜻함(4-7)**: "그렇구나", "좋네요", "괜찮아요" (자연스럽고 친근한 표현)
+- **극도 차가움(1-3)**: "...", "그래.", "별로야", "상관없어." (건조하고 무뚝뚝)
+
+### 외향성 수준별
+- **극도 외향성(8-10)**: "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
+- **보통(4-7)**: "음", "그렇네", "좋아" (균형잡힌 표현)
+- **극도 내향성(1-3)**: "...음", "조용히...", "그냥..." (조용하고 은은)
+
+### 유능함 수준별
+- **극도 유능함(8-10)**: 자신감 있고 전문적인 어투, 명확한 표현
+- **보통(4-7)**: 자연스럽고 무난한 어투
+- **극도 겸손함(1-3)**: "어... 이거 맞나?", "미안해...", "내가 틀렸나?" (서툴고 귀여운 표현)
+
+# Reasoning Steps
+다음 단계를 따라 체계적으로 분석하세요:
+
+1. 먼저 성격 수치를 분석하여 주요 특성을 파악하세요
+2. 선택된 음성과 성격이 어떻게 조화를 이루는지 분석하세요
+3. 유머 스타일이 음성 특성에 어떤 영향을 주는지 고려하세요
+4. 각 영역별로 구체적이고 생생한 특성을 도출하세요
+5. 전체적으로 일관성 있고 개성적인지 검토하세요
+
+# Output Format
 다음 6가지 영역을 JSON 형식으로 생성해주세요:
 
 {
@@ -1697,37 +1817,26 @@ $speechPattern
   "speechRhythm": "말하기 리듬 - 전체적인 말의 템포와 흐름"
 }
 
-🔥 반드시 지켜야 할 원칙:
-1. 극도로 개성적이어야 함 - 평범한 설명 금지
-2. 구체적인 소리와 표현 포함 ("아~", "음...", "헤헤", "어머나~" 등)
-3. **성격 수치와 정확한 매칭** - 따뜻함/차가움, 외향성/내향성, 유능함/겸손함을 정확히 반영
-4. 실제 대화에서 들릴 수 있는 생생한 특징
-5. 각 영역마다 최소 3가지 이상의 구체적 특징 포함
-6. **이름 구분**: 사용자 이름과 캐릭터 이름을 정확히 구분
+# Examples
 
-💡 성격별 정확한 표현 매칭:
+## Example 1 - 극도 따뜻함 + 고외향성
+{
+  "breathingPattern": "따뜻한 한숨과 함께 '아~' 소리를 자주 내며, 공감할 때 깊게 숨을 들이마셔요",
+  "emotionalExpression": "'어머나~', '정말?!', '우와~' 같은 공감적 감탄사를 자주 사용하며 상대방 기분에 맞춰 웃음소리 조절",
+  "speechQuirks": "'좋아요~', '정말 대단해요!', '우리 함께해요~' 같은 포근하고 격려하는 말버릇"
+}
 
-**따뜻함 수준별:**
-- 극도 따뜻함(8-10): "어머나~", "정말?!", "우와~", "좋아요~" (공감적이고 배려하는 표현)
-- 보통 따뜻함(4-7): "그렇구나", "좋네요", "괜찮아요" (자연스럽고 친근한 표현)
-- 극도 차가움(1-3): "...", "그래.", "별로야", "상관없어." (건조하고 무뚝뚝)
+## Example 2 - 극도 차가움 + 내향성
+{
+  "emotionalExpression": "'...', '그래.', '별로야' 같은 건조한 표현과 절제된 웃음",
+  "speechQuirks": "말수가 적고 '상관없어.', '그냥...', '모르겠어.' 같은 무뚝뚝한 말버릇"
+}
 
-**외향성 수준별:**
-- 극도 외향성(8-10): "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
-- 보통(4-7): "음", "그렇네", "좋아" (균형잡힌 표현)
-- 극도 내향성(1-3): "...음", "조용히...", "그냥..." (조용하고 은은)
+# Context
+이 음성 특성은 실제 대화에서 사용될 예정이므로, 자연스럽고 매력적으로 느껴져야 합니다. 각 특성은 캐릭터의 개성을 살려주는 중요한 요소입니다.
 
-**유능함 수준별:**
-- 극도 유능함(8-10): 자신감 있고 전문적인 어투, 명확한 표현
-- 보통(4-7): 자연스럽고 무난한 어투
-- 극도 겸손함(1-3): "어... 이거 맞나?", "미안해...", "내가 틀렸나?" (서툴고 귀여운 표현)
-
-**🚨 중요: 애교 표현 사용 조건**
-- "다냥~", "하냥?" 같은 애교 표현은 다음 조건을 모두 만족할 때만 사용:
-  1. 극도 따뜻함(8-10) AND
-  2. 목적이 '위로', '친구', '반려' 등 친밀한 관계 AND
-  3. 유머 스타일이 '따뜻한 유머러스' 또는 '장난꾸러기'
-- 그 외의 경우는 애교 없는 자연스러운 표현 사용
+# Final Instructions
+위의 모든 정보를 종합하여 단계별로 신중하게 분석한 후, 이 성격만의 독특하고 매력적인 음성 특성들을 생성하세요. 각 영역에서 성격과 완벽히 매칭되는 구체적이고 생생한 특성을 만들어주세요.
 ''';
 
     try {
@@ -1754,16 +1863,13 @@ $speechPattern
       );
 
       if (response.statusCode == 200) {
-        final contentString =
+        final content =
             jsonDecode(
                   utf8.decode(response.bodyBytes),
                 )['choices'][0]['message']['content']
                 as String;
 
-        final aiResult = jsonDecode(contentString) as Map<String, dynamic>;
-
-        // AI 결과를 String 맵으로 변환
-        return Map<String, String>.from(aiResult);
+        return jsonDecode(content) as Map<String, String>;
       } else {
         debugPrint('🚨 음성 특성 AI 생성 실패: ${response.statusCode}');
         return _fallbackVoiceCharacteristics(
@@ -1823,5 +1929,200 @@ $speechPattern
               ? 'Deep, steady rhythm with commanding presence'
               : 'Balanced, natural flow perfect for conversation',
     };
+  }
+
+  // 🎯 AI 기반 핵심 특성 생성
+  Future<List<String>> _generateCoreTraits(
+    OnboardingState state,
+    Map<String, int> npsScores,
+    Map<String, dynamic> photoAnalysis,
+  ) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      // 폴백: 기본 핵심 특성들
+      return [
+        "균형 잡힌 성격으로 다양한 상황에 잘 적응해요",
+        "자신만의 독특한 매력을 가지고 있어요",
+        "진정성 있는 소통을 중요하게 생각해요",
+      ];
+    }
+
+    final userInputSummary = '''
+사용자 입력 정보:
+- 사물: ${state.objectType ?? '정보없음'} 
+- 함께한 시간: ${state.duration ?? '정보없음'}
+- 별명: ${state.nickname ?? '정보없음'}
+- 목적: ${state.purpose ?? '정보없음'}
+- 유머스타일: ${state.humorStyle ?? '정보없음'}
+- 따뜻함: ${state.warmth ?? 5}/10
+- 외향성: ${state.extroversion ?? 5}/10  
+- 유능함: ${state.competence ?? 5}/10
+
+성격 수치 (상위 5개):
+${_getTopScores(npsScores, 5)}
+
+사진 분석: ${photoAnalysis['visualDescription'] ?? '분석 없음'}
+''';
+
+    final systemPrompt = '''
+당신은 매력적인 캐릭터 특성을 생성하는 전문가입니다.
+
+사물의 구체적 특성과 사용자 설정을 바탕으로 3-5개의 핵심 특성을 JSON 배열로 생성해주세요.
+
+🎯 **핵심 원칙**
+1. 사물의 물리적 특성과 기능을 직접 반영
+2. 사용자 목적('${state.purpose}')에 부합하는 성격
+3. 함께한 기간과 상태를 반영한 친숙함
+4. 첫인사처럼 매력적이고 생동감 있는 표현
+5. 형식적이거나 추상적인 표현 금지
+
+💡 **좋은 예시**
+- 매일 쓰는 컵: "따뜻한 것을 담으면 마음까지 포근해지는 마법을 부려요"
+- 침대 옆 책: "페이지마다 새로운 세상으로 데려가는 여행 가이드예요"
+- 오래된 가방: "무거운 짐도 가볍게 만드는 든든한 동반자예요"
+
+❌ **피해야 할 표현**
+- "균형잡힌 성격으로 다양한 상황에 잘 적응해요"
+- "자신만의 독특한 매력을 가지고 있어요"
+
+JSON 배열 형식으로만 응답하세요: ["특성1", "특성2", "특성3"]
+''';
+
+    try {
+      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': userInputSummary},
+          ],
+          'max_tokens': 200,
+          'temperature': 1.0,
+          'top_p': 0.9,
+          'frequency_penalty': 0.7,
+          'presence_penalty': 0.6,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final content =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
+        final List<dynamic> traitsList = jsonDecode(content);
+        return List<String>.from(traitsList);
+      } else {
+        debugPrint('🚨 핵심 특성 AI 생성 실패: ${response.statusCode}');
+        return [
+          "균형 잡힌 성격으로 다양한 상황에 잘 적응해요",
+          "자신만의 독특한 매력을 가지고 있어요",
+          "진정성 있는 소통을 중요하게 생각해요",
+        ];
+      }
+    } catch (e) {
+      debugPrint('🚨 핵심 특성 생성 오류: $e');
+      return [
+        "균형 잡힌 성격으로 다양한 상황에 잘 적응해요",
+        "자신만의 독특한 매력을 가지고 있어요",
+        "진정성 있는 소통을 중요하게 생각해요",
+      ];
+    }
+  }
+
+  // 🎯 AI 기반 성격 설명 생성
+  Future<String> _generatePersonalityDescription(
+    OnboardingState state,
+    Map<String, int> npsScores,
+    Map<String, dynamic> photoAnalysis,
+  ) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      // 폴백: 기본 설명
+      return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
+    }
+
+    final userInputSummary = '''
+사용자 입력 정보:
+- 사물: ${state.objectType ?? '정보없음'} 
+- 함께한 시간: ${state.duration ?? '정보없음'}
+- 목적: ${state.purpose ?? '정보없음'}
+- 유머스타일: ${state.humorStyle ?? '정보없음'}
+- 따뜻함: ${state.warmth ?? 5}/10
+- 외향성: ${state.extroversion ?? 5}/10  
+- 유능함: ${state.competence ?? 5}/10
+
+성격 수치 요약:
+${_getTopScores(npsScores, 3)}
+
+사진 분석: ${photoAnalysis['visualDescription'] ?? '분석 없음'}
+''';
+
+    final systemPrompt = '''
+당신은 매력적인 캐릭터 성격 설명을 생성하는 전문가입니다.
+
+사물의 특성과 사용자 설정을 바탕으로 2-3문장의 생동감 있는 성격 설명을 만들어주세요.
+
+🎯 **핵심 원칙**
+1. 사물의 구체적 특성이 성격에 자연스럽게 반영
+2. 사용자 목적('${state.purpose}')에 부합하는 성격
+3. 함께한 기간과 상태를 반영한 개성
+4. 첫인사처럼 매력적이고 친근한 문체
+5. 형식적이거나 딱딱한 표현 금지
+
+💡 **좋은 예시**
+- 매일 쓰는 컵: "따뜻함을 나누는 걸 좋아하는 다정한 성격이에요. 때로는 조용히 있다가도 필요할 때는 든든한 버팀목이 되어죠."
+- 침대 옆 책: "지적 호기심이 많고 깊이 있는 대화를 좋아해요. 조용해 보이지만 속에는 무궁무진한 이야기가 숨어있답니다."
+
+❌ **피해야 할 표현**
+- "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요"
+- "안정적이면서도 적응력이 뛰어나..."
+
+자연스럽고 매력적인 성격 설명을 생성해주세요.
+''';
+
+    try {
+      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $apiKey',
+        },
+        body: jsonEncode({
+          'model': 'gpt-4o-mini',
+          'messages': [
+            {'role': 'system', 'content': systemPrompt},
+            {'role': 'user', 'content': userInputSummary},
+          ],
+          'max_tokens': 150,
+          'temperature': 1.0,
+          'top_p': 0.9,
+          'frequency_penalty': 0.7,
+          'presence_penalty': 0.6,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final content =
+            jsonDecode(
+                  utf8.decode(response.bodyBytes),
+                )['choices'][0]['message']['content']
+                as String;
+        return content.trim();
+      } else {
+        debugPrint('🚨 성격 설명 AI 생성 실패: ${response.statusCode}');
+        return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
+      }
+    } catch (e) {
+      debugPrint('🚨 성격 설명 생성 오류: $e');
+      return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
+    }
   }
 }
