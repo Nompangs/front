@@ -11,6 +11,8 @@ class PersonalityProfile {
   final String communicationPrompt;
   final String? photoPath;
   final String? uuid;
+  final Map<String, dynamic>? realtimeSettings;
+  final Map<String, dynamic>? userInput;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -23,6 +25,8 @@ class PersonalityProfile {
     this.communicationPrompt = '',
     this.photoPath,
     this.uuid,
+    this.realtimeSettings,
+    this.userInput,
   });
 
   PersonalityProfile copyWith({
@@ -36,6 +40,8 @@ class PersonalityProfile {
     String? communicationPrompt,
     String? photoPath,
     String? uuid,
+    Map<String, dynamic>? realtimeSettings,
+    Map<String, dynamic>? userInput,
   }) {
     return PersonalityProfile(
       aiPersonalityProfile: aiPersonalityProfile ?? this.aiPersonalityProfile,
@@ -48,20 +54,24 @@ class PersonalityProfile {
       communicationPrompt: communicationPrompt ?? this.communicationPrompt,
       photoPath: photoPath ?? this.photoPath,
       uuid: uuid ?? this.uuid,
+      realtimeSettings: realtimeSettings ?? this.realtimeSettings,
+      userInput: userInput ?? this.userInput,
     );
   }
 
   factory PersonalityProfile.empty() => PersonalityProfile(
-        aiPersonalityProfile: AiPersonalityProfile.empty(),
-        photoAnalysis: PhotoAnalysis.empty(),
-        humorMatrix: HumorMatrix.empty(),
-        attractiveFlaws: [],
-        contradictions: [],
-        greeting: null,
-        initialUserMessage: null,
-        photoPath: null,
-        uuid: null,
-      );
+    aiPersonalityProfile: AiPersonalityProfile.empty(),
+    photoAnalysis: PhotoAnalysis.empty(),
+    humorMatrix: HumorMatrix.empty(),
+    attractiveFlaws: [],
+    contradictions: [],
+    greeting: null,
+    initialUserMessage: null,
+    photoPath: null,
+    uuid: null,
+    realtimeSettings: null,
+    userInput: null,
+  );
 
   Map<String, dynamic> toMap() {
     return {
@@ -74,27 +84,46 @@ class PersonalityProfile {
       'initialUserMessage': initialUserMessage,
       'communicationPrompt': communicationPrompt,
       'uuid': uuid,
+      'realtimeSettings': realtimeSettings,
+      'userInput': userInput,
     };
   }
 
   factory PersonalityProfile.fromMap(Map<String, dynamic> map) {
     return PersonalityProfile(
-      aiPersonalityProfile: map['aiPersonalityProfile'] != null
-          ? AiPersonalityProfile.fromMap(map['aiPersonalityProfile'] as Map<String, dynamic>)
-          : null,
-      photoAnalysis: map['photoAnalysis'] != null
-          ? PhotoAnalysis.fromMap(map['photoAnalysis'] as Map<String, dynamic>)
-          : null,
-      humorMatrix: map['humorMatrix'] != null
-          ? HumorMatrix.fromMap(map['humorMatrix'] as Map<String, dynamic>)
-          : null,
-      attractiveFlaws: List<String>.from((map['attractiveFlaws'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      contradictions: List<String>.from((map['contradictions'] as List<dynamic>? ?? []).map((e) => e.toString())),
+      aiPersonalityProfile:
+          map['aiPersonalityProfile'] != null
+              ? AiPersonalityProfile.fromMap(
+                map['aiPersonalityProfile'] as Map<String, dynamic>,
+              )
+              : null,
+      photoAnalysis:
+          map['photoAnalysis'] != null
+              ? PhotoAnalysis.fromMap(
+                map['photoAnalysis'] as Map<String, dynamic>,
+              )
+              : null,
+      humorMatrix:
+          map['humorMatrix'] != null
+              ? HumorMatrix.fromMap(map['humorMatrix'] as Map<String, dynamic>)
+              : null,
+      attractiveFlaws: List<String>.from(
+        (map['attractiveFlaws'] as List<dynamic>? ?? []).map(
+          (e) => e.toString(),
+        ),
+      ),
+      contradictions: List<String>.from(
+        (map['contradictions'] as List<dynamic>? ?? []).map(
+          (e) => e.toString(),
+        ),
+      ),
       greeting: map['greeting'] as String?,
       initialUserMessage: map['initialUserMessage'] as String?,
       communicationPrompt: map['communicationPrompt'] as String? ?? '',
       photoPath: map['photoPath'] as String?,
       uuid: map['uuid'] as String?,
+      realtimeSettings: map['realtimeSettings'] as Map<String, dynamic>?,
+      userInput: map['userInput'] as Map<String, dynamic>?,
     );
   }
 }
@@ -119,34 +148,38 @@ class AiPersonalityProfile {
   });
 
   factory AiPersonalityProfile.empty() => AiPersonalityProfile(
-        name: '',
-        objectType: '',
-        emotionalRange: 5,
-        coreValues: [],
-        relationshipStyle: '',
-        summary: '',
-        npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
-      );
+    name: '',
+    objectType: '',
+    emotionalRange: 5,
+    coreValues: [],
+    relationshipStyle: '',
+    summary: '',
+    npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
+  );
 
   Map<String, dynamic> toMap() => {
-        'name': name,
-        'objectType': objectType,
-        'emotionalRange': emotionalRange,
-        'coreValues': coreValues,
-        'relationshipStyle': relationshipStyle,
-        'summary': summary,
-        'npsScores': npsScores, // toMap() 대신 직접 전달
-      };
+    'name': name,
+    'objectType': objectType,
+    'emotionalRange': emotionalRange,
+    'coreValues': coreValues,
+    'relationshipStyle': relationshipStyle,
+    'summary': summary,
+    'npsScores': npsScores, // toMap() 대신 직접 전달
+  };
 
   factory AiPersonalityProfile.fromMap(Map<String, dynamic> map) {
     return AiPersonalityProfile(
       name: map['name'] as String? ?? '',
       objectType: map['objectType'] as String? ?? '',
       emotionalRange: map['emotionalRange'] as int? ?? 5,
-      coreValues: List<String>.from((map['coreValues'] as List<dynamic>? ?? []).map((e) => e.toString())),
+      coreValues: List<String>.from(
+        (map['coreValues'] as List<dynamic>? ?? []).map((e) => e.toString()),
+      ),
       relationshipStyle: map['relationshipStyle'] as String? ?? '',
       summary: map['summary'] as String? ?? '',
-      npsScores: Map<String, int>.from(map['npsScores'] ?? {}), // NpsScores 파싱 로직 대신 Map 파싱
+      npsScores: Map<String, int>.from(
+        map['npsScores'] ?? {},
+      ), // NpsScores 파싱 로직 대신 Map 파싱
     );
   }
 }
@@ -171,24 +204,24 @@ class PhotoAnalysis {
   });
 
   factory PhotoAnalysis.empty() => PhotoAnalysis(
-        objectType: '',
-        visualDescription: '',
-        location: '',
-        condition: '',
-        estimatedAge: '',
-        historicalSignificance: [],
-        culturalContext: [],
-      );
+    objectType: '',
+    visualDescription: '',
+    location: '',
+    condition: '',
+    estimatedAge: '',
+    historicalSignificance: [],
+    culturalContext: [],
+  );
 
   Map<String, dynamic> toMap() => {
-        'objectType': objectType,
-        'visualDescription': visualDescription,
-        'location': location,
-        'condition': condition,
-        'estimatedAge': estimatedAge,
-        'historicalSignificance': historicalSignificance,
-        'culturalContext': culturalContext,
-      };
+    'objectType': objectType,
+    'visualDescription': visualDescription,
+    'location': location,
+    'condition': condition,
+    'estimatedAge': estimatedAge,
+    'historicalSignificance': historicalSignificance,
+    'culturalContext': culturalContext,
+  };
 
   factory PhotoAnalysis.fromMap(Map<String, dynamic> map) {
     return PhotoAnalysis(
@@ -197,8 +230,16 @@ class PhotoAnalysis {
       location: map['location'] as String? ?? '',
       condition: map['condition'] as String? ?? '',
       estimatedAge: map['estimatedAge'] as String? ?? '',
-      historicalSignificance: List<String>.from((map['historicalSignificance'] as List<dynamic>? ?? []).map((e) => e.toString())),
-      culturalContext: List<String>.from((map['culturalContext'] as List<dynamic>? ?? []).map((e) => e.toString())),
+      historicalSignificance: List<String>.from(
+        (map['historicalSignificance'] as List<dynamic>? ?? []).map(
+          (e) => e.toString(),
+        ),
+      ),
+      culturalContext: List<String>.from(
+        (map['culturalContext'] as List<dynamic>? ?? []).map(
+          (e) => e.toString(),
+        ),
+      ),
     );
   }
 }

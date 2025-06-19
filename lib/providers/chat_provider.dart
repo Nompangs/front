@@ -64,7 +64,8 @@ class ChatProvider extends ChangeNotifier {
           'temp_uuid_${DateTime.now().millisecondsSinceEpoch}',
       characterName =
           characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음',
-      characterHandle = '@${characterProfile['userDisplayName'] ?? 'unknown'}',
+      characterHandle =
+          '@${(characterProfile['aiPersonalityProfile']?['name'] ?? 'unknown').toLowerCase().replaceAll(' ', '')}',
       personalityTags =
           (characterProfile['personalityTags'] as List<dynamic>?)
               ?.map((tag) => tag.toString())
@@ -155,7 +156,45 @@ class ChatProvider extends ChangeNotifier {
     );
     notifyListeners();
 
-    await _realtimeChatService.sendMessage(userInput);
+    try {
+      // 🔗 연결 상태 확인 후 필요시 재연결
+      if (!_realtimeChatService.isConnected) {
+        debugPrint("🔄 RealtimeAPI 재연결 시도...");
+        await _realtimeChatService.connect(_characterProfile);
+
+        // 재연결 후 안정화 대기 (최소화)
+        await Future.delayed(const Duration(milliseconds: 200));
+      }
+
+      await _realtimeChatService.sendMessage(userInput);
+    } catch (e) {
+      debugPrint("❌ 메시지 전송 실패: $e");
+
+      // 연결 오류인 경우 한 번 더 재시도
+      if (e.toString().contains('not connected')) {
+        try {
+          debugPrint("🔄 연결 오류로 인한 재시도...");
+          await _realtimeChatService.connect(_characterProfile);
+          await Future.delayed(const Duration(milliseconds: 500)); // 재시도 대기
+          await _realtimeChatService.sendMessage(userInput);
+          return; // 성공하면 return
+        } catch (retryError) {
+          debugPrint("❌ 재시도도 실패: $retryError");
+        }
+      }
+
+      // 오류 메시지 표시
+      if (_messages.isNotEmpty && _messages.first.isLoading) {
+        _messages.first.text = "연결 오류가 발생했습니다. 잠시 후 다시 시도해주세요.";
+        _messages.first.isLoading = false;
+      }
+
+      _isProcessing = false;
+      notifyListeners();
+
+      // 사용자에게 오류 알림 (필요시)
+      rethrow;
+    }
   }
 
   @override

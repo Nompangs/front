@@ -39,7 +39,7 @@ class OnboardingProvider extends ChangeNotifier {
     // debugPrint(jsonEncode(_profile.toMap()));
     // debugPrint('===============================');
   }
-  
+
   void updateUserBasicInfo({
     required String nickname,
     required String location,
@@ -55,28 +55,28 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
     _logStatus('updateUserBasicInfo');
   }
-  
+
   /// 용도 업데이트 (Step 3)
   void updatePurpose(String purpose) {
     _state = _state.copyWith(purpose: purpose);
     notifyListeners();
     _logStatus('updatePurpose');
   }
-  
+
   /// 유머스타일 업데이트 (Step 3)
   void updateHumorStyle(String style) {
     _state = _state.copyWith(humorStyle: style);
     notifyListeners();
     _logStatus('updateHumorStyle');
   }
-  
+
   /// 사진 경로 업데이트 (Step 4)
   void updatePhotoPath(String? path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
     _logStatus('updatePhotoPath');
   }
-  
+
   /// 성격 슬라이더 업데이트 (Step 6)
   void updatePersonalitySlider(String type, int value) {
     switch (type) {
@@ -93,31 +93,31 @@ class OnboardingProvider extends ChangeNotifier {
     notifyListeners();
     _logStatus('updatePersonalitySlider');
   }
-  
+
   void setPhotoPath(String path) {
     _state = _state.copyWith(photoPath: path);
     notifyListeners();
     _logStatus('setPhotoPath');
   }
-  
+
   void setGeneratedCharacter(PersonalityProfile profile) {
     _generatedCharacter = profile;
     notifyListeners();
     _logStatus('setGeneratedCharacter');
   }
-  
+
   void setError(String error) {
     _state = _state.copyWith(errorMessage: error, isLoading: false);
     notifyListeners();
     _logStatus('setError');
   }
-  
+
   void clearError() {
     _state = _state.copyWith(errorMessage: null);
     notifyListeners();
     _logStatus('clearError');
   }
-  
+
   /// 서버 전송용 사용자 입력 데이터를 Map으로 변환합니다.
   Map<String, dynamic> getUserInputAsMap() {
     return {
@@ -133,7 +133,7 @@ class OnboardingProvider extends ChangeNotifier {
       'competence': state.competence,
     };
   }
-  
+
   /*
   // 이 함수는 personality_service로 대체되었으므로 주석 처리합니다.
   Future<void> generateCharacter() async {
@@ -241,7 +241,7 @@ class OnboardingProvider extends ChangeNotifier {
     }
   }
   */
-  
+
   void setPersonalityProfile(PersonalityProfile profile) {
     _profile = profile;
     notifyListeners();
@@ -287,7 +287,7 @@ class OnboardingProvider extends ChangeNotifier {
     // AI 추천값으로 state 업데이트
     _state = _state.copyWith(
       warmth: draft.initialWarmth,
-      introversion: draft.initialIntroversion,
+      introversion: draft.initialExtroversion, // 🎯 수정: initialExtroversion 사용
       competence: draft.initialCompetence,
     );
     notifyListeners();

@@ -174,11 +174,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
       // 4. 서버에 저장하고 ID와 QR코드 받기
       setState(() => _message = "서버에 안전하게 저장하는 중...");
-      try {
-        final result = await _apiService.createQrProfile(
-          generatedProfile: sanitizedProfile,
-          userInput: provider.getUserInputAsMap(),
-        );
+      final result = await _apiService.createQrProfile(
+        generatedProfile: profileMap, // 가공된 맵 전달
+        userInput: provider.getUserInputAsMap(),
+      );
+
+      // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
+      final serverUuid = result['uuid'] as String?;
+      final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
+      provider.setPersonalityProfile(profileWithUuid);
 
         debugPrint('\n[API 응답] 성공:');
         debugPrint('----------------------------------------');
@@ -755,9 +759,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   (_) => ChatProvider(
                                     characterProfile: profileMap,
                                   ),
-                              child: const ChatTextScreen(
-                                showHomeInsteadOfBack: true,
-                              ),
+                              child: const ChatTextScreen(),
                             ),
                       ),
                       (Route<dynamic> route) => false, // 이전 모든 라우트를 제거

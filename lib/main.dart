@@ -49,7 +49,7 @@ final Map<String, dynamic> _defaultCharacterProfile = {
     'introversion': 5,
     'competence': 5,
     'humorStyle': '기본',
-  }
+  },
 };
 
 void main() async {
@@ -182,7 +182,7 @@ class _NompangsAppState extends State<NompangsApp> {
   void _handleDeepLink(Uri uri) async {
     final uuid = uri.queryParameters['roomId'] ?? uri.queryParameters['id'];
     print('📦 딥링크 수신됨! URI: $uri, 추출된 UUID: $uuid');
-    
+
     if (uuid != null) {
       try {
         final apiService = ApiService();
@@ -192,19 +192,25 @@ class _NompangsAppState extends State<NompangsApp> {
         final characterProfileMap = profile.toMap();
 
         // ChatTextScreen에서 사용할 태그를 추가합니다.
-        characterProfileMap['personalityTags'] = profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
-            ? profile.aiPersonalityProfile!.coreValues
-            : ['친구'];
+        characterProfileMap['personalityTags'] =
+            profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
+                ? profile.aiPersonalityProfile!.coreValues
+                : ['친구'];
+
+        // 🎯 딥링크 진입 시에도 서버에서 받은 실제 데이터 사용
+        // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
 
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (_) => ChatProvider(
-                // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
-                characterProfile: characterProfileMap,
-              ),
-              child: const ChatTextScreen(),
-            ),
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create:
+                      (_) => ChatProvider(
+                        // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
+                        characterProfile: characterProfileMap,
+                      ),
+                  child: const ChatTextScreen(),
+                ),
           ),
         );
       } catch (e) {
@@ -224,9 +230,7 @@ class _NompangsAppState extends State<NompangsApp> {
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => OnboardingProvider()),
-      ],
+      providers: [ChangeNotifierProvider(create: (_) => OnboardingProvider())],
       child: MaterialApp(
         navigatorKey: _navigatorKey,
         title: 'Nompangs',
@@ -256,7 +260,8 @@ class _NompangsAppState extends State<NompangsApp> {
           final uri = Uri.parse(settings.name ?? '');
 
           // '/chat/{characterId}' 형태의 경로를 처리
-          if (uri.pathSegments.length == 2 && uri.pathSegments.first == 'chat') {
+          if (uri.pathSegments.length == 2 &&
+              uri.pathSegments.first == 'chat') {
             final characterId = uri.pathSegments.last;
 
             // 라우트 인자(arguments)에서 PersonalityProfile 객체를 가져옴
@@ -274,11 +279,12 @@ class _NompangsAppState extends State<NompangsApp> {
               // 딥링크를 통해 들어왔지만 profile 정보가 없는 경우 등 예외 처리
               // TODO: characterId를 사용하여 Firestore 등에서 프로필 정보를 가져오는 로직 구현 필요
               return MaterialPageRoute(
-                builder: (_) => Scaffold(
-                  body: Center(
-                    child: Text('캐릭터 정보를 불러올 수 없습니다. (ID: $characterId)'),
-                  ),
-                ),
+                builder:
+                    (_) => Scaffold(
+                      body: Center(
+                        child: Text('캐릭터 정보를 불러올 수 없습니다. (ID: $characterId)'),
+                      ),
+                    ),
               );
             }
           }
