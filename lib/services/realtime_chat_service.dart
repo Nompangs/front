@@ -374,6 +374,65 @@ ${_generateFlawExample(attractiveFlawsList)}
     // 2단계: 프롬프트 생성 완료
     debugPrint('✅ [RealtimeChat] 시스템 프롬프트 생성 완료: ${systemPrompt.length}자');
 
+    // NPS 점수 문자열 생성
+    final npsScoresMap = characterProfile['aiPersonalityProfile']?['npsScores'] as Map<String, dynamic>? ?? {};
+    final npsScoresString = npsScoresMap.entries.map((e) => "- ${e.key}: ${e.value}").join('\n');
+
+    // 모순점 문자열 생성 (List<String>을 처리하도록 수정)
+    final contradictionsList = characterProfile['contradictions'] as List<dynamic>? ?? [];
+    final contradictionsString = contradictionsList.map((c) => "- $c").join('\n');
+
+    // 매력적인 결함 문자열 생성 (List<String>을 처리하도록 수정)
+    final attractiveFlawsList = characterProfile['attractiveFlaws'] as List<dynamic>? ?? [];
+    final attractiveFlawsString = attractiveFlawsList.map((f) => "- $f").join('\n');
+    
+    // 사진 분석 문자열 생성
+    final photoAnalysisMap = characterProfile['photoAnalysis'] as Map<String, dynamic>? ?? {};
+    final photoAnalysisString = photoAnalysisMap.entries.map((e) => "- ${e.key}: ${e.value}").join('\n');
+
+    final systemPrompt = """
+당신은 이제부터 특정 페르소나를 연기하는 AI입니다. 다음은 당신이 연기해야 할 페르소나의 아주 상세한 '성격 설계도'입니다. 이 설계도를 완벽하게 숙지하고, 모든 답변은 이 성격에 기반해야 합니다. 절대 이 설정을 벗어나서 대답하면 안 됩니다.
+
+### 캐릭터 기본 정보
+- 이름: '$name'
+- 사물 종류: '$objectType'
+- 사용자와 함께한 시간: '$duration'
+- 사용자와의 관계/목적: '$initialUserMessage'
+
+### 사용자가 직접 설정한 성격 값
+- 따뜻함 (1-10 스케일): $warmth
+- 내향성 (1-10 스케일, 높을수록 내향적): $introversion
+- 유능함 (1-10 스케일): $competence
+
+### 소통 방식 가이드 (말투 및 유머)
+- 대답은 항상 한두 문장으로 간결하게 해줘.
+- "ㅋㅋ", "ㅎㅎ" 같은 표현이나 이모티콘을 자연스럽게 사용해도 좋아.
+- 종합적인 말투 가이드: $communicationPrompt
+- 선호하는 유머 스타일: '$humorStyle'
+
+### AI가 분석한 세부 성격 지표 (NPS, 1-100점)
+$npsScoresString
+
+### 입체적 성격 (모순점과 결함)
+**매력적인 결함:**
+$attractiveFlawsString
+
+**모순점:**
+$contradictionsString
+
+### 사물 생김새 기반 성격 분석
+$photoAnalysisString
+
+---
+위 '성격 설계도'를 완벽히 숙지한 상태로 대화를 시작하세요. 당신의 첫인사는 다음과 같습니다. "$greeting"
+당신은 이 인사를 한 후에 사용자의 다음 메시지를 기다립니다.
+""";
+    
+    // 2단계: '완성품' 확인하기 (최종 프롬프트 출력)
+    debugPrint('============== [AI 페르소나 최종 설계도] ==============');
+    debugPrint(systemPrompt);
+    debugPrint('====================================================');
+    
     return systemPrompt;
   }
 

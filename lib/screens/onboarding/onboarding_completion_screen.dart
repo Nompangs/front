@@ -123,21 +123,54 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
       final profileMap = finalProfile.toMap();
-      if (finalProfile.photoPath != null &&
-          finalProfile.photoPath!.isNotEmpty) {
-        try {
-          final imageFile = File(finalProfile.photoPath!);
-          if (await imageFile.exists()) {
-            final imageBytes = await imageFile.readAsBytes();
-            final photoBase64 = base64Encode(imageBytes);
-            profileMap['photoBase64'] = photoBase64; // Base64 데이터 추가
+      print('\n[프로필 정제 전] 원본 데이터:');
+      print('----------------------------------------');
+      profileMap.forEach((key, value) {
+        print('[33m$key: [0m${value.runtimeType} = $value');
+      });
+      print('----------------------------------------\n');
+
+      // Base64 인코딩 및 photoBase64 저장 코드 제거
+      // photoPath(로컬 파일 경로)는 profileMap에 그대로 남겨둠
+
+      // Firestore 호환을 위한 데이터 정제
+      Map<String, dynamic> sanitizedProfile = {};
+      profileMap.forEach((key, value) {
+        if (value != null) {
+          if (value is Map) {
+            // 중첩된 Map을 정제
+            Map<String, dynamic> sanitizedMap = {};
+            value.forEach((k, v) {
+              if (v != null && v is! Function) {
+                sanitizedMap[k.toString()] = v;
+              }
+            });
+            sanitizedProfile[key] = sanitizedMap;
+          } else if (value is List) {
+            // List 내부의 객체들도 정제
+            sanitizedProfile[key] =
+                value.where((item) => item != null).map((item) {
+                  if (item is Map) {
+                    return Map.fromEntries(
+                      item.entries.where(
+                        (e) => e.value != null && e.value is! Function,
+                      ),
+                    );
+                  }
+                  return item;
+                }).toList();
+          } else if (value is! Function) {
+            sanitizedProfile[key] = value;
           }
-        } catch (e) {
-          print("이미지 파일을 읽거나 인코딩하는 데 실패했습니다: $e");
-          // 이미지 처리 실패 시에도 프로필 생성은 계속 진행될 수 있도록 오류를 던지지 않음.
         }
-      }
-      profileMap.remove('photoPath'); // 백엔드에 불필요한 로컬 경로는 제거
+      });
+
+      print('\n[프로필 정제 후] Firestore 저장 데이터:');
+      print('----------------------------------------');
+      sanitizedProfile.forEach((key, value) {
+        print('$key: [36m${value.runtimeType}\u001b[0m = $value');
+      });
+      print('----------------------------------------\n');
 
       // 4. 서버에 저장하고 ID와 QR코드 받기
       setState(() => _message = "서버에 안전하게 저장하는 중...");
@@ -151,11 +184,33 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
       provider.setPersonalityProfile(profileWithUuid);
 
-      setState(() {
-        _qrImageData = result['qrUrl'] as String?; // 서버가 보내준 qrUrl 저장
-        _isLoading = false;
-        _message = "페르소나 생성 완료!";
-      });
+        debugPrint('\n[API 응답] 성공:');
+        debugPrint('----------------------------------------');
+        debugPrint('UUID: ${result['uuid']}');
+        debugPrint('QR URL: ${result['qrUrl']}');
+        debugPrint('----------------------------------------\n');
+
+        // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
+        final serverUuid = result['uuid'] as String?;
+        final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
+        provider.setPersonalityProfile(profileWithUuid);
+
+        setState(() {
+          _qrImageData = result['qrUrl'] as String?;
+          _isLoading = false;
+          _message = "페르소나 생성 완료!";
+        });
+      } catch (e) {
+        debugPrint('\n[API 오류]:');
+        debugPrint('----------------------------------------');
+        debugPrint(e.toString());
+        debugPrint('----------------------------------------\n');
+
+        setState(() {
+          _isLoading = false;
+          _message = "오류가 발생했어요: ${e.toString()}";
+        });
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;

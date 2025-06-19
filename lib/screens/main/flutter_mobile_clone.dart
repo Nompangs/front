@@ -11,6 +11,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
+import 'dart:io';
+import 'package:nompangs/screens/main/object_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(MyApp());
@@ -703,14 +706,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 context,
                                                 index,
                                               ) => GestureDetector(
-                                                onTap: () {
-                                                  setState(() {
-                                                    selectedCardIndex =
-                                                        selectedCardIndex ==
-                                                                index
-                                                            ? null
-                                                            : index;
-                                                  });
+                                                onTap: () async {
+                                                  final result = await Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder:
+                                                          (
+                                                            context,
+                                                          ) => ObjectDetailScreen(
+                                                            objectData:
+                                                                filteredObjectData[index],
+                                                          ),
+                                                    ),
+                                                  );
+                                                  if (result == true) {
+                                                    // Firestore에서 삭제된 사물 uuid로 objectData에서 제거
+                                                    setState(() {
+                                                      objectData.removeWhere(
+                                                        (obj) =>
+                                                            obj.uuid ==
+                                                            filteredObjectData[index]
+                                                                .uuid,
+                                                      );
+                                                    });
+                                                  }
                                                 },
                                                 child: ObjectCard(
                                                   data:
@@ -793,7 +812,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         if (objectData.isEmpty) return;
                         final lastObject = objectData.reduce((a, b) {
                           int aMinutes = _parseDurationToMinutes(a.duration);
@@ -839,6 +858,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             'vadThreshold': 0.5,
                             'maxTokens': 300,
                           },
+                          'userDisplayName': displayName, // 반드시 포함
                         };
 
                         Navigator.push(
@@ -1077,6 +1097,8 @@ class ObjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final maskPath = 'assets/ui_assets/cardShape_${(index % 3) + 1}.png';
 
+    print('카드 이미지 경로: ${data.imageUrl}, 사물 이름: ${data.title}');
+
     return SizedBox(
       width: 130 * scale,
       height: 220 * scale,
@@ -1088,7 +1110,10 @@ class ObjectCard extends StatelessWidget {
             width: 130 * scale,
             height: 130 * scale,
             child: MaskedImage(
-              image: AssetImage(data.imageUrl!),
+              image:
+                  data.imageUrl != null && data.imageUrl!.startsWith('assets/')
+                      ? AssetImage(data.imageUrl!)
+                      : FileImage(File(data.imageUrl!)) as ImageProvider,
               mask: AssetImage(maskPath),
               width: 130 * scale,
               height: 130 * scale,
@@ -1155,24 +1180,44 @@ class ObjectCard extends StatelessWidget {
           SizedBox(height: 2 * scale),
 
           // Duration
-          RichText(
-            text: TextSpan(
-              children: [
-                TextSpan(
-                  text: '${data.duration.split(' ')[0]} ',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16 * scale,
-                    fontWeight: FontWeight.bold,
-                  ),
+          Builder(
+            builder: (context) {
+              final parts = data.duration.split(' ');
+              final number = parts.isNotEmpty ? parts[0] : '';
+              final unit = parts.length > 1 ? parts[1] : '';
+              String unitKor = '';
+              if (unit == '분')
+                unitKor = '분 전';
+              else if (unit == '시간')
+                unitKor = '시간 전';
+              else if (unit == '일')
+                unitKor = '일 전';
+              else
+                unitKor = unit;
+              return RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$number ',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 16 * scale,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    TextSpan(
+                      text: unitKor,
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 9 * scale,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
                 ),
-                TextSpan(
-                  text: data.duration.split(' ')[1],
-                  style: TextStyle(color: Colors.black, fontSize: 12 * scale),
-                ),
-              ],
-            ),
-            overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis,
+              );
+            },
           ),
         ],
       ),
@@ -1349,11 +1394,11 @@ class ObjectData {
 
     String duration;
     if (difference.inHours > 24) {
-      duration = '${difference.inDays} d';
+      duration = '${difference.inDays} 일';
     } else if (difference.inMinutes > 60) {
-      duration = '${difference.inHours} h';
+      duration = '${difference.inHours} 시간';
     } else {
-      duration = '${difference.inMinutes} min';
+      duration = '${difference.inMinutes} 분';
     }
 
     return ObjectData(
