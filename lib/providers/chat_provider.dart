@@ -79,6 +79,9 @@ class ChatProvider extends ChangeNotifier {
   Future<void> _initializeChat() async {
     await _loadHistory();
 
+    // 🎵 TTS 서비스에 캐릭터 음성 설정 전달
+    _openAiTtsService.setCharacterVoiceSettings(_characterProfile);
+
     // characterProfile 맵 전체를 connect 메서드에 전달합니다.
     await _realtimeChatService.connect(_characterProfile);
 

@@ -1000,15 +1000,7 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
       throw Exception('API 키가 없습니다.');
     }
 
-    // 🎭 말투 패턴 먼저 생성 (AI 기반)
-    final speechPattern = await _getDetailedSpeechPattern(
-      state.warmth ?? 5,
-      state.extroversion ?? 5,
-      state.competence ?? 5,
-      state.humorStyle ?? '따뜻한 유머러스',
-    );
-
-    // 🎯 사용자 입력값 종합 분석
+    // 🎯 사용자 입력값 종합 분석 (말투 패턴은 realtimeSettings에서 가져올 예정)
     final userInputSummary = '''
 사용자 입력 정보:
 - 사물: ${state.objectType ?? '정보없음'} 
@@ -1035,8 +1027,7 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
 매력적인 결함: ${attractiveFlaws.join(', ')}
 내면의 모순: ${contradictions.join(', ')}
 
-🎭 이 캐릭터의 고유 말투 패턴:
-$speechPattern
+💡 참고: 말투 패턴은 realtimeSettings에서 생성되어 실시간 채팅에 적용됩니다.
 ''';
 
     final systemPrompt = '''
@@ -1163,207 +1154,8 @@ $speechPattern
     }
   }
 
-  /// 🎭 성격 기반 상세 말투 패턴 생성 (AI 기반)
-  Future<String> _getDetailedSpeechPattern(
-    int warmth,
-    int extroversion,
-    int competence,
-    String humorStyle,
-  ) async {
-    final apiKey = dotenv.env['OPENAI_API_KEY'];
-    if (apiKey == null || apiKey.isEmpty) {
-      return _fallbackSpeechPattern(
-        warmth,
-        extroversion,
-        competence,
-        humorStyle,
-      );
-    }
-
-    // 🎯 성격 프로필 요약 (AI 입력용)
-    final personalityProfile = '''
-성격 지표:
-- 따뜻함: ${warmth}/10 (${warmth >= 8
-        ? '극도로 따뜻함'
-        : warmth <= 3
-        ? '차가움'
-        : '보통'})
-- 외향성: ${extroversion}/10 (${extroversion >= 8
-        ? '극도로 외향적'
-        : extroversion <= 2
-        ? '극도로 내향적'
-        : '보통'})
-- 유능함: ${competence}/10 (${competence >= 8
-        ? '매우 유능함'
-        : competence <= 3
-        ? '겸손함'
-        : '보통'})
-- 유머스타일: ${humorStyle}
-''';
-
-    final systemPrompt = '''
-당신은 세계 최고의 캐릭터 대화 전문가입니다.
-주어진 성격 지표를 바탕으로 극도로 개성적이고 매력적인 말투 패턴을 생성해주세요.
-
-🎯 핵심 원칙:
-1. 복합적 유머 스타일을 최우선으로 반영
-2. 극도로 개성적이어야 함 - 평범한 말투 절대 금지
-3. 유머 스타일별 고유한 웃음 패턴과 재치 표현 포함
-4. 실제 대화에서 해당 유머 감각이 자연스럽게 드러나는 특징
-
-💡 유머 스타일별 핵심 특징:
-- 따뜻한 유머러스: 공감적이고 포근한 웃음 ("헤헤", "귀여워~", "어머 이쁘다~")
-- 위트있는 재치꾼: 언어유희와 말장난 ("오잉?", "기가 막히네", "센스 쩔어!")
-- 날카로운 관찰자: 일상의 아이러니 포착 ("그거 알아?", "뭔가 이상한데?")
-- 자기 비하적: 자신을 소재로 한 친근한 유머 ("역시 난 안 되나봐", "다 내 탓이야")
-- 장난꾸러기: 예측불가능하고 과장된 재미 ("야호!", "키키키!", "완전 대박!")
-
-다음 형식으로 말투 패턴을 생성해주세요:
-
-**🎪 [유머 스타일 기반 핵심 말투]**: 특정 유머 스타일의 복합적 특징을 극대화한 말투
-**🌟 [따뜻함 특성]**: 유머 스타일과 결합된 따뜻함/차가움 표현
-**🎭 [외향성 특성]**: 유머 스타일과 결합된 외향성/내향성 표현  
-**🧠 [유능함 특성]**: 유머 스타일과 결합된 유능함/겸손함 표현
-''';
-
-    try {
-      final uri = Uri.parse('https://api.openai.com/v1/chat/completions');
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $apiKey',
-        },
-        body: jsonEncode({
-          'model': 'gpt-4o-mini',
-          'messages': [
-            {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': personalityProfile},
-          ],
-          'max_tokens': 600,
-          'temperature': 1.2, // 🔥 높은 창의성
-          'top_p': 0.9,
-          'frequency_penalty': 0.8, // 🔥 반복 방지
-          'presence_penalty': 0.7, // 🔥 새로운 표현 장려
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final content =
-            jsonDecode(
-                  utf8.decode(response.bodyBytes),
-                )['choices'][0]['message']['content']
-                as String;
-
-        return content.trim();
-      } else {
-        debugPrint('🚨 말투 패턴 AI 생성 실패: ${response.statusCode}');
-        debugPrint('응답 내용: ${response.body}');
-        return _fallbackSpeechPattern(
-          warmth,
-          extroversion,
-          competence,
-          humorStyle,
-        );
-      }
-    } catch (e) {
-      debugPrint('🚨 말투 패턴 생성 오류: $e');
-      return _fallbackSpeechPattern(
-        warmth,
-        extroversion,
-        competence,
-        humorStyle,
-      );
-    }
-  }
-
-  /// 🎭 폴백: 언어유희 기반 말투 패턴 (AI 실패시 사용)
-  String _fallbackSpeechPattern(
-    int warmth,
-    int extroversion,
-    int competence,
-    String humorStyle,
-  ) {
-    final patterns = <String>[];
-
-    // 🎪 복합적 유머 스타일 기반 핵심 말투
-    patterns.add("**🎪 복합적 유머 스타일 '$humorStyle' 기반 핵심 말투**:");
-    switch (humorStyle) {
-      case '따뜻한 유머러스':
-        patterns.add("- 공감적 유머: '헤헤~', '귀여워~', '어머 이쁘다~', '따뜻하게 웃어줄게~'");
-        patterns.add("- 포근한 표현: '괜찮아괜찮아~', '힘내힘내!', '우리 함께해~', '사랑해~'");
-        patterns.add("- 상대방 기분 좋게: '완전 멋져!', '정말 잘했어!', '너무 대단해~'");
-        break;
-      case '위트있는 재치꾼':
-        patterns.add("- 재치 있는 말장난: '오잉?', '기가 막히네~', '이거 완전 반전이네?', '센스 쩔어!'");
-        patterns.add("- 언어유희 활용: '말이 씨가 된다니까? 아니 씨(種子)가 아니라 말(言)이지! 하하'");
-        patterns.add("- 순발력 있는 대답: '어라라?', '그런 관점이?', '완전 새로운데?'");
-        break;
-      case '날카로운 관찰자':
-        patterns.add(
-          "- 상황 관찰: '그거 알아?', '진짜 웃기네', '뭔가 이상한데?', '흠... 재밌는 패턴이네'",
-        );
-        patterns.add(
-          "- 아이러니 지적: '아니야... 그런거 아니야', '근데 생각해보면...', '사실은 말이지...'",
-        );
-        patterns.add("- 모순점 발견: '어? 이상하네?', '뭔가 안 맞는데?', '논리적으로 보면...'");
-        break;
-      case '자기 비하적':
-        patterns.add("- 자기 소재 유머: '역시 난 안 되나봐', '다 내 탓이야', '아... 내가 이상한가봐'");
-        patterns.add("- 겸손한 재치: '미안해... 내가 못나서', '어... 이거 맞나?', '내가 틀렸나?'");
-        patterns.add("- 친근한 실수담: '또 실수했네 ㅠㅠ', '내가 원래 이래...', '하하... 바보같지?'");
-        break;
-      case '장난꾸러기':
-        patterns.add("- 과장된 표현: '야호!', '키키키!', '완전 대박!', '우왕굳!', '신난다!'");
-        patterns.add("- 예측불가능: '어? 갑자기?', '반전반전!', '놀랐지?', '예상못했지?'");
-        patterns.add("- 황당한 재미: '완전 랜덤이네!', '이거 뭐야 ㅋㅋㅋ', '세상에 이런일이!'");
-        break;
-      default:
-        patterns.add("- 유쾌한 표현: '하하!', '재밌네~', '좋아좋아!', '완전 웃겨!'");
-        patterns.add("- 밝은 에너지: '신나는데?', '기분 좋아~', '즐거워!'");
-    }
-
-    // 🌟 따뜻함과 유머 스타일 결합
-    if (warmth >= 8) {
-      patterns.add(
-        "**🌟 따뜻함 + $humorStyle**: 따뜻하고 공감적인 ${humorStyle} 유머 - 상대방을 기분 좋게 만드는 포근한 웃음",
-      );
-    } else if (warmth <= 3) {
-      patterns.add(
-        "**🌟 차가움 + $humorStyle**: 시크하고 거리감 있는 ${humorStyle} 유머 - '...그래', '별로야...', '흠... 재미없네'",
-      );
-    } else {
-      patterns.add("**🌟 보통 따뜻함 + $humorStyle**: 자연스러운 ${humorStyle} 유머 활용");
-    }
-
-    // 🎭 외향성과 유머 스타일 결합
-    if (extroversion >= 8) {
-      patterns.add(
-        "**🎭 고외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
-      );
-    } else if (extroversion <= 3) {
-      patterns.add(
-        "**🎭 저외향성(내향적) + $humorStyle**: 조용하고 은은한 ${humorStyle} 유머 - '음... 재밌네', '혼자만 아는 유머', '속으로 키키키'",
-      );
-    } else {
-      patterns.add("**🎭 보통 외향성 + $humorStyle**: 적당한 ${humorStyle} 유머 표현");
-    }
-
-    // 🧠 유능함과 유머 스타일 결합
-    if (competence >= 8) {
-      patterns.add(
-        "**🧠 유능함 + $humorStyle**: 지적이고 세련된 ${humorStyle} 유머 - 논리와 재치가 결합된 고급 유머",
-      );
-    } else if (competence <= 3) {
-      patterns.add(
-        "**🧠 겸손함 + $humorStyle**: 서툴지만 귀여운 ${humorStyle} 유머 - '어... 이거 맞나? 유머 실패했나봐... 헤헤'",
-      );
-    } else {
-      patterns.add("**🧠 보통 유능함 + $humorStyle**: 자연스러운 ${humorStyle} 유머");
-    }
-
-    return patterns.join('\n');
-  }
+  // 🧹 정리됨: 말투 패턴은 realtimeSettings에서 AI로 생성됨
+  // realtime_chat_service.dart는 생성된 설정을 사용만 함
 
   // 파이썬 로직 이식: 유머 매트릭스 생성 (규칙 기반)
   HumorMatrix _generateHumorMatrix(String humorStyle) {
@@ -1405,6 +1197,12 @@ $speechPattern
     );
   }
 
+  // 📊 데이터 흐름: PersonalityService → RealtimeChatService
+  // 1. 여기서 AI로 음성 특성 생성 (6개 항목)
+  // 2. realtimeSettings 맵에 저장
+  // 3. realtime_chat_service.dart에서 해당 설정값들 활용
+  // 4. 시스템 프롬프트에 음성 특성 반영하여 텍스트 응답 생성
+
   // 🆕 PERSONA_ENHANCEMENT_PLAN.md 기반 realtimeSettings 생성
   Future<Map<String, dynamic>> _generateRealtimeSettings(
     OnboardingState state,
@@ -1443,6 +1241,9 @@ $speechPattern
 
     // 🎭 동적 음성 고급 파라미터 생성 (성격 기반) - AI 호출
     final voiceCharacteristics = await _generateAdvancedVoiceCharacteristics(
+      state, // 전체 사용자 입력 정보 전달
+      npsScores, // NPS 점수들 전달
+      photoAnalysis, // 사진 분석 결과 전달
       warmth,
       extroversion,
       competence,
@@ -1727,6 +1528,9 @@ $speechPattern
 
   // 🎭 AI 기반 동적 고급 음성 특성 생성 (완전히 입체적이고 개성적)
   Future<Map<String, String>> _generateAdvancedVoiceCharacteristics(
+    OnboardingState state,
+    Map<String, int> npsScores,
+    Map<String, dynamic> photoAnalysis,
     int warmth,
     int extroversion,
     int competence,
@@ -1734,15 +1538,26 @@ $speechPattern
     String selectedVoice,
     Map<String, double> personalityScore,
   ) async {
+    debugPrint(
+      "🎭 [음성특성] AI 생성 시작 - 사물: ${state.objectType}, 음성: $selectedVoice",
+    );
+
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
+      debugPrint("🚨 [음성특성] API KEY 없음 → 폴백 사용");
       // 폴백: 기본 하드코딩된 값들
       return _fallbackVoiceCharacteristics(selectedVoice, warmth, extroversion);
     }
 
-    // 🎯 성격 프로필 요약 (AI 입력용)
-    final personalityProfile = '''
-성격 지표:
+    // 🎯 종합 정보 프로필 (AI 입력용) - 모든 사용자 정보 반영
+    final comprehensiveProfile = '''
+🎭 **사용자가 선택한 캐릭터 정보:**
+- 사물: ${state.objectType ?? '정보없음'}
+- 별명: ${state.nickname ?? '정보없음'}
+- 함께한 시간: ${state.duration ?? '정보없음'}
+- 목적: ${state.purpose ?? '정보없음'}
+
+🎨 **사용자가 직접 조정한 성격 지표:**
 - 따뜻함: ${warmth}/10 (${warmth >= 8
         ? '극도로 따뜻함'
         : warmth <= 3
@@ -1759,10 +1574,20 @@ $speechPattern
         ? '겸손함'
         : '보통'})
 - 유머스타일: ${humorStyle}
+
+🎵 **AI가 선택한 음성:**
 - 선택된음성: ${selectedVoice}
-- 에너지레벨: ${(personalityScore['extroversion']! * 10).toStringAsFixed(1)}
-- 감정적따뜻함: ${(personalityScore['warmth']! * 10).toStringAsFixed(1)}
-- 전문성수준: ${(personalityScore['competence']! * 10).toStringAsFixed(1)}
+- 최종 성격점수: 에너지${(personalityScore['extroversion']! * 10).toStringAsFixed(1)}, 따뜻함${(personalityScore['warmth']! * 10).toStringAsFixed(1)}, 전문성${(personalityScore['competence']! * 10).toStringAsFixed(1)}
+
+📸 **사진 분석 결과:**
+${photoAnalysis.isEmpty ? '- 사진 분석 정보 없음' : photoAnalysis.entries.map((e) => '- ${e.key}: ${e.value}').join('\n')}
+
+📊 **NPS 성격 세부 점수 (상위 5개):**
+${npsScores.isEmpty ? '- NPS 점수 정보 없음' : (npsScores.entries.toList()..sort((a, b) => b.value.compareTo(a.value))).take(5).map((e) => '- ${e.key}: ${e.value}점').join('\n')}
+
+🎯 **핵심 캐릭터 설정 가이드:**
+이 캐릭터는 "${state.objectType}"이라는 정체성을 가지고, 사용자가 "${state.purpose}"을 위해 선택했습니다.
+"${state.duration}" 동안 함께했다는 배경과 "${state.nickname}"이라는 별명을 고려해서 음성 특성을 만들어주세요.
 ''';
 
     final systemPrompt = '''
@@ -1771,14 +1596,16 @@ $speechPattern
 주어진 성격 지표를 바탕으로 극도로 개성적이고 매력적인 음성 특성을 생성하세요.
 
 # Instructions
-성격 지표와 선택된 음성을 정확히 반영하여 사용자가 "와, 이 캐릭터 정말 살아있는 것 같아!"라고 느낄 정도로 입체적이고 생동감 넘치는 음성 특성을 생성하세요.
+사용자가 제공한 **모든 정보를 종합적으로 반영**하여 완전히 개인화된 음성 특성을 생성하세요.
 
 ## 음성 특성 생성 원칙
-1. 극도로 개성적이어야 함 - 평범한 설명 금지
-2. 구체적인 소리와 표현 포함 ("아~", "음...", "헤헤", "어머나~" 등)
-3. 성격 수치와 정확한 매칭 - 따뜻함/차가움, 외향성/내향성, 유능함/겸손함을 정확히 반영
-4. 실제 대화에서 들릴 수 있는 생생한 특징
-5. 각 영역마다 최소 3가지 이상의 구체적 특징 포함
+1. **사물의 정체성 반영**: 사물 종류와 목적에 맞는 캐릭터성 부여
+2. **관계의 깊이 반영**: 함께한 시간과 별명을 통해 친밀도 수준 조정
+3. **사진 분석 활용**: 시각적 특징과 상태를 음성 특성에 연결
+4. **NPS 세부 점수 반영**: 상위 특성들을 음성에 구체적으로 적용
+5. **성격 지표 정확 매칭**: 사용자 조정값과 AI 분석값 모두 고려
+6. **구체적 표현 포함**: 실제 소리와 말버릇 ("아~", "음...", "헤헤" 등)
+7. **일관된 개성 유지**: 모든 영역이 하나의 캐릭터로 통합되도록
 
 ## 성격별 표현 매칭 가이드
 ### 따뜻함 수준별
@@ -1797,13 +1624,15 @@ $speechPattern
 - **극도 겸손함(1-3)**: "어... 이거 맞나?", "미안해...", "내가 틀렸나?" (서툴고 귀여운 표현)
 
 # Reasoning Steps
-다음 단계를 따라 체계적으로 분석하세요:
+다음 단계를 따라 종합적으로 분석하세요:
 
-1. 먼저 성격 수치를 분석하여 주요 특성을 파악하세요
-2. 선택된 음성과 성격이 어떻게 조화를 이루는지 분석하세요
-3. 유머 스타일이 음성 특성에 어떤 영향을 주는지 고려하세요
-4. 각 영역별로 구체적이고 생생한 특성을 도출하세요
-5. 전체적으로 일관성 있고 개성적인지 검토하세요
+1. **사물 정체성 분석**: 사물 종류, 목적, 함께한 시간을 토대로 기본 캐릭터 설정
+2. **사진 특성 반영**: 시각적 분위기, 상태, 표정을 음성 특성으로 변환
+3. **NPS 강점 활용**: 상위 5개 특성을 음성에 구체적으로 반영
+4. **성격 지표 매칭**: 사용자 조정값과 최종 점수를 종합 고려
+5. **음성 선택 조화**: 선택된 음성과 모든 특성이 자연스럽게 어우러지도록
+6. **구체적 표현 생성**: 각 영역별로 생생하고 개성적인 특징 도출
+7. **일관성 검토**: 전체적으로 하나의 완성된 캐릭터로 통합되는지 확인
 
 # Output Format
 다음 6가지 영역을 JSON 형식으로 생성해주세요:
@@ -1851,7 +1680,7 @@ $speechPattern
           'model': 'gpt-4o-mini',
           'messages': [
             {'role': 'system', 'content': systemPrompt},
-            {'role': 'user', 'content': personalityProfile},
+            {'role': 'user', 'content': comprehensiveProfile},
           ],
           'max_tokens': 600,
           'temperature': 1.2, // 🔥 높은 창의성
@@ -1869,9 +1698,12 @@ $speechPattern
                 )['choices'][0]['message']['content']
                 as String;
 
-        return jsonDecode(content) as Map<String, String>;
+        debugPrint("✅ [음성특성] AI 생성 성공! 내용 길이: ${content.length}자");
+        final result = jsonDecode(content) as Map<String, String>;
+        debugPrint("🎭 [음성특성] 생성된 특성들: ${result.keys.join(', ')}");
+        return result;
       } else {
-        debugPrint('🚨 음성 특성 AI 생성 실패: ${response.statusCode}');
+        debugPrint('🚨 [음성특성] AI 생성 실패 (HTTP ${response.statusCode}) → 폴백 사용');
         return _fallbackVoiceCharacteristics(
           selectedVoice,
           warmth,
@@ -1879,7 +1711,7 @@ $speechPattern
         );
       }
     } catch (e) {
-      debugPrint('🚨 음성 특성 생성 오류: $e');
+      debugPrint('🚨 [음성특성] AI 생성 오류: $e → 폴백 사용');
       return _fallbackVoiceCharacteristics(selectedVoice, warmth, extroversion);
     }
   }
@@ -1890,6 +1722,10 @@ $speechPattern
     int warmth,
     int extroversion,
   ) {
+    debugPrint(
+      "⚠️ [폴백] 하드코딩된 음성 특성 사용 - 음성: $selectedVoice, 따뜻함: $warmth, 외향성: $extroversion",
+    );
+
     // 기본적인 하드코딩된 특성들
     final isWarm = warmth >= 7;
     final isIntroverted = extroversion <= 3;
@@ -2019,7 +1855,7 @@ JSON 배열 형식으로만 응답하세요: ["특성1", "특성2", "특성3"]
         final List<dynamic> traitsList = jsonDecode(content);
         return List<String>.from(traitsList);
       } else {
-        debugPrint('🚨 핵심 특성 AI 생성 실패: ${response.statusCode}');
+        debugPrint('🚨 [핵심특성] AI 생성 실패 (HTTP ${response.statusCode}) → 폴백 사용');
         return [
           "균형 잡힌 성격으로 다양한 상황에 잘 적응해요",
           "자신만의 독특한 매력을 가지고 있어요",
@@ -2027,7 +1863,7 @@ JSON 배열 형식으로만 응답하세요: ["특성1", "특성2", "특성3"]
         ];
       }
     } catch (e) {
-      debugPrint('🚨 핵심 특성 생성 오류: $e');
+      debugPrint('🚨 [핵심특성] AI 생성 오류: $e → 폴백 사용');
       return [
         "균형 잡힌 성격으로 다양한 상황에 잘 적응해요",
         "자신만의 독특한 매력을 가지고 있어요",
