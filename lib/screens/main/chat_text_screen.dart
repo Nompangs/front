@@ -89,6 +89,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                     ),
                     _ChatInputBar(
                       controller: _inputController,
+                      isProcessing: chatProvider.isProcessing,
                       onSend: () {
                         context.read<ChatProvider>().sendMessage(_inputController.text);
                         _inputController.clear();
@@ -398,11 +399,13 @@ class _ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback onSpeakerModePressed;
+  final bool isProcessing;
 
   const _ChatInputBar({
     required this.controller,
     required this.onSend,
     required this.onSpeakerModePressed,
+    this.isProcessing = false,
   });
 
   @override
@@ -433,7 +436,6 @@ class _ChatInputBarState extends State<_ChatInputBar> {
 
   @override
   Widget build(BuildContext context) {
-    // 하단 안전 영역 높이
     final bottomInset = MediaQuery.of(context).viewPadding.bottom;
 
     return Padding(
@@ -454,21 +456,26 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               onPressed: () {},
             ),
             const SizedBox(width: 12),
-
             Expanded(
               child: Container(
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F0F0),
+                  // AI가 응답 중일 때 배경색 변경
+                  color: widget.isProcessing
+                      ? const Color(0xFFE8E8E8)
+                      : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextField(
                   controller: widget.controller,
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.only(top: 10),
-                    hintText: 'Send message...',
-                    hintStyle: TextStyle(
+                  // AI 응답 중일 때 입력 비활성화
+                  enabled: !widget.isProcessing,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.only(top: 10),
+                    // 힌트 텍스트 수정 및 상태에 따른 변경
+                    hintText: widget.isProcessing ? 'AI가 답변 중입니다...' : '메시지를 입력하세요...',
+                    hintStyle: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFFAAAAAA),
                     ),
@@ -484,8 +491,6 @@ class _ChatInputBarState extends State<_ChatInputBar> {
               ),
             ),
             const SizedBox(width: 12),
-
-            // ⑦ 전화기 버튼: 텍스트 입력 없으면 ChatSpeakerScreen으로 이동
             Container(
               width: 40,
               height: 40,
@@ -499,15 +504,21 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 icon: Icon(
                   _hasText ? Icons.send : Icons.call,
                   size: 20,
-                  color: _hasText ? Colors.black : Colors.white,
+                  // AI 응답 중일 때 아이콘 색상 변경
+                  color: widget.isProcessing
+                      ? Colors.grey
+                      : (_hasText ? Colors.black : Colors.white),
                 ),
-                onPressed: () {
-                  if (_hasText) {
-                    widget.onSend();
-                  } else {
-                    widget.onSpeakerModePressed();
-                  }
-                },
+                // AI 응답 중일 때 버튼 비활성화
+                onPressed: widget.isProcessing
+                    ? null
+                    : () {
+                        if (_hasText) {
+                          widget.onSend();
+                        } else {
+                          widget.onSpeakerModePressed();
+                        }
+                      },
               ),
             ),
           ],
