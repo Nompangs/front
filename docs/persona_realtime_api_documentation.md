@@ -308,7 +308,7 @@ class OnboardingState {
   // AI 생성 결과
   final int warmth;            // 1-10 (따뜻함)
   final int competence;        // 1-10 (유능함)
-  final int introversion;      // 1-10 (내향성 → 외향성)
+  final int extroversion;      // 1-10 (외향성 → 외향성)
 }
 ```
 
@@ -662,7 +662,7 @@ _adjustWithRandomVariation(adjustedVariables, 'C02_전문성', competence, 10, r
 // ... C01~C10 모두 조정
 
 // 외향성 슬라이더 → E계열 6개 변수 조정 (반전 적용)
-final extraversion = 10 - introversion; // 1(내향) → 9(외향)
+// 🔥 의미론적 수정: extroversion 슬라이더는 이미 외향성 기준 (1=내향적, 10=외향적)
 _adjustWithRandomVariation(adjustedVariables, 'E01_사교성', extraversion, 15, random);
 _adjustWithRandomVariation(adjustedVariables, 'E02_활동성', extraversion, 20, random);
 // ... E01~E06 모두 조정
@@ -702,7 +702,7 @@ Flutter 코드에서 구현된 사용자 슬라이더 값(1-9)을 80개 변수�
 
 ```dart
 // 외향성 처리 (슬라이더 값 반전)
-final extraversion = 10 - introversion; // 1(내향) -> 9(외향)
+// E (외향성) 계열은 extroversion 값을 그대로 사용 (높을수록 외향적)
 
 // 각 차원별 변수 조정
 _adjustWithRandomVariation(adjustedVariables, 'E01_사교성', extraversion, 15, random);
@@ -786,10 +786,10 @@ void _adjustWithRandomVariation(
 ```
 
 **역할**: 캐릭터의 에너지 레벨과 사회성을 결정하는 핵심 지표
-- **높을 때 (내향성 1-3점)**: "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
-- **보통 (내향성 4-7점)**: "음", "그렇네", "좋아" (균형잡힌 표현)
-- **낮을 때 (내향성 8-10점)**: "...음", "조용히...", "그냥..." (조용하고 은은)
-- **실제 적용**: 내향성 슬라이더와 **역상관** (내향성↑ = 외향성↓)
+- **높을 때 (외향성 8-10점)**: "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
+- **보통 (외향성 4-7점)**: "음", "그렇네", "좋아" (균형잡힌 표현)
+- **낮을 때 (외향성 1-3점)**: "...음", "조용히...", "그냥..." (조용하고 은은)
+- **실제 적용**: 외향성 슬라이더와 **직접 연동** (외향성↑ = 더 활발함)
 
 #### 3.4.2 매력적 결함 (Attractive Flaws) 시스템 분석
 
@@ -1223,7 +1223,7 @@ if (warmth >= 8) {
 }
 
 // 외향성과 유머 스타일 결합
-if (introversion <= 3) {
+if (extroversion <= 3) {
   patterns.add(
     "**🎭 외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
   );
@@ -1373,7 +1373,7 @@ Map<String, dynamic> _generateVADSettings(Map<String, int> npsScores) {
 ```dart
 Future<Map<String, String>> _generateAdvancedVoiceCharacteristics(
   int warmth,
-  int introversion,
+  int extroversion,
   int competence,
   String humorStyle,
   String selectedVoice,
@@ -1383,7 +1383,7 @@ Future<Map<String, String>> _generateAdvancedVoiceCharacteristics(
   final personalityProfile = '''
 성격 설정:
 - 따뜻함: $warmth/10
-- 외향성: ${10 - introversion}/10
+- 외향성: ${10 - extroversion}/10
 - 유능함: $competence/10
 - 유머 스타일: $humorStyle
 - 선택된 음성: $selectedVoice
@@ -1435,7 +1435,7 @@ ${contradictions.map((contradiction) => '- $contradiction').join('\n')}
 ```dart
 String _generateCommunicationPrompt(OnboardingState state) {
   final warmth = state.warmth;
-  final extraversion = 100 - state.introversion!; // 외향성으로 변환
+  final extraversion = 100 - state.extroversion!; // 외향성으로 변환
   
   String warmthStyle;
   if (warmth > 70) {
@@ -1468,11 +1468,11 @@ String _getExtroversionDescription(int extroversion) {
   } else if (extroversion >= 60) {
     return "외향적이고 사교적이며, 다양한 사람들과의 교류를 즐깁니다.";
   } else if (extroversion >= 40) {
-    return "균형잡힌 성향으로, 상황에 따라 외향적이거나 내향적일 수 있습니다.";
+    return "균형잡힌 성향으로, 상황에 따라 외향적이거나 외향적일 수 있습니다.";
   } else if (extroversion >= 20) {
-    return "다소 내향적이며, 깊이 있는 대화와 조용한 환경을 선호합니다.";
+    return "다소 외향적이며, 깊이 있는 대화와 조용한 환경을 선호합니다.";
   } else {
-    return "매우 내향적이고 신중하며, 혼자만의 시간을 통해 에너지를 충전합니다.";
+    return "매우 외향적이고 신중하며, 혼자만의 시간을 통해 에너지를 충전합니다.";
   }
 }
 ```
@@ -1484,12 +1484,12 @@ String _getExtroversionDescription(int extroversion) {
 ```dart
 // OnboardingProvider에서 외향성 상태 관리
 class OnboardingProvider extends ChangeNotifier {
-  int? _introversion; // 1-9 슬라이더 (1=내향적, 9=외향적)
+  int? _extroversion; // 1-9 슬라이더 (1=내향적, 9=외향적)
   
-  int? get introversion => _introversion;
+  int? get extroversion => _extroversion;
   
   void setIntroversion(int value) {
-    _introversion = value;
+    _extroversion = value;
     notifyListeners();
   }
 }
@@ -1659,7 +1659,7 @@ Flutter 프로젝트에서 AI가 동적으로 생성하는 6가지 고급 음성
 final personalityProfile = '''
 성격 지표:
 - 따뜻함: ${warmth}/10 (${warmth >= 8 ? '극도로 따뜻함' : warmth <= 3 ? '차가움' : '보통'})
-- 내향성: ${introversion}/10 (${introversion <= 2 ? '극도로 외향적' : introversion >= 8 ? '극도로 내향적' : '보통'})
+- 외향성: ${extroversion}/10 (${extroversion >= 8 ? '극도로 외향적' : extroversion <= 2 ? '극도로 내향적' : '보통'})
 - 유능함: ${competence}/10 (${competence >= 8 ? '매우 유능함' : competence <= 3 ? '겸손함' : '보통'})
 - 유머스타일: ${humorStyle}
 - 선택된음성: ${selectedVoice}
@@ -1680,7 +1680,7 @@ final systemPrompt = '''
 🔥 반드시 지켜야 할 원칙:
 1. 극도로 개성적이어야 함 - 평범한 설명 금지
 2. 구체적인 소리와 표현 포함 ("아~", "음...", "헤헤", "어머나~" 등)
-3. **성격 수치와 정확한 매칭** - 따뜻함/차가움, 외향성/내향성, 유능함/겸손함을 정확히 반영
+3. **성격 수치와 정확한 매칭** - 따뜻함/차가움, 외향성/외향성, 유능함/겸손함을 정확히 반영
 4. 실제 대화에서 들릴 수 있는 생생한 특징
 5. 각 영역마다 최소 3가지 이상의 구체적 특징 포함
 6. **이름 구분**: 사용자 이름과 캐릭터 이름을 정확히 구분
@@ -1699,10 +1699,10 @@ final systemPrompt = '''
 
 #### 3.2 외향성 수준별 표현 패턴
 ```dart
-**외향성 수준별 (내향성 역순):**
-- 극도 외향성(내향성 1-3): "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
-- 보통(내향성 4-7): "음", "그렇네", "좋아" (균형잡힌 표현)
-- 극도 내향성(8-10): "...음", "조용히...", "그냥..." (조용하고 은은)
+**외향성 수준별:**
+- 극도 외향성(8-10): "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
+- 보통(4-7): "음", "그렇네", "좋아" (균형잡힌 표현)
+- 극도 내향성(1-3): "...음", "조용히...", "그냥..." (조용하고 은은)
 ```
 
 #### 3.3 유능함 수준별 표현 패턴
@@ -1745,11 +1745,11 @@ final systemPrompt = '''
 Map<String, String> _fallbackVoiceCharacteristics(
   String selectedVoice,
   int warmth, 
-  int introversion,
+  int extroversion,
 ) {
   final isWarm = warmth >= 7;
-  final isIntroverted = introversion >= 7;
-  final isEnergetic = introversion <= 3;
+  final isIntroverted = extroversion <= 3;
+final isEnergetic = extroversion >= 7;
 
   return {
     'breathingPattern': 
@@ -1834,7 +1834,7 @@ String _buildVoiceToTextGuide(Map<String, dynamic> realtimeSettings) {
 }
 ```
 
-#### 8.2 낮은 따뜻함 + 내향성 + 날카로운 관찰자적 유머
+#### 8.2 낮은 따뜻함 + 외향성 + 날카로운 관찰자적 유머
 ```json
 {
   "breathingPattern": "깊고 차분한 호흡. 말하기 전 '흠...' 하며 생각하는 시간이 긴 편",
@@ -1850,7 +1850,7 @@ String _buildVoiceToTextGuide(Map<String, dynamic> realtimeSettings) {
 
 ```dart
 debugPrint("============== [🎭 고급 음성 특성 생성] ==============");
-debugPrint("입력 성격: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+debugPrint("입력 성격: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
 debugPrint("선택된 음성: $selectedVoice");
 debugPrint("생성된 특성: ${aiResult.keys.join(', ')}");
 debugPrint("발음 스타일: ${aiResult['pronunciation']}");
@@ -2001,7 +2001,7 @@ final systemPrompt = '''
 🔥 반드시 지켜야 할 원칙:
 1. 극도로 개성적이어야 함 - 평범한 설명 금지
 2. 구체적인 소리와 표현 포함 ("아~", "음...", "헤헤", "어머나~" 등)
-3. **성격 수치와 정확한 매칭** - 따뜻함/차가움, 외향성/내향성, 유능함/겸손함을 정확히 반영
+3. **성격 수치와 정확한 매칭** - 따뜻함/차가움, 외향성/외향성, 유능함/겸손함을 정확히 반영
 4. 실제 대화에서 들릴 수 있는 생생한 특징
 5. 각 영역마다 최소 3가지 이상의 구체적 특징 포함
 ''';
@@ -2023,13 +2023,13 @@ final systemPrompt = '''
 
 **외향성 수준별 표현:**
 ```dart
-// 극도 외향성(내향성 1-3)
+// 극도 외향성(8-10)
 "와!", "정말정말!", "완전!", "야호!" // 에너지 넘치고 활발
 
-// 보통(내향성 4-7)
+// 보통(4-7)
 "음", "그렇네", "좋아" // 균형잡힌 표현
 
-// 극도 내향성(8-10)  
+// 극도 내향성(1-3)  
 "...음", "조용히...", "그냥..." // 조용하고 은은
 ```
 
@@ -2068,7 +2068,7 @@ if (warmth >= 8 &&
 **성격별 호흡 특성:**
 ```json
 {
-  "내향적": "Deep, thoughtful breaths with contemplative pauses",
+  "외향적": "Deep, thoughtful breaths with contemplative pauses",
   "외향적": "Quick, excited breathing with energy", 
   "차분함": "Natural, comfortable breathing rhythm",
   "흥분됨": "Rapid, anticipatory breathing patterns"
@@ -2116,7 +2116,7 @@ if (warmth >= 8 &&
 **성격별 침묵과 쉼:**
 ```json
 {
-  "내향적": "Longer contemplative pauses for deep reflection",
+  "외향적": "Longer contemplative pauses for deep reflection",
   "외향적": "Quick, anticipatory pauses with barely contained energy",
   "사려깊음": "Thoughtful pauses before important points",
   "즉흥적": "Natural conversation pauses that feel comfortable"
@@ -2171,12 +2171,12 @@ if (competence >= 8) {
   topP = 0.9;
   frequencyPenalty = 0.8;
   presencePenalty = 0.7;
-} else if (introversion >= 8) {
-  // 고내향성: 신중하고 깊이 있는 답변
-  temperature = 0.7;
-  topP = 0.75;
-  frequencyPenalty = 0.6;
-  presencePenalty = 0.5;
+} else if (extroversion >= 8) {
+  // 고외향성: 활발하고 다양한 답변
+  temperature = 0.95;
+  topP = 0.85;
+  frequencyPenalty = 0.75;
+  presencePenalty = 0.65;
 } else {
   // 기본값: 균형잡힌 설정
   temperature = 0.9;
@@ -2258,7 +2258,7 @@ String _buildVoiceToTextGuide(Map<String, dynamic> realtimeSettings) {
 }
 ```
 
-#### 9.6.2 차분하고 유능한 캐릭터 (유능함: 9, 내향성: 7)
+#### 9.6.2 차분하고 유능한 캐릭터 (유능함: 9, 외향성: 7)
 
 ```json
 {
