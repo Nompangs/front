@@ -13,6 +13,7 @@ import 'package:nompangs/providers/chat_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'dart:io';
 import 'package:nompangs/screens/main/object_detail_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 void main() {
   runApp(MyApp());
@@ -811,13 +812,28 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () {
+                      onTap: () async {
                         if (objectData.isEmpty) return;
                         final lastObject = objectData.reduce((a, b) {
                           int aMinutes = _parseDurationToMinutes(a.duration);
                           int bMinutes = _parseDurationToMinutes(b.duration);
                           return aMinutes < bMinutes ? a : b;
                         });
+
+                        // Firestore에서 displayName을 읽어옵니다.
+                        String displayName = 'unknown';
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          final doc =
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user.uid)
+                                  .get();
+                          final data = doc.data();
+                          if (data != null) {
+                            displayName = data['displayName'] ?? 'unknown';
+                          }
+                        }
 
                         // ChatProvider가 요구하는 새로운 형식에 맞게 프로필 맵을 재조립합니다.
                         final characterProfile = {
@@ -839,6 +855,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                             'competence': 5,
                             'humorStyle': '기본',
                           },
+                          'userDisplayName': displayName, // 반드시 포함
                         };
 
                         Navigator.push(

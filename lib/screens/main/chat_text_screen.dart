@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatTextScreen extends StatelessWidget {
   final bool showHomeInsteadOfBack;
