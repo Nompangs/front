@@ -612,46 +612,47 @@ class PersonalityService {
     );
 
     // E (외향성) 계열: extroversion 슬라이더 (반대로 적용)
-    final extraversion = 10 - extroversion; // 1(내향) -> 9(외향), 9(내향) -> 1(외향)
+    // 🔥 의미론적 수정: extroversion 슬라이더는 이미 외향성 기준 (1=내향적, 10=외향적)
+    // E (외향성) 계열은 extroversion 값을 그대로 사용 (높을수록 외향적)
     _adjustWithRandomVariation(
       adjustedVariables,
       'E01_사교성',
-      extraversion,
+      extroversion,
       15,
       random,
     );
     _adjustWithRandomVariation(
       adjustedVariables,
       'E02_활동성',
-      extraversion,
+      extroversion,
       20,
       random,
     );
     _adjustWithRandomVariation(
       adjustedVariables,
       'E03_자기주장',
-      extraversion,
+      extroversion,
       25,
       random,
     );
     _adjustWithRandomVariation(
       adjustedVariables,
       'E04_긍정정서',
-      extraversion,
+      extroversion,
       20,
       random,
     );
     _adjustWithRandomVariation(
       adjustedVariables,
       'E05_자극추구',
-      extraversion,
+      extroversion,
       30,
       random,
     );
     _adjustWithRandomVariation(
       adjustedVariables,
       'E06_주도성',
-      extraversion,
+      extroversion,
       20,
       random,
     );
@@ -881,7 +882,7 @@ JSON 배열 형식으로만 응답하세요: ["결점1", "결점2", "결점3"]
 - 위치: ${state.location ?? '정보없음'}
 - 유머스타일: ${state.humorStyle ?? '정보없음'}
 - 따뜻함 수준: ${state.warmth ?? 5}/10
-- 내향성 수준: ${state.extroversion ?? 5}/10  
+- 외향성 수준: ${state.extroversion ?? 5}/10  
 - 유능함 수준: ${state.competence ?? 5}/10
 
 성격 수치 분석:
@@ -1248,17 +1249,17 @@ $speechPattern
       patterns.add("**🌟 보통 따뜻함 + $humorStyle**: 자연스러운 ${humorStyle} 유머 활용");
     }
 
-    // 🎭 내향성과 유머 스타일 결합
-    if (extroversion <= 3) {
+    // 🎭 외향성과 유머 스타일 결합
+    if (extroversion >= 8) {
       patterns.add(
-        "**🎭 외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
+        "**🎭 고외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
       );
-    } else if (extroversion >= 8) {
+    } else if (extroversion <= 3) {
       patterns.add(
-        "**🎭 내향성 + $humorStyle**: 조용하고 은은한 ${humorStyle} 유머 - '음... 재밌네', '혼자만 아는 유머', '속으로 키키키'",
+        "**🎭 저외향성(내향적) + $humorStyle**: 조용하고 은은한 ${humorStyle} 유머 - '음... 재밌네', '혼자만 아는 유머', '속으로 키키키'",
       );
     } else {
-      patterns.add("**🎭 보통 내향성 + $humorStyle**: 적당한 ${humorStyle} 유머 표현");
+      patterns.add("**🎭 보통 외향성 + $humorStyle**: 적당한 ${humorStyle} 유머 표현");
     }
 
     // 🧠 유능함과 유머 스타일 결합
@@ -1325,12 +1326,12 @@ $speechPattern
   ) async {
     // 🎯 사용자 입력값 기반 음성 선택
     final warmth = state.warmth ?? 5;
-    final extroversion = state.extroversion ?? 5; // 1(내향) ~ 9(외향)
+    final extroversion = state.extroversion ?? 5; // 1(내향적) ~ 10(외향적)
     final competence = state.competence ?? 5;
     final humorStyle = state.humorStyle ?? '따뜻한';
 
     debugPrint(
-      "🎵 음성 선택 입력값: 따뜻함=$warmth, 내향성=$extroversion, 유능함=$competence, 유머=$humorStyle",
+      "🎵 음성 선택 입력값: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence, 유머=$humorStyle",
     );
 
     // 🎵 동적 음성 선택 로직 - NPS 점수와 사진 분석도 반영
@@ -1391,7 +1392,7 @@ $speechPattern
       frequencyPenalty = 0.8;
       presencePenalty = 0.7;
     } else if (extroversion <= 3) {
-      // 고내향성: 신중하고 깊이 있는 답변
+      // 저외향성(내향적): 신중하고 깊이 있는 답변
       temperature = 0.7;
       topP = 0.75;
       frequencyPenalty = 0.6;
@@ -1447,8 +1448,8 @@ $speechPattern
   ) {
     // 기본 사용자 설정 (가중치 60%)
     double baseWarmth = warmth / 10.0;
-    // 🔥 버그 수정: 내향성을 외향성으로 변환 (10 - 내향성값)
-    double baseExtroversion = (10 - extroversion) / 10.0;
+    // 🔥 의미론적 수정: extroversion 슬라이더는 외향성 기준 (1=내향적, 10=외향적)
+    double baseExtroversion = extroversion / 10.0;
     double baseCompetence = competence / 10.0;
 
     // NPS 점수 반영 (가중치 30%) - 실제 생성된 키들 사용
@@ -1523,7 +1524,7 @@ $speechPattern
 
     // 🔍 성격 점수 계산 과정 디버그
     debugPrint("🧮 성격 점수 계산 결과:");
-    debugPrint("  입력값: 따뜻함=$warmth, 내향성=$extroversion, 유능함=$competence");
+    debugPrint("  입력값: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
     debugPrint(
       "  기본점수: 따뜻함=${baseWarmth.toStringAsFixed(2)}, 외향성=${baseExtroversion.toStringAsFixed(2)}, 유능함=${baseCompetence.toStringAsFixed(2)}",
     );
@@ -1660,9 +1661,9 @@ $speechPattern
         : warmth <= 3
         ? '차가움'
         : '보통'})
-- 내향성: ${extroversion}/10 (${extroversion <= 2
+- 외향성: ${extroversion}/10 (${extroversion >= 8
         ? '극도로 외향적'
-        : extroversion >= 8
+        : extroversion <= 2
         ? '극도로 내향적'
         : '보통'})
 - 유능함: ${competence}/10 (${competence >= 8
@@ -1709,10 +1710,10 @@ $speechPattern
 - 보통 따뜻함(4-7): "그렇구나", "좋네요", "괜찮아요" (자연스럽고 친근한 표현)
 - 극도 차가움(1-3): "...", "그래.", "별로야", "상관없어." (건조하고 무뚝뚝)
 
-**외향성 수준별 (내향성 역순):**
-- 극도 외향성(내향성 1-3): "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
-- 보통(내향성 4-7): "음", "그렇네", "좋아" (균형잡힌 표현)
-- 극도 내향성(8-10): "...음", "조용히...", "그냥..." (조용하고 은은)
+**외향성 수준별:**
+- 극도 외향성(8-10): "와!", "정말정말!", "완전!", "야호!" (에너지 넘치고 활발)
+- 보통(4-7): "음", "그렇네", "좋아" (균형잡힌 표현)
+- 극도 내향성(1-3): "...음", "조용히...", "그냥..." (조용하고 은은)
 
 **유능함 수준별:**
 - 극도 유능함(8-10): 자신감 있고 전문적인 어투, 명확한 표현
@@ -1783,8 +1784,8 @@ $speechPattern
   ) {
     // 기본적인 하드코딩된 특성들
     final isWarm = warmth >= 7;
-    final isIntroverted = extroversion >= 7;
-    final isEnergetic = extroversion <= 3;
+    final isIntroverted = extroversion <= 3;
+    final isEnergetic = extroversion >= 7;
 
     return {
       'breathingPattern':

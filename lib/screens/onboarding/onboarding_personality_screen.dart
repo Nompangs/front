@@ -172,16 +172,16 @@ class _OnboardingPersonalityScreenState
                 onPressed: () {
                   // 현재 슬라이더 값으로 최종 업데이트 보장
                   final provider = context.read<OnboardingProvider>();
-                  final introVal = ((extroversionValue ?? 0.5) * 10).round();
+                  final extroVal = ((extroversionValue ?? 0.5) * 10).round();
                   final warmthVal = ((warmthValue ?? 0.5) * 10).round();
                   final compVal = ((competenceValue ?? 0.5) * 10).round();
 
                   debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
-                  debugPrint("  - 외향성: ${extroversionValue} → $introVal");
+                  debugPrint("  - 외향성: ${extroversionValue} → $extroVal");
                   debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
                   debugPrint("  - 유능함: ${competenceValue} → $compVal");
 
-                  provider.updatePersonalitySlider('extroversion', introVal);
+                  provider.updatePersonalitySlider('extroversion', extroVal);
                   provider.updatePersonalitySlider('warmth', warmthVal);
                   provider.updatePersonalitySlider('competence', compVal);
 
