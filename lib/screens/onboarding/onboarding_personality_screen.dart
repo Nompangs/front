@@ -99,10 +99,13 @@ class _OnboardingPersonalityScreenState
                   rightLabel: '활발함',
                   onChanged: (value) {
                     setState(() => introversionValue = value);
+                    final intValue = (value * 10).round();
+                    debugPrint("🎯 [성격화면] 내향성 슬라이더 변경: $value → $intValue");
                     // 슬라이더를 움직일 때마다 Provider 상태 업데이트
-                    Provider.of<OnboardingProvider>(context, listen: false)
-                        .updatePersonalitySlider(
-                            'introversion', (value * 10).round());
+                    Provider.of<OnboardingProvider>(
+                      context,
+                      listen: false,
+                    ).updatePersonalitySlider('introversion', intValue);
                   },
                 ),
               ),
@@ -117,8 +120,12 @@ class _OnboardingPersonalityScreenState
                   rightLabel: '따뜻한',
                   onChanged: (value) {
                     setState(() => warmthValue = value);
-                    Provider.of<OnboardingProvider>(context, listen: false)
-                        .updatePersonalitySlider('warmth', (value * 10).round());
+                    final intValue = (value * 10).round();
+                    debugPrint("🎯 [성격화면] 따뜻함 슬라이더 변경: $value → $intValue");
+                    Provider.of<OnboardingProvider>(
+                      context,
+                      listen: false,
+                    ).updatePersonalitySlider('warmth', intValue);
                   },
                 ),
               ),
@@ -133,9 +140,12 @@ class _OnboardingPersonalityScreenState
                   rightLabel: '능숙한',
                   onChanged: (value) {
                     setState(() => competenceValue = value);
-                    Provider.of<OnboardingProvider>(context, listen: false)
-                        .updatePersonalitySlider(
-                            'competence', (value * 10).round());
+                    final intValue = (value * 10).round();
+                    debugPrint("🎯 [성격화면] 유능함 슬라이더 변경: $value → $intValue");
+                    Provider.of<OnboardingProvider>(
+                      context,
+                      listen: false,
+                    ).updatePersonalitySlider('competence', intValue);
                   },
                 ),
               ),
@@ -162,10 +172,19 @@ class _OnboardingPersonalityScreenState
                 onPressed: () {
                   // 현재 슬라이더 값으로 최종 업데이트 보장
                   final provider = context.read<OnboardingProvider>();
-                  provider.updatePersonalitySlider('introversion', ((introversionValue ?? 0.5) * 10).round());
-                  provider.updatePersonalitySlider('warmth', ((warmthValue ?? 0.5) * 10).round());
-                  provider.updatePersonalitySlider('competence', ((competenceValue ?? 0.5) * 10).round());
-                  
+                  final introVal = ((introversionValue ?? 0.5) * 10).round();
+                  final warmthVal = ((warmthValue ?? 0.5) * 10).round();
+                  final compVal = ((competenceValue ?? 0.5) * 10).round();
+
+                  debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
+                  debugPrint("  - 내향성: ${introversionValue} → $introVal");
+                  debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
+                  debugPrint("  - 유능함: ${competenceValue} → $compVal");
+
+                  provider.updatePersonalitySlider('introversion', introVal);
+                  provider.updatePersonalitySlider('warmth', warmthVal);
+                  provider.updatePersonalitySlider('competence', compVal);
+
                   // 최종 완료 화면으로 이동
                   Navigator.pushNamed(context, '/onboarding/completion');
                 },

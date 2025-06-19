@@ -159,6 +159,7 @@ class PersonalityService {
       finalState,
       draft.photoAnalysis,
     );
+
     debugPrint("✅ 4단계 풍부한 자연어 프로필 생성 완료");
 
     // 4. 첫인사 생성 (AI 기반)
@@ -1446,13 +1447,49 @@ $speechPattern
   ) {
     // 기본 사용자 설정 (가중치 60%)
     double baseWarmth = warmth / 10.0;
-    double baseExtroversion = introversion / 10.0;
+    // 🔥 버그 수정: 내향성을 외향성으로 변환 (10 - 내향성값)
+    double baseExtroversion = (10 - introversion) / 10.0;
     double baseCompetence = competence / 10.0;
 
-    // NPS 점수 반영 (가중치 30%)
-    double npsWarmth = (npsScores['warmth_score'] ?? 50) / 100.0;
-    double npsExtroversion = (npsScores['extroversion_score'] ?? 50) / 100.0;
-    double npsCompetence = (npsScores['competence_score'] ?? 50) / 100.0;
+    // NPS 점수 반영 (가중치 30%) - 실제 생성된 키들 사용
+    // 🔥 따뜻함 관련 점수들 평균 계산
+    final warmthKeys = [
+      'W01_친절함',
+      'W02_공감능력',
+      'W03_격려성향',
+      'W04_포용력',
+      'W05_신뢰성',
+      'W06_배려심',
+    ];
+    double npsWarmth =
+        warmthKeys.map((key) => npsScores[key] ?? 50).reduce((a, b) => a + b) /
+        warmthKeys.length /
+        100.0;
+
+    // 🔥 외향성 관련 점수들 평균 계산
+    final extroversionKeys = ['E01_사교성', 'E02_활동성'];
+    double npsExtroversion =
+        extroversionKeys
+            .map((key) => npsScores[key] ?? 50)
+            .reduce((a, b) => a + b) /
+        extroversionKeys.length /
+        100.0;
+
+    // 🔥 유능함 관련 점수들 평균 계산
+    final competenceKeys = [
+      'C01_효율성',
+      'C02_전문성',
+      'C03_창의성',
+      'C04_학습능력',
+      'C05_적응력',
+      'C06_통찰력',
+    ];
+    double npsCompetence =
+        competenceKeys
+            .map((key) => npsScores[key] ?? 50)
+            .reduce((a, b) => a + b) /
+        competenceKeys.length /
+        100.0;
 
     // 사진 분석 반영 (가중치 10%)
     double photoEnergyBoost = 0.0;
@@ -1483,6 +1520,19 @@ $speechPattern
         (baseCompetence * 0.6) +
         (npsCompetence * 0.3) +
         (photoConfidenceBoost * 0.1);
+
+    // 🔍 성격 점수 계산 과정 디버그
+    debugPrint("🧮 성격 점수 계산 결과:");
+    debugPrint("  입력값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+    debugPrint(
+      "  기본점수: 따뜻함=${baseWarmth.toStringAsFixed(2)}, 외향성=${baseExtroversion.toStringAsFixed(2)}, 유능함=${baseCompetence.toStringAsFixed(2)}",
+    );
+    debugPrint(
+      "  NPS보정: 따뜻함=${npsWarmth.toStringAsFixed(2)}, 외향성=${npsExtroversion.toStringAsFixed(2)}, 유능함=${npsCompetence.toStringAsFixed(2)}",
+    );
+    debugPrint(
+      "  최종점수: 따뜻함=${finalWarmth.toStringAsFixed(2)}, 외향성=${finalExtroversion.toStringAsFixed(2)}, 유능함=${finalCompetence.toStringAsFixed(2)}",
+    );
 
     return {
       'warmth': finalWarmth.clamp(0.0, 1.0),
@@ -1516,30 +1566,24 @@ $speechPattern
       "🎭 5차원 성격 벡터: 에너지=$energyLevel, 전문성=$professionalLevel, 따뜻함=$emotionalWarmth, 자신감=$socialConfidence, 창의성=$creativityIndex",
     );
 
-    // 🎵 동적 음성 매핑 (6가지 음성 모두 활용)
-    if (energyLevel >= 0.8 && emotionalWarmth >= 0.7) {
-      return {
-        'voice': 'nova',
-        'rationale':
-            '고에너지(${(energyLevel * 100).toInt()}%) + 고따뜻함(${(emotionalWarmth * 100).toInt()}%) → 밝고 활발한 에너지 넘치는 음성',
-      };
-    } else if (professionalLevel >= 0.8 && socialConfidence >= 0.6) {
-      return {
-        'voice': 'onyx',
-        'rationale':
-            '고전문성(${(professionalLevel * 100).toInt()}%) + 사회적자신감(${(socialConfidence * 100).toInt()}%) → 권위있고 신뢰할 수 있는 깊은 음성',
-      };
-    } else if (emotionalWarmth >= 0.7 && creativityIndex >= 0.6) {
-      return {
-        'voice': 'alloy',
-        'rationale':
-            '고따뜻함(${(emotionalWarmth * 100).toInt()}%) + 창의성(${(creativityIndex * 100).toInt()}%) → 친근하고 포근한 따뜻한 음성',
-      };
-    } else if (socialConfidence >= 0.7 && energyLevel >= 0.6) {
+    // 🎵 동적 음성 매핑 (실제 지원되는 음성들로 다양성 증대)
+    if (energyLevel >= 0.7 && emotionalWarmth >= 0.6) {
       return {
         'voice': 'echo',
         'rationale':
-            '사회적자신감(${(socialConfidence * 100).toInt()}%) + 에너지(${(energyLevel * 100).toInt()}%) → 명랑하고 활발한 사교적 음성',
+            '고에너지(${(energyLevel * 100).toInt()}%) + 고따뜻함(${(emotionalWarmth * 100).toInt()}%) → 명랑하고 활발한 에너지 넘치는 음성',
+      };
+    } else if (professionalLevel >= 0.7 && socialConfidence >= 0.5) {
+      return {
+        'voice': 'sage',
+        'rationale':
+            '고전문성(${(professionalLevel * 100).toInt()}%) + 사회적자신감(${(socialConfidence * 100).toInt()}%) → 지혜롭고 신뢰할 수 있는 음성',
+      };
+    } else if (socialConfidence >= 0.6 && energyLevel >= 0.5) {
+      return {
+        'voice': 'ballad',
+        'rationale':
+            '사회적자신감(${(socialConfidence * 100).toInt()}%) + 에너지(${(energyLevel * 100).toInt()}%) → 표현력 풍부한 감성적 음성',
       };
     } else if (emotionalWarmth <= 0.4 ||
         (professionalLevel >= 0.6 && emotionalWarmth <= 0.5)) {
@@ -1547,6 +1591,19 @@ $speechPattern
         'voice': 'shimmer',
         'rationale':
             '저따뜻함(${(emotionalWarmth * 100).toInt()}%) 또는 전문적냉정함 → 차분하고 우아한 절제된 음성',
+      };
+    } else if (creativityIndex >= 0.6 ||
+        (emotionalWarmth >= 0.5 && energyLevel >= 0.4)) {
+      return {
+        'voice': 'coral',
+        'rationale':
+            '창의성(${(creativityIndex * 100).toInt()}%) 또는 따뜻한에너지 → 부드럽고 친근한 창의적 음성',
+      };
+    } else if (emotionalWarmth >= 0.6 && creativityIndex <= 0.4) {
+      return {
+        'voice': 'verse',
+        'rationale':
+            '따뜻함(${(emotionalWarmth * 100).toInt()}%) + 안정성 → 시적이고 차분한 따뜻한 음성',
       };
     } else {
       return {

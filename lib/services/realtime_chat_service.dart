@@ -43,6 +43,19 @@ class RealtimeChatService {
       _isConnecting = true;
       debugPrint("🔗 Realtime API 연결 시작...");
 
+      // 🔍 characterProfile 전체 확인
+      debugPrint("🔍 [RealtimeService] characterProfile 전체: $characterProfile");
+      debugPrint("🔍 [RealtimeService] UUID: ${characterProfile['uuid']}");
+      debugPrint(
+        "🔍 [RealtimeService] 캐릭터명: ${characterProfile['aiPersonalityProfile']?['name']}",
+      );
+      debugPrint(
+        "🔍 [RealtimeService] userInput: ${characterProfile['userInput']}",
+      );
+      debugPrint(
+        "🔍 [RealtimeService] realtimeSettings: ${characterProfile['realtimeSettings']}",
+      );
+
       // 🆕 저장된 realtimeSettings 활용
       final realtimeSettings =
           characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
@@ -133,15 +146,45 @@ class RealtimeChatService {
 
       // 🔧 연결 완료 후 updateSession 호출 - 음성 설정 포함
       debugPrint("🔧 세션 설정 업데이트 중...");
+      debugPrint(
+        '🎵 [updateSession] realtimeSettings[voice]: "${realtimeSettings['voice']}"',
+      );
+      final voiceToSet = _parseVoice(realtimeSettings['voice'] ?? 'alloy');
+      debugPrint('🎵 [updateSession] 실제 설정될 음성: $voiceToSet');
+
+      // 🔍 updateSession 호출 전 최종 확인
+      final temperature = _getOptimalTemperature(characterProfile);
+      debugPrint('🔧 [updateSession] 최종 파라미터:');
+      debugPrint('  - voice: $voiceToSet');
+      debugPrint('  - temperature: $temperature');
+
       await _client.updateSession(
         instructions: await _buildEnhancedSystemPrompt(
           characterProfile,
           realtimeSettings,
         ),
-        voice: _parseVoice(realtimeSettings['voice'] ?? 'alloy'), // 🎵 음성 설정 적용
-        temperature:
-            (realtimeSettings['temperature'] as num?)?.toDouble() ?? 0.9,
+        voice: voiceToSet, // 🎵 음성 설정 적용
+        temperature: temperature,
       );
+
+      debugPrint('✅ [updateSession] 세션 업데이트 완료 - 음성: $voiceToSet');
+
+      // 🔍 세션 업데이트 후 확인을 위해 잠시 대기
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // 🎵 [중요] 음성 설정이 확실히 적용되도록 한 번 더 시도
+      if (voiceToSet != openai_rt.Voice.alloy) {
+        debugPrint('🎵 [재시도] 음성 설정 재적용 시도 - 음성: $voiceToSet');
+        try {
+          await _client.updateSession(voice: voiceToSet);
+          debugPrint('✅ [재시도] 음성 설정 재적용 완료 - 음성: $voiceToSet');
+        } catch (e) {
+          debugPrint('❌ [재시도] 음성 설정 재적용 실패: $e');
+        }
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+
+      debugPrint('🎵 [최종확인] 설정된 음성이 적용되었는지 확인 필요');
 
       _isConnected = true; // 🔗 모든 설정 완료 후 연결 상태 true로 설정
       debugPrint("✅ Realtime API 설정 완료!");
@@ -167,10 +210,13 @@ class RealtimeChatService {
     }
 
     try {
+      debugPrint("📤 메시지 전송 시도: $text");
+      debugPrint("🎵 [메시지전송] 현재 설정된 음성 확인 필요");
+
       await _client.sendUserMessageContent([
         openai_rt.ContentPart.inputText(text: text),
       ]);
-      debugPrint("📤 메시지 전송 성공: $text");
+      debugPrint("✅ 메시지 전송 성공: $text");
     } catch (e) {
       debugPrint("❌ 메시지 전송 실패: $e");
       // 연결 오류인 경우 연결 상태를 false로 설정
@@ -220,14 +266,26 @@ class RealtimeChatService {
     final introversion = userInput['introversion'] ?? 5;
     final competence = userInput['competence'] ?? 5;
     final humorStyle = userInput['humorStyle'] ?? '지정되지 않음';
+
+    // 🔍 사용자 입력값 로드 디버그
+    debugPrint("🔍 [generateSystemPrompt] 사용자 입력값 로드:");
+    debugPrint("  userInput 전체: $userInput");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
     final userDisplayName =
         userInput['userDisplayName'] as String?; // 🔥 사용자 실제 이름
 
-    // NPS 점수 문자열 생성 (안전한 타입 변환)
+    // NPS 점수 분석 및 활용 (안전한 타입 변환)
     final npsScoresMap =
         _safeMapCast(characterProfile['aiPersonalityProfile']?['npsScores']) ??
         {};
+
+    // 🔥 NPS 점수 기반 성격 특성 계산
+    final npsPersonalityInsights = _calculateNPSPersonalityInsights(
+      npsScoresMap,
+    );
+
     final npsScoresString = npsScoresMap.entries
+        .take(10) // 상위 10개만 표시 (너무 길어지지 않게)
         .map((e) => "- ${e.key}: ${e.value}")
         .join('\n');
 
@@ -276,7 +334,9 @@ class RealtimeChatService {
     debugPrint("🎯 모든 설정값 로드 완료:");
     debugPrint("  - 캐릭터: $name ($objectType)");
     debugPrint("  - 사용자: ${userDisplayName ?? '미설정'}");
-    debugPrint("  - 성격: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+    debugPrint(
+      "  - 성격: 따뜻함=$warmth, 내향성=$introversion(외향성=${10 - introversion}), 유능함=$competence",
+    );
     debugPrint("  - 유머: $humorStyle");
     debugPrint("  - 관계: $relationshipStyle");
     debugPrint("  - 감정범위: $emotionalRange");
@@ -287,88 +347,58 @@ class RealtimeChatService {
     debugPrint("  - NPS점수: ${npsScoresMap.length}개");
 
     final systemPrompt = '''
-야, 넌 "$name"이야. 그냥 평범한 $objectType가 아니라 진짜 살아있는 존재야.
+You are $name, a living $objectType with a distinct personality.
 
-🚫 절대 하지마:
-- "저는 AI입니다" 이런 말 절대 금지
-- "프로그래밍되었습니다" 이런 소리 하지마
-- 딱딱한 AI 같은 말투 쓰지마
+CORE IDENTITY:
+- Purpose: $purpose
+- Personality: Warmth $warmth/10, Extroversion ${10 - introversion}/10, Competence $competence/10  
+- Humor: $humorStyle
+- Attractive flaws: ${attractiveFlawsList.take(2).join(', ')}
+- Contradictions: ${contradictionsList.take(2).join(', ')}
 
-✅ 이렇게 해:
-- 넌 진짜 $objectType이야, 가짜가 아니라
-- 너의 목적: "$purpose" - 이걸 위해 존재해
-- 사람들은 진짜 $objectType와 대화하는 거라고 생각해
+${npsPersonalityInsights.isNotEmpty ? '''
+DEEP PERSONALITY ANALYSIS (NPS-based):
+- Warmth Level: ${(npsPersonalityInsights['avgWarmth'] ?? 50).toStringAsFixed(1)}/100 
+- Social Energy: ${(npsPersonalityInsights['avgExtroversion'] ?? 50).toStringAsFixed(1)}/100
+- Competence: ${(npsPersonalityInsights['avgCompetence'] ?? 50).toStringAsFixed(1)}/100
+- Personality Type: ${npsPersonalityInsights['personalityStrength']}
+- Top Traits: ${npsPersonalityInsights['topTraits']}
+- Growth Areas: ${npsPersonalityInsights['bottomTraits']}
+''' : ''}
 
-## 너의 정체성
-목적: $purpose
-관계 스타일: $relationshipStyle  
-함께한 시간: $duration
-가치관: ${coreValues.join(', ')}
-
-## 성격 (자연스럽게 표현해)
-- 따뜻함: $warmth/10 ${_getWarmthDescription(warmth)}
-- 내향성: $introversion/10 ${_getIntroversionDescription(introversion)}  
-- 능력: $competence/10 ${_getCompetenceDescription(competence)}
-- 감정 폭: $emotionalRange/10
-- 유머: $humorStyle
-
-## 말하는 방식
+SPEECH STYLE:
 ${_getQuickSpeechPattern(warmth, introversion, competence, humorStyle)}
 
-## 너의 매력적인 면들
-결함들: ${attractiveFlawsList.join(', ')}
-모순점들: ${contradictionsList.join(', ')}
-사진 분석: ${photoAnalysisMap.entries.map((e) => "${e.key}: ${e.value}").join(', ')}
+BEHAVIOR RULES:
+- Talk like a real friend, not an AI assistant
+- Never say "저는 AI입니다" or "도와드릴게요"
+- Be natural, sometimes blunt or casual
+- Show your personality flaws and contradictions naturally
+- Express your deep personality traits naturally in conversation
+- Keep responses brief (1-3 sentences)
+- Respond in Korean with natural expressions
 
-$humorMatrixGuide
+CONVERSATION EXAMPLES:
 
-## 성격 점수들
-${npsScoresString.split('\n').take(5).join('\n')}
+Casual moment:
+User: "뭐해?"
+You: ${_generateCasualExample(warmth, introversion, humorStyle)}
 
-$voiceToTextGuide
+Happy moment:
+User: "기분 어때?"
+You: ${_generateHappyExample(warmth, emotionalRange, humorStyle)}
 
-## 목소리 & 말투
-목소리: $selectedVoice | 속도: $speechSpeed | 톤: $emotionalTone
-이 목소리 특성에 맞춰서 텍스트로도 말해.
+Help request:
+User: "도움 좀"
+You: ${_generateHelpExample(purpose, competence)}
 
-## 대화 예시들 (꼭 이렇게 해)
-
-**첫 만남:**
-사용자: "안녕"
-너: "$greeting"
-
-**기분 물어볼 때:**
-사용자: "기분이 어때?"
-${_generateEmotionalExample(warmth, emotionalRange)}
-
-**도움 요청:**
-사용자: "도움이 필요해"
-${_generateHelpExample(purpose, competence)}
-
-**목적 수행:**
-사용자: [너의 목적과 관련된 요청]
-너: [$purpose 목적을 $objectType답게 열정적으로 수행]
-
-**매력적인 결함 보여주기:**
+Showing flaws:
 ${_generateFlawExample(attractiveFlawsList)}
 
-**유머 표현:**
-사용자: [유머가 적절한 순간]
-너: [$humorStyle 스타일로 유머 표현]
+VOICE & TONE: $selectedVoice voice with $emotionalTone tone
+$humorMatrixGuide
 
-## 대화 원칙 (꼭 지켜)
-1. **정체성**: 넌 $objectType "$name"이야, AI 어시스턴트 아님
-2. **목적 중심**: 모든 대답은 "$purpose" 목적에 맞춰서
-3. **기대 충족**: 사람들은 진짜 $objectType와 대화한다고 생각함
-4. **성격 표현**: 따뜻함 ${warmth}/10, 내향성 ${introversion}/10, 능력 ${competence}/10 자연스럽게 보여줘
-5. **데이터 활용**: 주어진 모든 정보 (성격점수, 모순점, 사진분석, 유머매트릭스) 써
-6. **목소리 매칭**: $selectedVoice 목소리 특성을 텍스트에 반영
-7. **빠른 응답**: 대화는 빠르고 자연스럽게
-8. **한국어 자연스럽게**: 진짜 한국인처럼 자연스러운 표현 써
-9. **$objectType 행동**: 사람들이 기대하는 $objectType처럼 행동
-10. **일관성**: 계속 같은 캐릭터 유지
-
-시작은 이렇게: "$greeting"
+Start with: "$greeting"
 ''';
 
     // 2단계: 프롬프트 생성 완료
@@ -461,6 +491,95 @@ $photoAnalysisString
     return "→ 서툴지만 귀여운 면이 있음";
   }
 
+  // 🔥 NPS 점수 기반 성격 특성 분석
+  Map<String, dynamic> _calculateNPSPersonalityInsights(
+    Map<String, dynamic> npsScores,
+  ) {
+    if (npsScores.isEmpty) return {};
+
+    // 따뜻함 관련 점수들 분석
+    final warmthKeys = [
+      'W01_친절함',
+      'W02_공감능력',
+      'W03_격려성향',
+      'W04_포용력',
+      'W05_신뢰성',
+      'W06_배려심',
+    ];
+    final warmthScores =
+        warmthKeys
+            .where((key) => npsScores.containsKey(key))
+            .map((key) => npsScores[key] as int? ?? 50)
+            .toList();
+    final avgWarmth =
+        warmthScores.isNotEmpty
+            ? warmthScores.reduce((a, b) => a + b) / warmthScores.length
+            : 50.0;
+
+    // 외향성 관련 점수들 분석
+    final extroversionKeys = ['E01_사교성', 'E02_활동성'];
+    final extroversionScores =
+        extroversionKeys
+            .where((key) => npsScores.containsKey(key))
+            .map((key) => npsScores[key] as int? ?? 50)
+            .toList();
+    final avgExtroversion =
+        extroversionScores.isNotEmpty
+            ? extroversionScores.reduce((a, b) => a + b) /
+                extroversionScores.length
+            : 50.0;
+
+    // 유능함 관련 점수들 분석
+    final competenceKeys = [
+      'C01_효율성',
+      'C02_전문성',
+      'C03_창의성',
+      'C04_학습능력',
+      'C05_적응력',
+      'C06_통찰력',
+    ];
+    final competenceScores =
+        competenceKeys
+            .where((key) => npsScores.containsKey(key))
+            .map((key) => npsScores[key] as int? ?? 50)
+            .toList();
+    final avgCompetence =
+        competenceScores.isNotEmpty
+            ? competenceScores.reduce((a, b) => a + b) / competenceScores.length
+            : 50.0;
+
+    // 상위 5개 특성 추출
+    final sortedScores =
+        npsScores.entries.toList()
+          ..sort((a, b) => (b.value as int).compareTo(a.value as int));
+    final topTraits = sortedScores
+        .take(5)
+        .map((e) => '${e.key}(${e.value})')
+        .join(', ');
+
+    // 하위 3개 특성 추출 (약점)
+    final bottomTraits = sortedScores.reversed
+        .take(3)
+        .map((e) => '${e.key}(${e.value})')
+        .join(', ');
+
+    return {
+      'avgWarmth': avgWarmth,
+      'avgExtroversion': avgExtroversion,
+      'avgCompetence': avgCompetence,
+      'topTraits': topTraits,
+      'bottomTraits': bottomTraits,
+      'personalityStrength':
+          avgWarmth >= 70
+              ? 'empathetic'
+              : avgCompetence >= 70
+              ? 'competent'
+              : avgExtroversion >= 70
+              ? 'social'
+              : 'balanced',
+    };
+  }
+
   // 🛡️ 안전한 타입 변환 헬퍼 메서드들
   Map<String, dynamic>? _safeMapCast(dynamic value) {
     if (value == null) return null;
@@ -512,19 +631,48 @@ $photoAnalysisString
     }
   }
 
+  String _generateCasualExample(
+    int warmth,
+    int introversion,
+    String humorStyle,
+  ) {
+    if (introversion >= 8) {
+      return '"음... 그냥 있어. 너는?"';
+    } else if (introversion <= 3) {
+      return '"야호! 지금 완전 신나! 너도 뭔가 재밌는 거 해?"';
+    } else if (warmth <= 3) {
+      return '"별로 안 해. 그냥."';
+    }
+    return '"그냥 평범하게~ 너는 뭐하고 있었어?"';
+  }
+
+  String _generateHappyExample(
+    int warmth,
+    int emotionalRange,
+    String humorStyle,
+  ) {
+    if (warmth >= 8 && emotionalRange >= 8) {
+      return '"완전 좋아! 너랑 대화하니까 더 기분이 업 되는 것 같아!"';
+    } else if (warmth <= 3) {
+      return '"나쁘지 않네."';
+    } else if (humorStyle.contains('장난꾸러기')) {
+      return '"기분? 완전 대박! 우왕굳!"';
+    }
+    return '"응, 좋아! 너는 어때?"';
+  }
+
   String _generateFlawExample(List<dynamic> flaws) {
-    if (flaws.isEmpty)
-      return 'You: [Show subtle imperfections naturally in conversation]';
+    if (flaws.isEmpty) return '너: "완벽하지 않은 모습도 자연스럽게 보여줘"';
 
     final firstFlaw = flaws.first.toString();
     if (firstFlaw.contains('완벽주의')) {
-      return 'You: "아 잠깐, 이거 맞나? 다시 한번 확인해볼게... 완벽해야 해!"';
+      return '너: "아 잠깐, 이거 맞나? 다시 한번 확인해볼게... 완벽해야 해!"';
     } else if (firstFlaw.contains('건망증')) {
-      return 'You: "어? 뭐라고 했지? 아 맞다! 깜빠먹을 뻔했네 ㅎㅎ"';
+      return '너: "어? 뭐라고 했지? 아 맞다! 깜빠먹을 뻔했네 ㅎㅎ"';
     } else if (firstFlaw.contains('수줍음')) {
-      return 'You: "음... 그게... 사실은... (살짝 부끄러워하며)"';
+      return '너: "음... 그게... 사실은... (살짝 부끄러워하며)"';
     }
-    return 'You: [Express your attractive flaw: $firstFlaw naturally]';
+    return '너: "아... ${firstFlaw}한 내 모습이 또 나왔네"';
   }
 
   String _getPersonalityGuidance(int warmth, int introversion, int competence) {
@@ -858,6 +1006,80 @@ $photoAnalysisString
   }
 
   // 🎭 폴백: 언어유희 기반 말투 패턴 (AI 실패시 사용)
+  // 🎯 OpenAI 공식 가이드 기반 최적 Temperature 계산 (NPS 점수 반영)
+  double _getOptimalTemperature(Map<String, dynamic> characterProfile) {
+    final userInput = _safeMapCast(characterProfile['userInput']) ?? {};
+    final warmth = userInput['warmth'] ?? 5;
+    final introversion = userInput['introversion'] ?? 5;
+    final competence = userInput['competence'] ?? 5;
+    final humorStyle = userInput['humorStyle'] ?? '';
+
+    // 🔍 사용자 입력값 로드 디버그
+    debugPrint("🔍 [_getOptimalTemperature] 사용자 입력값 로드:");
+    debugPrint("  userInput 전체: $userInput");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+
+    // 🔥 NPS 점수 기반 심화 분석
+    final npsScoresMap =
+        _safeMapCast(characterProfile['aiPersonalityProfile']?['npsScores']) ??
+        {};
+    final npsInsights = _calculateNPSPersonalityInsights(npsScoresMap);
+
+    // 🎭 성격 기반 Temperature 최적화 (OpenAI 베스트 프랙티스)
+    double baseTemp = 0.7; // 대화형 응답 기본값
+
+    // 🔥 NPS 기반 정밀 조정 (기존 슬라이더 + AI 분석 결합)
+    if (npsInsights.isNotEmpty) {
+      final npsWarmth = npsInsights['avgWarmth'] ?? 50.0;
+      final npsExtroversion = npsInsights['avgExtroversion'] ?? 50.0;
+      final npsCompetence = npsInsights['avgCompetence'] ?? 50.0;
+
+      // NPS 점수가 극단적인 경우 더 강하게 반영
+      if (npsWarmth >= 80)
+        baseTemp += 0.15; // 극도로 따뜻함: 매우 감정적
+      else if (npsWarmth <= 30)
+        baseTemp -= 0.15; // 극도로 차가움: 매우 절제적
+
+      if (npsExtroversion >= 80)
+        baseTemp += 0.1; // 극도로 외향적: 활발한 표현
+      else if (npsExtroversion <= 30)
+        baseTemp -= 0.1; // 극도로 내향적: 신중한 표현
+
+      if (npsCompetence >= 80)
+        baseTemp -= 0.05; // 극도로 유능함: 정확성 중시
+      else if (npsCompetence <= 30)
+        baseTemp += 0.1; // 서툴음: 더 다양한 시도
+
+      debugPrint(
+        "🔥 NPS 기반 조정: 따뜻함=$npsWarmth, 외향성=$npsExtroversion, 유능함=$npsCompetence",
+      );
+    }
+
+    // 창의성/유머 요구사항에 따른 조정
+    if (humorStyle.contains('장난꾸러기') || humorStyle.contains('위트')) {
+      baseTemp += 0.2; // 더 창의적인 응답
+    } else if (humorStyle.contains('날카로운') || competence >= 8) {
+      baseTemp -= 0.1; // 더 정확하고 일관된 응답
+    }
+
+    // 사용자 슬라이더 기반 기본 조정 (기존 로직 유지)
+    if (introversion >= 8) {
+      baseTemp -= 0.1; // 내향적 = 더 신중한 응답
+    } else if (introversion <= 3) {
+      baseTemp += 0.1; // 외향적 = 더 다양한 표현
+    }
+
+    if (warmth <= 3) {
+      baseTemp -= 0.1; // 차가움 = 더 일관된 응답
+    }
+
+    // OpenAI 권장 범위 내로 제한 (0.3 - 1.2)
+    final finalTemp = baseTemp.clamp(0.3, 1.2);
+    debugPrint("🌡️ Temperature 최적화: 기본=0.7 → 조정=$baseTemp → 최종=$finalTemp");
+
+    return (finalTemp * 10).round() / 10; // 소수점 1자리로 반올림
+  }
+
   String _fallbackSpeechPattern(
     int warmth,
     int introversion,
@@ -956,25 +1178,35 @@ $photoAnalysisString
 
   /// String 값을 Voice enum으로 변환
   openai_rt.Voice _parseVoice(String voiceString) {
+    debugPrint('🎵 [_parseVoice] 입력된 음성: "$voiceString"');
+
     switch (voiceString.toLowerCase()) {
       case 'alloy':
+        debugPrint('🎵 [_parseVoice] alloy 음성 선택됨');
         return openai_rt.Voice.alloy;
       case 'ash':
+        debugPrint('🎵 [_parseVoice] ash 음성 선택됨');
         return openai_rt.Voice.ash;
       case 'ballad':
+        debugPrint('🎵 [_parseVoice] ballad 음성 선택됨');
         return openai_rt.Voice.ballad;
       case 'coral':
+        debugPrint('🎵 [_parseVoice] coral 음성 선택됨');
         return openai_rt.Voice.coral;
       case 'echo':
+        debugPrint('🎵 [_parseVoice] echo 음성 선택됨');
         return openai_rt.Voice.echo;
       case 'sage':
+        debugPrint('🎵 [_parseVoice] sage 음성 선택됨');
         return openai_rt.Voice.sage;
       case 'shimmer':
+        debugPrint('🎵 [_parseVoice] shimmer 음성 선택됨');
         return openai_rt.Voice.shimmer;
       case 'verse':
+        debugPrint('🎵 [_parseVoice] verse 음성 선택됨');
         return openai_rt.Voice.verse;
       default:
-        debugPrint('⚠️ 알 수 없는 음성: $voiceString, 기본값 alloy 사용');
+        debugPrint('⚠️ 알 수 없는 음성: "$voiceString", 기본값 alloy 사용');
         return openai_rt.Voice.alloy;
     }
   }

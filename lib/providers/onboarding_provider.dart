@@ -79,6 +79,12 @@ class OnboardingProvider extends ChangeNotifier {
 
   /// 성격 슬라이더 업데이트 (Step 6)
   void updatePersonalitySlider(String type, int value) {
+    debugPrint("🎯 [OnboardingProvider] updatePersonalitySlider 호출됨:");
+    debugPrint("  - type: $type, value: $value");
+    debugPrint(
+      "  - 업데이트 전 상태: warmth=${_state.warmth}, introversion=${_state.introversion}, competence=${_state.competence}",
+    );
+
     switch (type) {
       case 'introversion':
         _state = _state.copyWith(introversion: value);
@@ -90,6 +96,10 @@ class OnboardingProvider extends ChangeNotifier {
         _state = _state.copyWith(competence: value);
         break;
     }
+
+    debugPrint(
+      "  - 업데이트 후 상태: warmth=${_state.warmth}, introversion=${_state.introversion}, competence=${_state.competence}",
+    );
     notifyListeners();
     _logStatus('updatePersonalitySlider');
   }
@@ -120,7 +130,7 @@ class OnboardingProvider extends ChangeNotifier {
 
   /// 서버 전송용 사용자 입력 데이터를 Map으로 변환합니다.
   Map<String, dynamic> getUserInputAsMap() {
-    return {
+    final userInputMap = {
       'photoPath': state.photoPath,
       'objectType': state.objectType,
       'purpose': state.purpose,
@@ -132,6 +142,15 @@ class OnboardingProvider extends ChangeNotifier {
       'introversion': state.introversion,
       'competence': state.competence,
     };
+
+    // 🔍 사용자 입력값 디버그 로그 추가
+    debugPrint("🔍 [OnboardingProvider] getUserInputAsMap 호출됨:");
+    debugPrint("  - warmth: ${state.warmth}");
+    debugPrint("  - introversion: ${state.introversion}");
+    debugPrint("  - competence: ${state.competence}");
+    debugPrint("  - 전체 userInputMap: $userInputMap");
+
+    return userInputMap;
   }
 
   /*
