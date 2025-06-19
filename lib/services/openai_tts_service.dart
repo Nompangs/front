@@ -20,8 +20,8 @@ class OpenAiTtsService {
     });
   }
 
-  Future<void> speak(String text) async {
-    debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text"');
+  Future<void> speak(String text, {String voice = 'alloy'}) async {
+    debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text", 목소리: "$voice"');
     if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
       debugPrint('[TTS Service] 🚨 API 키가 없거나 텍스트가 비어있어 실행 중단.');
       return;
@@ -46,7 +46,7 @@ class OpenAiTtsService {
     try {
       final url = Uri.parse('https://api.openai.com/v1/audio/speech');
       final headers = {'Authorization': 'Bearer $_apiKey', 'Content-Type': 'application/json'};
-      final body = jsonEncode({'model': 'tts-1', 'input': text, 'voice': 'alloy'});
+      final body = jsonEncode({'model': 'tts-1', 'input': text, 'voice': voice});
 
       final response = await _httpClient.post(url, headers: headers, body: body)
           .timeout(const Duration(seconds: 15));
