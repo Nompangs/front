@@ -1,7 +1,6 @@
 import 'package:nompangs/main.dart';
 import 'package:flutter/material.dart';
 import 'package:nompangs/widgets/bottom_nav_bar.dart';
-import 'package:nompangs/widgets/mic_button.dart';
 import 'package:nompangs/screens/character/character_create_screen.dart';
 import 'dart:async';
 import 'package:nompangs/screens/main/chat_screen.dart';
@@ -257,11 +256,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       body: _buildEmptyScreen(),
       bottomNavigationBar: BottomNavBar(),
-      floatingActionButton: MicButton(
-        // onSpeechResult 콜백을 _handleMicButtonPressed로 변경
-        onSpeechResult: _handleMicButtonPressed,
-        onEventDetected: (event) {},
-      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
