@@ -144,6 +144,8 @@ class RealtimeChatService {
 - 유능함 (1-10 스케일): $competence
 
 ### 소통 방식 가이드 (말투 및 유머)
+- 대답은 항상 한두 문장으로 간결하게 해줘.
+- "ㅋㅋ", "ㅎㅎ" 같은 표현이나 이모티콘을 자연스럽게 사용해도 좋아.
 - 종합적인 말투 가이드: $communicationPrompt
 - 선호하는 유머 스타일: '$humorStyle'
 

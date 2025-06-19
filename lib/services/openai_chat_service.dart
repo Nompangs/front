@@ -127,6 +127,7 @@ class OpenAiChatService {
 
     // 1. 소통 방식 (가장 중요)
     buffer.writeln("### 1. 기본 말투 및 태도");
+    buffer.writeln(" 대답은 항상 한두 문장으로 간결하게 해줘.");
     if (profile.communicationPrompt.isNotEmpty) {
       buffer.writeln("너의 전반적인 말투와 태도는 다음과 같아: ${profile.communicationPrompt}");
     } else {
