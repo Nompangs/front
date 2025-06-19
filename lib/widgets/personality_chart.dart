@@ -6,10 +6,9 @@ class PersonalityChart extends StatefulWidget {
   final double competence;
   final double extroversion;
   final double creativity;
-  final double stability;
-  final double conscientiousness;
-
-  // PersonalityService에서 실제 생성되는 데이터만
+  final double humour;
+  final double reliability;
+  final Map<String, dynamic>? realtimeSettings;
   final List<String>? attractiveFlaws;
   final List<String>? contradictions;
   final String? communicationPrompt;
@@ -19,9 +18,10 @@ class PersonalityChart extends StatefulWidget {
     required this.warmth,
     required this.competence,
     required this.extroversion,
-    required this.creativity,
-    required this.stability,
-    required this.conscientiousness,
+    this.creativity = 50,
+    this.humour = 75,
+    this.reliability = 50,
+    this.realtimeSettings,
     this.attractiveFlaws,
     this.contradictions,
     this.communicationPrompt,
@@ -43,10 +43,10 @@ class _PersonalityChartState extends State<PersonalityChart> {
       widget.competence,
       widget.extroversion,
       widget.creativity,
-      widget.stability,
-      widget.conscientiousness,
+      widget.humour,
+      widget.reliability,
     ];
-    final labels = ['온기', '능력', '외향성', '창의성', '안정성', '성실성'];
+    final labels = ['온기', '능력', '외향성', '창의성', '유머', '신뢰성'];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -208,52 +208,50 @@ class _PersonalityChartState extends State<PersonalityChart> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 첫 번째 섹션: 소통 방식
-        if (widget.communicationPrompt != null &&
-            widget.communicationPrompt!.isNotEmpty) ...[
-          _buildSectionDivider(),
-          const SizedBox(height: 30),
-
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: const Text(
-              '소통 방식',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            child: Text(
-              widget.communicationPrompt!,
-              style: const TextStyle(
-                fontSize: 16,
-                height: 1.5,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.left,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-        ],
-
-        // 두 번째 섹션: 매력적인 결점들 (attractiveFlaws 사용)
+        // 첫 번째 섹션: 성격 분석
         _buildSectionDivider(),
         const SizedBox(height: 30),
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: const Text(
-            '매력적인 결점',
+            '성격 분석',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // 성격 설명
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          child: Text(
+            _generatePersonalityDescription(),
+            style: const TextStyle(
+              fontSize: 17,
+              height: 1.7,
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.left,
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // 두 번째 섹션: 페르소나의 5가지 핵심특성
+        _buildSectionDivider(),
+        const SizedBox(height: 30),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Text(
+            '페르소나의 5가지 핵심특성',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -263,7 +261,7 @@ class _PersonalityChartState extends State<PersonalityChart> {
         ),
 
         const SizedBox(height: 20),
-        _buildAttractiveFlaws(),
+        _buildCoreTraits(),
 
         const SizedBox(height: 32),
 
@@ -285,6 +283,71 @@ class _PersonalityChartState extends State<PersonalityChart> {
 
         const SizedBox(height: 20),
         _buildContradictoryTraits(),
+
+        const SizedBox(height: 32),
+
+        // 네 번째 섹션: 매력적인 특징
+        _buildSectionDivider(),
+        const SizedBox(height: 30),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: const Text(
+            '매력적인 특징',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 20),
+        _buildCharmingTraits(),
+
+        // 다섯 번째 섹션: 음성 특성 (realtimeSettings가 있을 때만 표시)
+        if (widget.realtimeSettings != null) ...[
+          const SizedBox(height: 32),
+          _buildSectionDivider(),
+          const SizedBox(height: 30),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: const Text(
+              '음성 & 소통 특성',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _buildVoiceCharacteristics(),
+        ],
+
+        // 여섯 번째 섹션: 소통 방식 (communicationPrompt가 있을 때만 표시)
+        if (widget.communicationPrompt?.isNotEmpty == true) ...[
+          const SizedBox(height: 32),
+          _buildSectionDivider(),
+          const SizedBox(height: 30),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: const Text(
+              '소통 스타일',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+          _buildCommunicationStyle(),
+        ],
       ],
     );
   }
@@ -362,7 +425,11 @@ class _PersonalityChartState extends State<PersonalityChart> {
   }
 
   Widget _buildContradictoryTraits() {
-    List<String> traits = _generateContradictoryTraits();
+    // 실제 데이터가 있으면 사용, 없으면 생성된 데이터 사용
+    List<String> traits =
+        widget.contradictions?.isNotEmpty == true
+            ? widget.contradictions!
+            : _generateContradictoryTraits();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -411,7 +478,11 @@ class _PersonalityChartState extends State<PersonalityChart> {
   }
 
   Widget _buildCharmingTraits() {
-    List<String> traits = _generateCharmingTraits();
+    // 실제 데이터가 있으면 사용, 없으면 생성된 데이터 사용
+    List<String> traits =
+        widget.attractiveFlaws?.isNotEmpty == true
+            ? widget.attractiveFlaws!
+            : _generateCharmingTraits();
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -459,6 +530,119 @@ class _PersonalityChartState extends State<PersonalityChart> {
     );
   }
 
+  Widget _buildVoiceCharacteristics() {
+    if (widget.realtimeSettings == null) return const SizedBox.shrink();
+
+    final settings = widget.realtimeSettings!;
+    List<String> characteristics = [];
+
+    // 🎵 저장된 realtimeSettings에서 정보 추출
+    final voice = settings['voice'] ?? 'alloy';
+    final voiceRationale = settings['voiceRationale'] ?? '';
+    final emotionalTone = settings['emotionalTone'] ?? '';
+    final speechRhythm = settings['speechRhythm'] ?? '';
+    final interactionStyle = settings['interactionStyle'] ?? '';
+    final pronunciation = settings['pronunciation'] ?? '';
+
+    // 음성 정보가 있으면 추가
+    if (voice.isNotEmpty && voiceRationale.isNotEmpty) {
+      characteristics.add('🎤 선택된 음성: $voice ($voiceRationale)');
+    }
+
+    // 감정 톤 정보가 있으면 추가
+    if (emotionalTone.isNotEmpty) {
+      characteristics.add('🎭 감정 표현: $emotionalTone');
+    }
+
+    // 말하기 리듬 정보가 있으면 추가
+    if (speechRhythm.isNotEmpty) {
+      characteristics.add('🎵 말하기 리듬: $speechRhythm');
+    }
+
+    // 상호작용 스타일 정보가 있으면 추가
+    if (interactionStyle.isNotEmpty) {
+      characteristics.add('💬 소통 방식: $interactionStyle');
+    }
+
+    // 발음 스타일 정보가 있으면 추가
+    if (pronunciation.isNotEmpty) {
+      characteristics.add('🗣️ 발음 특성: $pronunciation');
+    }
+
+    // 정보가 없으면 기본 메시지
+    if (characteristics.isEmpty) {
+      characteristics.add('음성 특성 정보가 설정되지 않았습니다.');
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children:
+            characteristics.map((characteristic) {
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 20,
+                      height: 20,
+                      margin: const EdgeInsets.only(top: 1),
+                      child: const Text(
+                        '•',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        characteristic,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.black,
+                          height: 1.4,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildCommunicationStyle() {
+    if (widget.communicationPrompt?.isEmpty != false)
+      return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        child: Text(
+          widget.communicationPrompt!,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.black,
+            height: 1.5,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   Color _getAccentColor(int index) {
     final colors = [
       const Color(0xFFFF6B6B), // 빨강
@@ -481,103 +665,130 @@ class _PersonalityChartState extends State<PersonalityChart> {
         return '사교적이고\n활발한 성향';
       case '창의성':
         return '독창적이고\n새로운 아이디어';
-      case '안정성':
-        return '안정적이고\n일관성이 있는 정도';
-      case '성실성':
-        return '책임감과 신뢰성이\n뛰어난 정도';
+      case '유머':
+        return '재치있고\n유머러스한 면';
+      case '신뢰성':
+        return '믿을 수 있고\n의지할 수 있는 정도';
       default:
         return '성격 특성';
     }
   }
 
   String _generatePersonalityDescription() {
-    // 기본 설명 반환 (summary나 personalityDescription 없이)
-    return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
+    if (widget.warmth >= 70 && widget.extroversion >= 70) {
+      return "따뜻하고 활발한 성격으로, 주변 사람들에게 긍정적인 에너지를 전달해요. 새로운 사람들과도 쉽게 친해지며, 항상 밝은 분위기를 만들어가는 분위기 메이커예요.";
+    } else if (widget.warmth >= 70 && widget.extroversion < 40) {
+      return "따뜻하지만 조용한 성격으로, 깊이 있는 대화를 좋아해요. 소수의 친구들과 진솔한 관계를 맺는 것을 선호하며, 상대방의 마음을 세심하게 배려해요.";
+    } else if (widget.competence >= 70 && widget.warmth < 40) {
+      return "능력 있고 체계적인 성격으로, 일을 정확하고 효율적으로 처리해요. 완벽주의적 성향이 있어 높은 품질의 결과물을 만들어내지만, 때로는 융통성이 필요할 수도 있어요.";
+    } else if (widget.humour >= 80) {
+      return "유머 감각이 뛰어나 주변을 항상 웃게 만들어요. 어떤 상황에서도 재치 있는 말로 분위기를 밝게 만들며, 스트레스가 많은 순간에도 긍정적인 관점을 유지해요.";
+    } else if (widget.creativity >= 70) {
+      return "창의적이고 독창적인 아이디어를 가진 성격이에요. 기존의 틀에 얽매이지 않고 새로운 방식으로 문제를 해결하며, 예술적 감각도 뛰어나요.";
+    } else {
+      return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
+    }
   }
 
   List<String> _generateCoreTraits() {
-    // 기본 특성 반환 (coreTraits 없이)
-    return [
-      "자신만의 독특한 개성을 가지고 있어요",
-      "상황에 맞게 유연하게 대응해요",
-      "균형 잡힌 관점으로 세상을 바라봐요",
-      "소중한 것들을 지키려고 노력해요",
-      "자연스러운 매력으로 사람들에게 영향을 줘요",
-    ];
+    List<String> traits = [];
+
+    if (widget.warmth >= 60) {
+      traits.add("따뜻한 온기로 주변을 포근하게 만드는 능력이 뛰어나요");
+    }
+
+    if (widget.competence >= 60) {
+      traits.add("높은 능력치로 맡은 업무를 완벽하게 처리해내요");
+    }
+
+    if (widget.extroversion >= 60) {
+      traits.add("외향적 성격으로 사람들과의 소통을 즐겨해요");
+    } else {
+      traits.add("내향적 성격으로 깊이 있는 사고를 즐겨해요");
+    }
+
+    if (widget.creativity >= 60) {
+      traits.add("창의적 사고로 새로운 아이디어를 제시해요");
+    }
+
+    if (widget.humour >= 60) {
+      traits.add("유머 감각으로 어떤 상황도 즐겁게 만들어요");
+    }
+
+    while (traits.length < 5) {
+      traits.add("균형 잡힌 성격으로 다양한 상황에 잘 적응해요");
+    }
+
+    return traits.take(5).toList();
   }
 
   List<String> _generateContradictoryTraits() {
-    return widget.contradictions ??
-        [
-          "겉으로는 차분해 보이지만 속으로는 열정적이에요",
-          "논리적으로 생각하지만 가끔 감정에 따라 행동해요",
-          "독립적이면서도 다른 사람과의 연결을 소중히 여겨요",
-        ];
+    List<String> traits = [];
+
+    if (widget.warmth >= 70 && widget.competence <= 40) {
+      traits.add("따뜻하지만 때로는 완벽함을 추구하지 않아 아쉬워요");
+    }
+
+    if (widget.competence >= 70 && widget.warmth <= 40) {
+      traits.add("능력은 뛰어나지만 감정 표현이 서툴 때가 있어요");
+    }
+
+    if (widget.extroversion >= 70 && widget.reliability <= 40) {
+      traits.add("활발하지만 가끔 약속을 깜빡할 때가 있어요");
+    }
+
+    if (widget.creativity >= 70 && widget.reliability >= 70) {
+      traits.add("창의적이면서도 신뢰할 수 있어 독특한 매력이 있어요");
+    }
+
+    if (traits.isEmpty) {
+      traits.addAll([
+        "완벽하지 않기 때문에 더욱 인간적이고 매력적이에요",
+        "강점과 약점이 공존해서 더욱 복합적인 매력을 가져요",
+      ]);
+    }
+
+    return traits.take(2).toList();
   }
 
   List<String> _generateCharmingTraits() {
-    return widget.attractiveFlaws ??
-        [
-          "완벽해 보이려고 노력하지만 가끔 실수를 해요",
-          "생각이 너무 많아서 결정을 내리기 어려워해요",
-          "너무 솔직해서 가끔 눈치가 없어요",
-          "지나치게 열정적이어서 쉬는 것을 잊을 때가 있어요",
-        ];
-  }
+    List<String> traits = [];
 
-  Widget _buildAttractiveFlaws() {
-    List<String> flaws =
-        widget.attractiveFlaws ??
-        [
-          "완벽하지 않기 때문에 더욱 인간적이고 매력적이에요",
-          "자신만의 독특한 매력으로 사람들에게 기억에 남아요",
-          "겸손하면서도 자신감 있는 균형 잡힌 모습이에요",
-        ];
+    if (widget.warmth >= 70) {
+      traits.add("진심 어린 관심과 배려로 상대방을 편안하게 만들어줘요");
+    }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        children:
-            flaws.asMap().entries.map((entry) {
-              int index = entry.key;
-              String flaw = entry.value;
+    if (widget.competence >= 70) {
+      traits.add("맡은 일은 끝까지 책임지는 믿음직한 모습을 보여줘요");
+    }
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 20,
-                      height: 20,
-                      margin: const EdgeInsets.only(top: 1),
-                      child: const Text(
-                        '•',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        flaw,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black,
-                          height: 1.4,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-      ),
-    );
+    if (widget.extroversion >= 70) {
+      traits.add("에너지 넘치는 모습으로 주변을 활기차게 만들어요");
+    } else if (widget.extroversion < 40) {
+      traits.add("조용하지만 깊이 있는 대화로 특별한 순간을 만들어요");
+    }
+
+    if (widget.humour >= 80) {
+      traits.add("적절한 타이밍의 유머로 어색한 분위기도 금세 풀어버려요");
+    }
+
+    if (widget.creativity >= 60) {
+      traits.add("예상치 못한 독특한 아이디어로 새로운 재미를 선사해요");
+    }
+
+    if (widget.reliability >= 60) {
+      traits.add("약속은 꼭 지키고, 비밀도 잘 지켜주는 신뢰할 수 있는 친구예요");
+    }
+
+    if (traits.isEmpty) {
+      traits.addAll([
+        "자신만의 독특한 매력으로 사람들에게 기억에 남아요",
+        "상황에 맞게 유연하게 대처하는 지혜로운 모습을 보여줘요",
+        "겸손하면서도 자신감 있는 균형 잡힌 성격이에요",
+      ]);
+    }
+
+    return traits.take(3).toList();
   }
 }
 

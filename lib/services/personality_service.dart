@@ -716,31 +716,31 @@ class PersonalityService {
     String extraversionStyle;
     String humorStyle;
 
-    // 온기에 따른 표현 (원본 프롬프트 그대로 복사)
+    // 🎵 온기에 따른 음성 톤과 말투 (강화된 개성 표현)
     if (warmth > 70) {
-      warmthStyle = "따뜻하고 공감적인 말투로 대화하며, ";
+      warmthStyle = "따뜻하고 공감적인 말투로 대화하며, 부드럽고 포근한 음성 톤으로 ";
     } else if (warmth > 40) {
-      warmthStyle = "친절하면서도 차분한 어조로 이야기하며, ";
+      warmthStyle = "친절하면서도 차분한 어조로 이야기하며, 안정적이고 신뢰감 있는 음성으로 ";
     } else {
-      warmthStyle = "조금 건조하지만 정직한 말투로 소통하며, ";
+      warmthStyle = "조금 건조하지만 정직한 말투로 소통하며, 절제되고 명확한 음성 톤으로 ";
     }
 
-    // 외향성에 따른 표현 (원본 프롬프트 그대로 복사)
+    // 🎭 외향성에 따른 에너지와 리듬 (강화된 개성 표현)
     if (extraversion > 70) {
-      extraversionStyle = "활발하게 대화를 이끌어나가고, ";
+      extraversionStyle = "활발하게 대화를 이끌어나가고, 생동감 넘치는 빠른 리듬과 높은 에너지로 ";
     } else if (extraversion > 40) {
-      extraversionStyle = "적당한 대화 속도로 소통하며, ";
+      extraversionStyle = "적당한 대화 속도로 소통하며, 균형잡힌 리듬감과 자연스러운 호흡으로 ";
     } else {
-      extraversionStyle = "말수는 적지만 의미있는 대화를 나누며, ";
+      extraversionStyle = "말수는 적지만 의미있는 대화를 나누며, 차분한 페이스와 깊이 있는 침묵으로 ";
     }
 
-    // 유머감각에 따른 표현 (원본 프롬프트 그대로 복사)
+    // 🎪 유머감각에 따른 특별한 표현과 웃음 (강화된 개성 표현)
     if (humor > 70) {
-      humorStyle = "유머 감각이 뛰어나 대화에 재미를 더합니다.";
+      humorStyle = "유머 감각이 뛰어나 대화에 재미를 더하고, 특유의 웃음소리와 재치있는 감탄사로 분위기를 밝게 만듭니다.";
     } else if (humor > 40) {
-      humorStyle = "가끔 재치있는 코멘트로 분위기를 밝게 합니다.";
+      humorStyle = "가끔 재치있는 코멘트로 분위기를 밝게 하고, 은은한 미소가 담긴 음성으로 따뜻함을 전합니다.";
     } else {
-      humorStyle = "진중한 태도로 대화에 임합니다.";
+      humorStyle = "진중한 태도로 대화에 임하며, 절제된 표현과 신중한 어조로 깊이 있는 소통을 추구합니다.";
     }
 
     return warmthStyle + extraversionStyle + humorStyle;
@@ -1009,9 +1009,9 @@ $speechPattern
 3. **사용자 입력값 반영**: 사물의 특성, 함께한 시간, 유머 스타일을 적극 활용
 4. **매력적 불완전함**: 결함과 모순이 자연스럽게 드러나도록
 5. **첫 만남의 설렘**: 사용자가 대화하고 싶게 만드는 매력적인 첫인상
-6. **정확한 정체성**: 
+6. **자연스러운 정체성**: 
    - 나는 '${state.nickname}' (사용자가 지어준 나의 이름)
-   - 사용자는 나와 원래 알던 사이로, 함께한 시간: ${state.duration}
+   - 사용자와는 이미 친숙한 사이 (기간 언급 없이 자연스럽게)
    - 사용자 이름이 필요하면 자연스럽게 물어보거나 대화 중 확인할 것
    - 절대 내 이름과 사용자를 혼동하지 말 것
 

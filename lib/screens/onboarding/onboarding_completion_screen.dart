@@ -684,15 +684,17 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   warmth: provider.state!.warmth! * 10,
                                   competence: provider.state!.competence! * 10,
                                   extroversion:
-                                      (11 - provider.state!.extroversion!) * 10,
+                                      provider.state!.extroversion! * 10,
 
                                   // AI 생성 지표
                                   creativity: _calculateCreativity(character),
-                                  stability: _calculateStability(character),
-                                  conscientiousness:
-                                      _calculateConscientiousness(character),
+                                  humour: _calculateHumour(character),
+                                  reliability: _calculateReliability(character),
 
-                                  // PersonalityService에서 실제 생성되는 데이터
+                                  // realtimeSettings 정보 추가
+                                  realtimeSettings: character.realtimeSettings,
+
+                                  // PersonalityService에서 실제 생성되는 매력적인 특성들
                                   attractiveFlaws: character.attractiveFlaws,
                                   contradictions: character.contradictions,
                                   communicationPrompt:
@@ -1260,5 +1262,35 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
 
     return (responsibility * 0.6 + orderliness * 0.4).clamp(0.0, 100.0);
+  }
+
+  double _calculateHumour(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 75.0;
+
+    final playfulness =
+        character!.aiPersonalityProfile!.npsScores['E06_유쾌함'] ?? 75;
+    final creativity =
+        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
+    final sociability =
+        character.aiPersonalityProfile!.npsScores['E01_사교성'] ?? 50;
+
+    return (playfulness * 0.5 + creativity * 0.3 + sociability * 0.2).clamp(
+      0.0,
+      100.0,
+    );
+  }
+
+  double _calculateReliability(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final trustworthiness =
+        character!.aiPersonalityProfile!.npsScores['A01_신뢰성'] ?? 50;
+    final responsibility =
+        character.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
+    final consistency =
+        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
+
+    return (trustworthiness * 0.4 + responsibility * 0.4 + consistency * 0.2)
+        .clamp(0.0, 100.0);
   }
 }
