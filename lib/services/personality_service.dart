@@ -687,7 +687,9 @@ class PersonalityService {
   // 파이썬 로직 100% 복제: 소통 방식 프롬프트 생성
   String _generateCommunicationPrompt(OnboardingState state) {
     final warmth = state.warmth;
-    final extraversion = 100 - state.extroversion!;
+    // 🔥 의미론적 수정: extroversion 슬라이더는 이미 외향성 기준 (1=내향적, 10=외향적)
+    // 100점 기준으로 변환: 10점 만점 → 100점 만점
+    final extraversion = (state.extroversion! * 10).toDouble();
 
     // 유머 스타일 문자열을 숫자 점수로 변환
     Random random = Random();
