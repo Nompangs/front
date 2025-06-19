@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ObjectDetailScreen extends StatelessWidget {
   final ObjectData objectData;
@@ -238,7 +239,17 @@ class ObjectDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final user = FirebaseAuth.instance.currentUser;
+                    String displayName = 'unknown';
+                    if (user != null) {
+                      final doc =
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .get();
+                      displayName = doc.data()?['displayName'] ?? 'unknown';
+                    }
                     final characterProfile = {
                       'uuid': objectData.uuid,
                       'greeting': objectData.greeting ?? '다시 만나서 반가워!',
@@ -257,6 +268,7 @@ class ObjectDetailScreen extends StatelessWidget {
                         'competence': 5,
                         'humorStyle': '기본',
                       },
+                      'userDisplayName': displayName,
                     };
                     Navigator.push(
                       context,
