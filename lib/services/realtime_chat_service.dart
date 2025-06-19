@@ -31,7 +31,6 @@ class RealtimeChatService {
   }
 
   Future<void> connect(Map<String, dynamic> characterProfile) async {
-    // 🔗 이미 연결 중이거나 연결되어 있으면 스킵
     if (_isConnecting || _isConnected) {
       debugPrint(
         "⚠️ 이미 연결 중이거나 연결되어 있음. 연결 상태: $_isConnected, 연결 중: $_isConnecting",
@@ -41,90 +40,49 @@ class RealtimeChatService {
 
     try {
       _isConnecting = true;
-      debugPrint("🔗 Realtime API 연결 시작...");
+      debugPrint("🔗 Realtime API 연결 절차 시작...");
 
-      // 🔍 characterProfile 전체 확인
-      debugPrint("🔍 [RealtimeService] characterProfile 전체: $characterProfile");
-      debugPrint("🔍 [RealtimeService] UUID: ${characterProfile['uuid']}");
-      debugPrint(
-        "🔍 [RealtimeService] 캐릭터명: ${characterProfile['aiPersonalityProfile']?['name']}",
-      );
-      debugPrint(
-        "🔍 [RealtimeService] userInput: ${characterProfile['userInput']}",
-      );
-      debugPrint(
-        "🔍 [RealtimeService] realtimeSettings: ${characterProfile['realtimeSettings']}",
-      );
-
-      // 🆕 저장된 realtimeSettings 활용
+      // --- 1. 모든 데이터와 설정 준비 ---
       final realtimeSettings =
           characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
+      final voiceToSet = _parseVoice(realtimeSettings['voice'] ?? 'alloy');
+      final temperature = _getOptimalTemperature(characterProfile);
+      final instructions =
+          await _buildEnhancedSystemPrompt(characterProfile, realtimeSettings);
 
-      debugPrint("============== [🎵 Realtime 설정 적용] ==============");
-      debugPrint("선택된 음성: ${realtimeSettings['voice'] ?? 'alloy'}");
-      debugPrint("음성 선택 이유: ${realtimeSettings['voiceRationale'] ?? '기본값'}");
-      debugPrint(
-        "창의성 파라미터: temperature=${realtimeSettings['temperature']}, topP=${realtimeSettings['topP']}",
-      );
-      debugPrint("발음 스타일: ${realtimeSettings['pronunciation']}");
-      debugPrint("=====================================================");
+      debugPrint("✅ 설정 준비 완료: Voice='${voiceToSet}', Temp='${temperature}'");
 
-      // 🔗 먼저 이벤트 리스너 등록
-      // 대화 내용 업데이트 이벤트 리스너
+      // --- 2. 이벤트 리스너 등록 (가장 먼저) ---
       _client.on(openai_rt.RealtimeEventType.conversationUpdated, (event) {
         final result =
             (event as openai_rt.RealtimeEventConversationUpdated).result;
         final delta = result.delta;
         if (delta?.transcript != null) {
-          // ChatMessage 객체 대신 순수 텍스트(String)를 전달
           _responseController.add(delta!.transcript!);
         }
       });
 
-      // --- '응답 완료' 감지를 위한 새로운 리스너 (디버깅 로그 추가) ---
-      _client.on(openai_rt.RealtimeEventType.conversationItemCompleted, (
-        event,
-      ) {
+      _client.on(openai_rt.RealtimeEventType.conversationItemCompleted, (event) {
         final item =
             (event as openai_rt.RealtimeEventConversationItemCompleted).item;
         debugPrint("[Realtime Service] 💬 응답 완료 이벤트 발생!");
 
         if (item.item case final openai_rt.ItemMessage message) {
-          debugPrint(
-            "[Realtime Service] 역할: ${message.role.name}, 내용: ${message.content}",
-          );
-
           if (message.role.name == 'assistant') {
             String textContent = '';
-
-            // --- 오류 수정 부분: content 리스트를 순회하며 올바른 타입에서 텍스트 추출 ---
             for (final part in message.content) {
-              // 응답이 ContentPart.audio 타입이고, 그 안에 transcript가 있을 경우
-              if (part is openai_rt.ContentPartAudio &&
-                  part.transcript != null) {
+              if (part is openai_rt.ContentPartAudio && part.transcript != null) {
                 textContent = part.transcript!;
-                break; // 텍스트를 찾았으므로 반복 중단
-              }
-              // 예비용: 만약 ContentPart.text 타입으로 올 경우
-              else if (part is openai_rt.ContentPartText) {
+                break;
+              } else if (part is openai_rt.ContentPartText) {
                 textContent = part.text;
                 break;
               }
             }
-
-            debugPrint("[Realtime Service] 추출된 텍스트: '$textContent'");
-
             if (textContent.isNotEmpty) {
               _completionController.add(textContent);
-              debugPrint("[Realtime Service] ✅ TTS 재생을 위해 텍스트 전송 완료!");
-            } else {
-              debugPrint("[Realtime Service] ⚠️ 추출된 텍스트가 비어있어 TTS를 호출하지 않음.");
             }
           }
-        } else {
-          debugPrint(
-            "[Realtime Service] ⚠️ 완료된 아이템이 'ItemMessage' 타입이 아님: ${item.item.runtimeType}",
-          );
         }
       });
 
@@ -132,62 +90,24 @@ class RealtimeChatService {
         final error = (event as openai_rt.RealtimeEventError).error;
         _responseController.addError(error);
         debugPrint('[Realtime Service] 🚨 에러 발생: $error');
-        _isConnected = false; // 🔗 오류 시 연결 상태 false로 설정
+        _isConnected = false;
       });
+      debugPrint("✅ 이벤트 리스너 등록 완료.");
 
-      // 🔗 먼저 연결 후 세션 업데이트
-      debugPrint("🔗 RealtimeAPI 연결 시도 중...");
-      await _client.connect();
-      debugPrint("✅ RealtimeAPI 연결 완료!");
-
-      // 연결 안정화를 위한 대기 (최소화)
-      await Future.delayed(const Duration(milliseconds: 300));
-      debugPrint("⏳ 연결 안정화 완료");
-
-      // 🔧 연결 완료 후 updateSession 호출 - 음성 설정 포함
-      debugPrint("🔧 세션 설정 업데이트 중...");
-      debugPrint(
-        '🎵 [updateSession] realtimeSettings[voice]: "${realtimeSettings['voice']}"',
-      );
-      final voiceToSet = _parseVoice(realtimeSettings['voice'] ?? 'alloy');
-      debugPrint('🎵 [updateSession] 실제 설정될 음성: $voiceToSet');
-
-      // 🔍 updateSession 호출 전 최종 확인
-      final temperature = _getOptimalTemperature(characterProfile);
-      debugPrint('🔧 [updateSession] 최종 파라미터:');
-      debugPrint('  - voice: $voiceToSet');
-      debugPrint('  - temperature: $temperature');
-
+      // --- 3. 세션 설정 업데이트 ---
       await _client.updateSession(
-        instructions: await _buildEnhancedSystemPrompt(
-          characterProfile,
-          realtimeSettings,
-        ),
-        voice: voiceToSet, // 🎵 음성 설정 적용
+        instructions: instructions,
+        voice: voiceToSet,
         temperature: temperature,
       );
+      debugPrint("✅ 세션 업데이트 완료.");
 
-      debugPrint('✅ [updateSession] 세션 업데이트 완료 - 음성: $voiceToSet');
+      // --- 4. API 연결 ---
+      await _client.connect();
+      debugPrint("✅ API 연결 완료.");
 
-      // 🔍 세션 업데이트 후 확인을 위해 잠시 대기
-      await Future.delayed(const Duration(milliseconds: 200));
-
-      // 🎵 [중요] 음성 설정이 확실히 적용되도록 한 번 더 시도
-      if (voiceToSet != openai_rt.Voice.alloy) {
-        debugPrint('🎵 [재시도] 음성 설정 재적용 시도 - 음성: $voiceToSet');
-        try {
-          await _client.updateSession(voice: voiceToSet);
-          debugPrint('✅ [재시도] 음성 설정 재적용 완료 - 음성: $voiceToSet');
-        } catch (e) {
-          debugPrint('❌ [재시도] 음성 설정 재적용 실패: $e');
-        }
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      debugPrint('🎵 [최종확인] 설정된 음성이 적용되었는지 확인 필요');
-
-      _isConnected = true; // 🔗 모든 설정 완료 후 연결 상태 true로 설정
-      debugPrint("✅ Realtime API 설정 완료!");
+      _isConnected = true;
+      debugPrint("🎉 Realtime API 성공적으로 연결됨!");
     } catch (e) {
       debugPrint("❌ Realtime API 연결 실패: $e");
       _isConnected = false;

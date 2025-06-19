@@ -113,7 +113,11 @@ class ChatProvider extends ChangeNotifier {
         }
 
         if (fullText.trim().isNotEmpty) {
-          await _openAiTtsService.speak(fullText.trim());
+          final realtimeSettings =
+              _characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
+          final voice = realtimeSettings['voice'] as String? ?? 'alloy';
+          // speak 함수에 voice 파라미터를 전달합니다.
+          await _openAiTtsService.speak(fullText.trim(), voice: voice);
         }
 
         _isProcessing = false;
@@ -151,7 +155,10 @@ class ChatProvider extends ChangeNotifier {
     }
 
     if (speak) {
-      _openAiTtsService.speak(text);
+      final realtimeSettings =
+          _characterProfile['realtimeSettings'] as Map<String, dynamic>? ?? {};
+      final voice = realtimeSettings['voice'] as String? ?? 'alloy';
+      _openAiTtsService.speak(text, voice: voice);
     }
     notifyListeners();
   }
