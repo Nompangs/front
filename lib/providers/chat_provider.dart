@@ -8,18 +8,18 @@ class ChatMessage {
   String text;
   final bool isUser;
   bool isLoading;
-  final String uuid; 
+  final String uuid;
 
   ChatMessage({
     required this.text,
     required this.isUser,
-    required this.uuid, 
+    required this.uuid,
     this.isLoading = false,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'uuid': uuid, 
+      'uuid': uuid,
       'content': text,
       'sender': isUser ? 'user' : 'ai',
       'timestamp': DateTime.now().toIso8601String(),
@@ -28,7 +28,7 @@ class ChatMessage {
 
   factory ChatMessage.fromMap(Map<String, dynamic> map) {
     return ChatMessage(
-      uuid: map['uuid'], 
+      uuid: map['uuid'],
       text: map['content'],
       isUser: map['sender'] == 'user',
     );
@@ -39,7 +39,7 @@ class ChatProvider extends ChangeNotifier {
   final RealtimeChatService _realtimeChatService = RealtimeChatService();
   final OpenAiTtsService _openAiTtsService = OpenAiTtsService();
   final DatabaseService _databaseService = DatabaseService.instance;
-  
+
   StreamSubscription<String>? _completionSubscription;
   StreamSubscription<ChatMessage>? _responseSubscription;
 
@@ -57,21 +57,24 @@ class ChatProvider extends ChangeNotifier {
 
   final Map<String, dynamic> _characterProfile;
 
-  ChatProvider({
-    required Map<String, dynamic> characterProfile,
-  })  : _characterProfile = characterProfile,
-        uuid = characterProfile['uuid'] ?? 'temp_uuid_${DateTime.now().millisecondsSinceEpoch}',
-        characterName = characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음',
-        characterHandle = '@${(characterProfile['aiPersonalityProfile']?['name'] ?? 'unknown').toLowerCase().replaceAll(' ', '')}',
-        personalityTags = (characterProfile['personalityTags'] as List<dynamic>?)
-                ?.map((tag) => tag.toString())
-                .toList() ??
-            [],
-        greeting = characterProfile['greeting'] as String? {
+  ChatProvider({required Map<String, dynamic> characterProfile})
+    : _characterProfile = characterProfile,
+      uuid =
+          characterProfile['uuid'] ??
+          'temp_uuid_${DateTime.now().millisecondsSinceEpoch}',
+      characterName =
+          characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음',
+      characterHandle = '@${characterProfile['userDisplayName'] ?? 'unknown'}',
+      personalityTags =
+          (characterProfile['personalityTags'] as List<dynamic>?)
+              ?.map((tag) => tag.toString())
+              .toList() ??
+          [],
+      greeting = characterProfile['greeting'] as String? {
     debugPrint('[ChatProvider] Received characterProfile: $characterProfile');
     _initializeChat();
   }
-  
+
   Future<void> _initializeChat() async {
     await _loadHistory();
 
@@ -90,7 +93,7 @@ class ChatProvider extends ChangeNotifier {
           await _databaseService.saveMessage(_messages.first.toMap());
           notifyListeners();
         }
-        
+
         if (fullText.trim().isNotEmpty) {
           await _openAiTtsService.speak(fullText.trim());
         }
@@ -99,13 +102,14 @@ class ChatProvider extends ChangeNotifier {
         notifyListeners();
       },
       onError: (e) {
-       if (_messages.isNotEmpty && _messages.first.isLoading) {
+        if (_messages.isNotEmpty && _messages.first.isLoading) {
           _messages.first.text = "AI 응답 중 오류가 발생했습니다: $e";
           _messages.first.isLoading = false;
         }
-       _isProcessing = false;
-       notifyListeners();
-    });
+        _isProcessing = false;
+        notifyListeners();
+      },
+    );
   }
 
   Future<void> _loadHistory() async {
@@ -115,12 +119,17 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _addMessage(String text, bool isUser, {bool speak = false, bool saveToDb = false}) {
+  void _addMessage(
+    String text,
+    bool isUser, {
+    bool speak = false,
+    bool saveToDb = false,
+  }) {
     final message = ChatMessage(text: text, isUser: isUser, uuid: uuid);
     _messages.insert(0, message);
 
     if (saveToDb) {
-    _databaseService.saveMessage(message.toMap());
+      _databaseService.saveMessage(message.toMap());
     }
 
     if (speak) {
@@ -136,13 +145,16 @@ class ChatProvider extends ChangeNotifier {
   Future<void> sendMessage(String userInput) async {
     if (userInput.trim().isEmpty || _isProcessing) return;
 
-    await _openAiTtsService.stop(); 
+    await _openAiTtsService.stop();
     _addMessage(userInput, true, saveToDb: true);
 
     _isProcessing = true;
-    _messages.insert(0, ChatMessage(text: '', isUser: false, uuid: uuid, isLoading: true));
+    _messages.insert(
+      0,
+      ChatMessage(text: '', isUser: false, uuid: uuid, isLoading: true),
+    );
     notifyListeners();
-    
+
     await _realtimeChatService.sendMessage(userInput);
   }
 
@@ -150,7 +162,7 @@ class ChatProvider extends ChangeNotifier {
   void dispose() {
     _completionSubscription?.cancel();
     _responseSubscription?.cancel();
-    _realtimeChatService.dispose(); 
+    _realtimeChatService.dispose();
     _openAiTtsService.dispose();
     super.dispose();
   }
