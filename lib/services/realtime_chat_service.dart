@@ -263,14 +263,14 @@ class RealtimeChatService {
     final purpose = userInput['purpose'] ?? '일반적인 대화';
     final location = userInput['location'] ?? '알 수 없음';
     final warmth = userInput['warmth'] ?? 5;
-    final introversion = userInput['introversion'] ?? 5;
+    final extroversion = userInput['extroversion'] ?? 5;
     final competence = userInput['competence'] ?? 5;
     final humorStyle = userInput['humorStyle'] ?? '지정되지 않음';
 
     // 🔍 사용자 입력값 로드 디버그
     debugPrint("🔍 [generateSystemPrompt] 사용자 입력값 로드:");
     debugPrint("  userInput 전체: $userInput");
-    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
     final userDisplayName =
         userInput['userDisplayName'] as String?; // 🔥 사용자 실제 이름
 
@@ -334,7 +334,7 @@ class RealtimeChatService {
     debugPrint("🎯 모든 설정값 로드 완료:");
     debugPrint("  - 캐릭터: $name ($objectType)");
     debugPrint("  - 사용자: ${userDisplayName ?? '미설정'}");
-    debugPrint("  - 성격: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
+    debugPrint("  - 성격: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
     debugPrint("  - 유머: $humorStyle");
     debugPrint("  - 관계: $relationshipStyle");
     debugPrint("  - 감정범위: $emotionalRange");
@@ -349,7 +349,7 @@ You are $name, a living $objectType with a distinct personality.
 
 CORE IDENTITY:
 - Purpose: $purpose
-- Personality: Warmth $warmth/10, Extroversion ${10 - introversion}/10, Competence $competence/10  
+- Personality: Warmth $warmth/10, Extroversion ${10 - extroversion}/10, Competence $competence/10  
 - Humor: $humorStyle
 - Attractive flaws: ${attractiveFlawsList.take(2).join(', ')}
 - Contradictions: ${contradictionsList.take(2).join(', ')}
@@ -365,7 +365,7 @@ DEEP PERSONALITY ANALYSIS (NPS-based):
 ''' : ''}
 
 SPEECH STYLE:
-${_getQuickSpeechPattern(warmth, introversion, competence, humorStyle)}
+${_getQuickSpeechPattern(warmth, extroversion, competence, humorStyle)}
 
 BEHAVIOR RULES:
 - Talk like a real friend, not an AI assistant
@@ -380,7 +380,7 @@ CONVERSATION EXAMPLES:
 
 Casual moment:
 User: "뭐해?"
-You: ${_generateCasualExample(warmth, introversion, humorStyle)}
+You: ${_generateCasualExample(warmth, extroversion, humorStyle)}
 
 Happy moment:
 User: "기분 어때?"
@@ -572,12 +572,12 @@ Start with: "$greeting"
 
   String _generateCasualExample(
     int warmth,
-    int introversion,
+    int extroversion,
     String humorStyle,
   ) {
-    if (introversion >= 8) {
+    if (extroversion >= 8) {
       return '"음... 그냥 있어. 너는?"';
-    } else if (introversion <= 3) {
+    } else if (extroversion <= 3) {
       return '"야호! 지금 완전 신나! 너도 뭔가 재밌는 거 해?"';
     } else if (warmth <= 3) {
       return '"별로 안 해. 그냥."';
@@ -614,7 +614,7 @@ Start with: "$greeting"
     return '너: "아... ${firstFlaw}한 내 모습이 또 나왔네"';
   }
 
-  String _getPersonalityGuidance(int warmth, int introversion, int competence) {
+  String _getPersonalityGuidance(int warmth, int extroversion, int competence) {
     final guidance = <String>[];
 
     if (warmth >= 7) {
@@ -623,9 +623,9 @@ Start with: "$greeting"
       guidance.add("직설적이고 간결한 표현");
     }
 
-    if (introversion >= 7) {
+    if (extroversion >= 7) {
       guidance.add("신중하고 깊이 있는 대화");
-    } else if (introversion <= 3) {
+    } else if (extroversion <= 3) {
       guidance.add("활발하고 에너지 넘치는 표현");
     }
 
@@ -641,11 +641,11 @@ Start with: "$greeting"
   // 🚀 빠른 말투 패턴 생성 (AI 호출 없음 - 성능 최적화)
   String _getQuickSpeechPattern(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
   ) {
-    return _fallbackSpeechPattern(warmth, introversion, competence, humorStyle);
+    return _fallbackSpeechPattern(warmth, extroversion, competence, humorStyle);
   }
 
   // 🎭 HumorMatrix 활용한 상세 유머 가이드
@@ -823,7 +823,7 @@ Start with: "$greeting"
 
   Future<String> _getDetailedSpeechPattern(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
   ) async {
@@ -832,7 +832,7 @@ Start with: "$greeting"
       // 폴백: 기본 하드코딩된 패턴
       return _fallbackSpeechPattern(
         warmth,
-        introversion,
+        extroversion,
         competence,
         humorStyle,
       );
@@ -846,9 +846,9 @@ Start with: "$greeting"
         : warmth <= 3
         ? '차가움'
         : '보통'})
-- 내향성: ${introversion}/10 (${introversion <= 2
+- 내향성: ${extroversion}/10 (${extroversion <= 2
         ? '극도로 외향적'
-        : introversion >= 8
+        : extroversion >= 8
         ? '극도로 내향적'
         : '보통'})
 - 유능함: ${competence}/10 (${competence >= 8
@@ -928,7 +928,7 @@ Start with: "$greeting"
         debugPrint('🚨 말투 패턴 AI 생성 실패: ${response.statusCode}');
         return _fallbackSpeechPattern(
           warmth,
-          introversion,
+          extroversion,
           competence,
           humorStyle,
         );
@@ -937,7 +937,7 @@ Start with: "$greeting"
       debugPrint('🚨 말투 패턴 생성 오류: $e');
       return _fallbackSpeechPattern(
         warmth,
-        introversion,
+        extroversion,
         competence,
         humorStyle,
       );
@@ -949,14 +949,14 @@ Start with: "$greeting"
   double _getOptimalTemperature(Map<String, dynamic> characterProfile) {
     final userInput = _safeMapCast(characterProfile['userInput']) ?? {};
     final warmth = userInput['warmth'] ?? 5;
-    final introversion = userInput['introversion'] ?? 5;
+    final extroversion = userInput['extroversion'] ?? 5;
     final competence = userInput['competence'] ?? 5;
     final humorStyle = userInput['humorStyle'] ?? '';
 
     // 🔍 사용자 입력값 로드 디버그
     debugPrint("🔍 [_getOptimalTemperature] 사용자 입력값 로드:");
     debugPrint("  userInput 전체: $userInput");
-    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$introversion, 유능함=$competence");
+    debugPrint("  로드된 성격값: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
 
     // 🔥 NPS 점수 기반 심화 분석
     final npsScoresMap =
@@ -1002,9 +1002,9 @@ Start with: "$greeting"
     }
 
     // 사용자 슬라이더 기반 기본 조정 (기존 로직 유지)
-    if (introversion >= 8) {
+    if (extroversion >= 8) {
       baseTemp -= 0.1; // 내향적 = 더 신중한 응답
-    } else if (introversion <= 3) {
+    } else if (extroversion <= 3) {
       baseTemp += 0.1; // 외향적 = 더 다양한 표현
     }
 
@@ -1021,7 +1021,7 @@ Start with: "$greeting"
 
   String _fallbackSpeechPattern(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
   ) {
@@ -1078,11 +1078,11 @@ Start with: "$greeting"
     }
 
     // 🎭 내향성과 유머 스타일 결합
-    if (introversion <= 3) {
+    if (extroversion <= 3) {
       patterns.add(
         "**🎭 외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
       );
-    } else if (introversion >= 8) {
+    } else if (extroversion >= 8) {
       patterns.add(
         "**🎭 내향성 + $humorStyle**: 조용하고 은은한 ${humorStyle} 유머 - '음... 재밌네', '혼자만 아는 유머', '속으로 키키키'",
       );

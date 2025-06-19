@@ -23,7 +23,7 @@ _$OnboardingStateImpl _$$OnboardingStateImplFromJson(
   generationMessage: json['generationMessage'] as String? ?? '',
   warmth: (json['warmth'] as num?)?.toInt() ?? 5,
   competence: (json['competence'] as num?)?.toInt() ?? 5,
-  introversion: (json['introversion'] as num?)?.toInt() ?? 5,
+  extroversion: (json['extroversion'] as num?)?.toInt() ?? 5,
 );
 
 Map<String, dynamic> _$$OnboardingStateImplToJson(
@@ -43,7 +43,7 @@ Map<String, dynamic> _$$OnboardingStateImplToJson(
   'generationMessage': instance.generationMessage,
   'warmth': instance.warmth,
   'competence': instance.competence,
-  'introversion': instance.introversion,
+  'extroversion': instance.extroversion,
 };
 
 _$CharacterImpl _$$CharacterImplFromJson(Map<String, dynamic> json) =>
@@ -95,7 +95,7 @@ Map<String, dynamic> _$$PersonalityImplToJson(_$PersonalityImpl instance) =>
 _$FinalPersonalityImpl _$$FinalPersonalityImplFromJson(
   Map<String, dynamic> json,
 ) => _$FinalPersonalityImpl(
-  introversion: (json['introversion'] as num).toInt(),
+  extroversion: (json['extroversion'] as num).toInt(),
   warmth: (json['warmth'] as num).toInt(),
   competence: (json['competence'] as num).toInt(),
   userAdjusted: json['userAdjusted'] as bool? ?? false,
@@ -104,7 +104,7 @@ _$FinalPersonalityImpl _$$FinalPersonalityImplFromJson(
 Map<String, dynamic> _$$FinalPersonalityImplToJson(
   _$FinalPersonalityImpl instance,
 ) => <String, dynamic>{
-  'introversion': instance.introversion,
+  'extroversion': instance.extroversion,
   'warmth': instance.warmth,
   'competence': instance.competence,
   'userAdjusted': instance.userAdjusted,

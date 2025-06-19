@@ -82,12 +82,12 @@ class OnboardingProvider extends ChangeNotifier {
     debugPrint("🎯 [OnboardingProvider] updatePersonalitySlider 호출됨:");
     debugPrint("  - type: $type, value: $value");
     debugPrint(
-      "  - 업데이트 전 상태: warmth=${_state.warmth}, introversion=${_state.introversion}, competence=${_state.competence}",
+      "  - 업데이트 전 상태: warmth=${_state.warmth}, extroversion=${_state.extroversion}, competence=${_state.competence}",
     );
 
     switch (type) {
-      case 'introversion':
-        _state = _state.copyWith(introversion: value);
+      case 'extroversion':
+        _state = _state.copyWith(extroversion: value);
         break;
       case 'warmth':
         _state = _state.copyWith(warmth: value);
@@ -98,7 +98,7 @@ class OnboardingProvider extends ChangeNotifier {
     }
 
     debugPrint(
-      "  - 업데이트 후 상태: warmth=${_state.warmth}, introversion=${_state.introversion}, competence=${_state.competence}",
+      "  - 업데이트 후 상태: warmth=${_state.warmth}, extroversion=${_state.extroversion}, competence=${_state.competence}",
     );
     notifyListeners();
     _logStatus('updatePersonalitySlider');
@@ -139,14 +139,14 @@ class OnboardingProvider extends ChangeNotifier {
       'duration': state.duration,
       'humorStyle': state.humorStyle,
       'warmth': state.warmth,
-      'introversion': state.introversion,
+      'extroversion': state.extroversion,
       'competence': state.competence,
     };
 
     // 🔍 사용자 입력값 디버그 로그 추가
     debugPrint("🔍 [OnboardingProvider] getUserInputAsMap 호출됨:");
     debugPrint("  - warmth: ${state.warmth}");
-    debugPrint("  - introversion: ${state.introversion}");
+    debugPrint("  - extroversion: ${state.extroversion}");
     debugPrint("  - competence: ${state.competence}");
     debugPrint("  - 전체 userInputMap: $userInputMap");
 
@@ -306,7 +306,7 @@ class OnboardingProvider extends ChangeNotifier {
     // AI 추천값으로 state 업데이트
     _state = _state.copyWith(
       warmth: draft.initialWarmth,
-      introversion: draft.initialExtroversion, // 🎯 수정: initialExtroversion 사용
+      extroversion: draft.initialExtroversion, // 🎯 수정: initialExtroversion 사용
       competence: draft.initialCompetence,
     );
     notifyListeners();

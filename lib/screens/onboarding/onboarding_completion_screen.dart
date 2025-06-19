@@ -684,7 +684,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                   warmth: provider.state!.warmth! * 10,
                                   competence: provider.state!.competence! * 10,
                                   extroversion:
-                                      (11 - provider.state!.introversion!) * 10,
+                                      (11 - provider.state!.extroversion!) * 10,
 
                                   // AI 생성 지표
                                   creativity: _calculateCreativity(character),
@@ -1170,10 +1170,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
   String _getPersonalityTag1(OnboardingState state) {
     // 첫 번째 태그: 외향성 기반 (수줍음 ↔ 활발함)
-    final introversion = state.introversion ?? 5;
-    if (introversion <= 3) {
+    final extroversion = state.extroversion ?? 5;
+    if (extroversion <= 3) {
       return '수줍음';
-    } else if (introversion >= 7) {
+    } else if (extroversion >= 7) {
       return '활발함';
     } else {
       return '반쯤활발';
@@ -1211,13 +1211,13 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     // 사용자가 설정한 값을 기반으로 백엔드 스타일 성격특성 생성
     final warmth = (state.warmth ?? 5).toDouble();
     final competence = (state.competence ?? 5).toDouble();
-    final introversion = (state.introversion ?? 5).toDouble();
+    final extroversion = (state.extroversion ?? 5).toDouble();
 
     return {
       "성격특성": {
         "온기": warmth * 10,
         "능력": competence * 10,
-        "외향성": (11 - introversion) * 10,
+        "외향성": (11 - extroversion) * 10,
         "유머감각": 75.0,
         "창의성": 60 + (warmth * 4),
         "신뢰성": 50 + (competence * 5),

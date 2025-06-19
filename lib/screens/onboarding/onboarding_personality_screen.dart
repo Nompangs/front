@@ -13,7 +13,7 @@ class OnboardingPersonalityScreen extends StatefulWidget {
 
 class _OnboardingPersonalityScreenState
     extends State<OnboardingPersonalityScreen> {
-  double? introversionValue;
+  double? extroversionValue;
   double? warmthValue;
   double? competenceValue;
 
@@ -25,7 +25,7 @@ class _OnboardingPersonalityScreenState
       final provider = context.read<OnboardingProvider>();
       setState(() {
         // 1-10 범위의 int 값을 0.0-1.0 범위의 double로 변환
-        introversionValue = (provider.state.introversion ?? 5) / 10.0;
+        extroversionValue = (provider.state.extroversion ?? 5) / 10.0;
         warmthValue = (provider.state.warmth ?? 5) / 10.0;
         competenceValue = (provider.state.competence ?? 5) / 10.0;
       });
@@ -94,18 +94,18 @@ class _OnboardingPersonalityScreenState
                   screenWidth: screenWidth,
                   color: const Color(0xFFFFD700),
                   title: '외향성',
-                  value: introversionValue ?? 0.5,
+                  value: extroversionValue ?? 0.5,
                   leftLabel: '수줍음',
                   rightLabel: '활발함',
                   onChanged: (value) {
-                    setState(() => introversionValue = value);
+                    setState(() => extroversionValue = value);
                     final intValue = (value * 10).round();
                     debugPrint("🎯 [성격화면] 외향성 슬라이더 변경: $value → $intValue");
                     // 슬라이더를 움직일 때마다 Provider 상태 업데이트
                     Provider.of<OnboardingProvider>(
                       context,
                       listen: false,
-                    ).updatePersonalitySlider('introversion', intValue);
+                    ).updatePersonalitySlider('extroversion', intValue);
                   },
                 ),
               ),
@@ -172,16 +172,16 @@ class _OnboardingPersonalityScreenState
                 onPressed: () {
                   // 현재 슬라이더 값으로 최종 업데이트 보장
                   final provider = context.read<OnboardingProvider>();
-                  final introVal = ((introversionValue ?? 0.5) * 10).round();
+                  final introVal = ((extroversionValue ?? 0.5) * 10).round();
                   final warmthVal = ((warmthValue ?? 0.5) * 10).round();
                   final compVal = ((competenceValue ?? 0.5) * 10).round();
 
                   debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
-                  debugPrint("  - 외향성: ${introversionValue} → $introVal");
+                  debugPrint("  - 외향성: ${extroversionValue} → $introVal");
                   debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
                   debugPrint("  - 유능함: ${competenceValue} → $compVal");
 
-                  provider.updatePersonalitySlider('introversion', introVal);
+                  provider.updatePersonalitySlider('extroversion', introVal);
                   provider.updatePersonalitySlider('warmth', warmthVal);
                   provider.updatePersonalitySlider('competence', compVal);
 

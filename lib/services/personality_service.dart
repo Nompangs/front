@@ -192,7 +192,7 @@ class PersonalityService {
       'duration': finalState.duration,
       'humorStyle': finalState.humorStyle,
       'warmth': finalState.warmth,
-      'introversion': finalState.introversion,
+      'extroversion': finalState.extroversion,
       'competence': finalState.competence,
       'userDisplayName': userDisplayName, // 🔥 사용자 실제 이름 추가
     };
@@ -464,7 +464,7 @@ class PersonalityService {
     // 슬라이더 값 (1~9)
     final warmth = state.warmth ?? 5;
     final competence = state.competence ?? 5;
-    final introversion = state.introversion ?? 5; // 슬라이더 값: 오른쪽으로 갈수록 외향적
+    final extroversion = state.extroversion ?? 5; // 슬라이더 값: 오른쪽으로 갈수록 외향적
 
     // nps_test 방식 적용
     // W (온기) 계열: warmth 슬라이더
@@ -611,8 +611,8 @@ class PersonalityService {
       random,
     );
 
-    // E (외향성) 계열: introversion 슬라이더 (반대로 적용)
-    final extraversion = 10 - introversion; // 1(내향) -> 9(외향), 9(내향) -> 1(외향)
+    // E (외향성) 계열: extroversion 슬라이더 (반대로 적용)
+    final extraversion = 10 - extroversion; // 1(내향) -> 9(외향), 9(내향) -> 1(외향)
     _adjustWithRandomVariation(
       adjustedVariables,
       'E01_사교성',
@@ -686,7 +686,7 @@ class PersonalityService {
   // 파이썬 로직 100% 복제: 소통 방식 프롬프트 생성
   String _generateCommunicationPrompt(OnboardingState state) {
     final warmth = state.warmth;
-    final extraversion = 100 - state.introversion!;
+    final extraversion = 100 - state.extroversion!;
 
     // 유머 스타일 문자열을 숫자 점수로 변환
     Random random = Random();
@@ -785,7 +785,7 @@ class PersonalityService {
 - 위치: ${state.location ?? '정보없음'}
 - 유머스타일: ${state.humorStyle ?? '정보없음'}
 - 따뜻함 수준: ${state.warmth ?? 5}/10
-- 외향성 수준: ${state.introversion ?? 5}/10  
+- 외향성 수준: ${state.extroversion ?? 5}/10  
 - 유능함 수준: ${state.competence ?? 5}/10
 
 성격 수치 (상위 5개):
@@ -881,7 +881,7 @@ JSON 배열 형식으로만 응답하세요: ["결점1", "결점2", "결점3"]
 - 위치: ${state.location ?? '정보없음'}
 - 유머스타일: ${state.humorStyle ?? '정보없음'}
 - 따뜻함 수준: ${state.warmth ?? 5}/10
-- 내향성 수준: ${state.introversion ?? 5}/10  
+- 내향성 수준: ${state.extroversion ?? 5}/10  
 - 유능함 수준: ${state.competence ?? 5}/10
 
 성격 수치 분석:
@@ -967,7 +967,7 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
     // 🎭 말투 패턴 먼저 생성 (AI 기반)
     final speechPattern = await _getDetailedSpeechPattern(
       state.warmth ?? 5,
-      state.introversion ?? 5,
+      state.extroversion ?? 5,
       state.competence ?? 5,
       state.humorStyle ?? '따뜻한 유머러스',
     );
@@ -982,7 +982,7 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
 - 위치: ${state.location ?? '정보없음'}
 - 유머스타일: ${state.humorStyle ?? '정보없음'}
 - 따뜻함 수준: ${state.warmth ?? 5}/10
-- 외향성 수준: ${state.introversion ?? 5}/10  
+- 외향성 수준: ${state.extroversion ?? 5}/10  
 - 유능함 수준: ${state.competence ?? 5}/10
 
 성격 수치 분석:
@@ -1068,7 +1068,7 @@ $speechPattern
   /// 🎭 성격 기반 상세 말투 패턴 생성 (AI 기반)
   Future<String> _getDetailedSpeechPattern(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
   ) async {
@@ -1077,7 +1077,7 @@ $speechPattern
       // 폴백: 기본 하드코딩된 패턴
       return _fallbackSpeechPattern(
         warmth,
-        introversion,
+        extroversion,
         competence,
         humorStyle,
       );
@@ -1091,9 +1091,9 @@ $speechPattern
         : warmth <= 3
         ? '차가움'
         : '보통'})
-- 외향성: ${introversion}/10 (${introversion >= 8
+- 외향성: ${extroversion}/10 (${extroversion >= 8
         ? '극도로 외향적'
-        : introversion <= 2
+        : extroversion <= 2
         ? '극도로 내향적'
         : '보통'})
 - 유능함: ${competence}/10 (${competence >= 8
@@ -1173,7 +1173,7 @@ $speechPattern
         debugPrint('🚨 말투 패턴 AI 생성 실패: ${response.statusCode}');
         return _fallbackSpeechPattern(
           warmth,
-          introversion,
+          extroversion,
           competence,
           humorStyle,
         );
@@ -1182,7 +1182,7 @@ $speechPattern
       debugPrint('🚨 말투 패턴 생성 오류: $e');
       return _fallbackSpeechPattern(
         warmth,
-        introversion,
+        extroversion,
         competence,
         humorStyle,
       );
@@ -1192,7 +1192,7 @@ $speechPattern
   /// 🎭 폴백: 언어유희 기반 말투 패턴 (AI 실패시 사용)
   String _fallbackSpeechPattern(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
   ) {
@@ -1249,11 +1249,11 @@ $speechPattern
     }
 
     // 🎭 내향성과 유머 스타일 결합
-    if (introversion <= 3) {
+    if (extroversion <= 3) {
       patterns.add(
         "**🎭 외향성 + $humorStyle**: 에너지 넘치고 활발한 ${humorStyle} 유머 - 모든 사람과 유머 공유하기",
       );
-    } else if (introversion >= 8) {
+    } else if (extroversion >= 8) {
       patterns.add(
         "**🎭 내향성 + $humorStyle**: 조용하고 은은한 ${humorStyle} 유머 - '음... 재밌네', '혼자만 아는 유머', '속으로 키키키'",
       );
@@ -1325,18 +1325,18 @@ $speechPattern
   ) async {
     // 🎯 사용자 입력값 기반 음성 선택
     final warmth = state.warmth ?? 5;
-    final introversion = state.introversion ?? 5; // 1(내향) ~ 9(외향)
+    final extroversion = state.extroversion ?? 5; // 1(내향) ~ 9(외향)
     final competence = state.competence ?? 5;
     final humorStyle = state.humorStyle ?? '따뜻한';
 
     debugPrint(
-      "🎵 음성 선택 입력값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence, 유머=$humorStyle",
+      "🎵 음성 선택 입력값: 따뜻함=$warmth, 내향성=$extroversion, 유능함=$competence, 유머=$humorStyle",
     );
 
     // 🎵 동적 음성 선택 로직 - NPS 점수와 사진 분석도 반영
     final personalityScore = _calculatePersonalityScore(
       warmth,
-      introversion,
+      extroversion,
       competence,
       npsScores,
       photoAnalysis,
@@ -1356,7 +1356,7 @@ $speechPattern
     // 🎭 동적 음성 고급 파라미터 생성 (성격 기반) - AI 호출
     final voiceCharacteristics = await _generateAdvancedVoiceCharacteristics(
       warmth,
-      introversion,
+      extroversion,
       competence,
       humorStyle,
       selectedVoice,
@@ -1372,7 +1372,7 @@ $speechPattern
 
     // 🔧 기술적 설정 (성격 기반 조정)
     final vadThreshold =
-        introversion <= 3 ? 0.3 : (introversion >= 7 ? 0.7 : 0.5);
+        extroversion <= 3 ? 0.3 : (extroversion >= 7 ? 0.7 : 0.5);
     final maxTokens = competence >= 7 ? 400 : (warmth >= 7 ? 300 : 250);
 
     // 🧠 창의성 파라미터 (성격 기반 조정)
@@ -1390,13 +1390,13 @@ $speechPattern
       topP = 0.9;
       frequencyPenalty = 0.8;
       presencePenalty = 0.7;
-    } else if (introversion <= 3) {
+    } else if (extroversion <= 3) {
       // 고내향성: 신중하고 깊이 있는 답변
       temperature = 0.7;
       topP = 0.75;
       frequencyPenalty = 0.6;
       presencePenalty = 0.5;
-    } else if (introversion >= 8) {
+    } else if (extroversion >= 8) {
       // 고외향성: 활발하고 다양한 답변
       temperature = 0.95;
       topP = 0.85;
@@ -1440,7 +1440,7 @@ $speechPattern
   // 🧮 성격 종합 점수 계산 (사용자 설정 + NPS + 사진 분석)
   Map<String, double> _calculatePersonalityScore(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     Map<String, int> npsScores,
     Map<String, dynamic> photoAnalysis,
@@ -1448,7 +1448,7 @@ $speechPattern
     // 기본 사용자 설정 (가중치 60%)
     double baseWarmth = warmth / 10.0;
     // 🔥 버그 수정: 내향성을 외향성으로 변환 (10 - 내향성값)
-    double baseExtroversion = (10 - introversion) / 10.0;
+    double baseExtroversion = (10 - extroversion) / 10.0;
     double baseCompetence = competence / 10.0;
 
     // NPS 점수 반영 (가중치 30%) - 실제 생성된 키들 사용
@@ -1523,7 +1523,7 @@ $speechPattern
 
     // 🔍 성격 점수 계산 과정 디버그
     debugPrint("🧮 성격 점수 계산 결과:");
-    debugPrint("  입력값: 따뜻함=$warmth, 내향성=$introversion, 유능함=$competence");
+    debugPrint("  입력값: 따뜻함=$warmth, 내향성=$extroversion, 유능함=$competence");
     debugPrint(
       "  기본점수: 따뜻함=${baseWarmth.toStringAsFixed(2)}, 외향성=${baseExtroversion.toStringAsFixed(2)}, 유능함=${baseCompetence.toStringAsFixed(2)}",
     );
@@ -1640,7 +1640,7 @@ $speechPattern
   // 🎭 AI 기반 동적 고급 음성 특성 생성 (완전히 입체적이고 개성적)
   Future<Map<String, String>> _generateAdvancedVoiceCharacteristics(
     int warmth,
-    int introversion,
+    int extroversion,
     int competence,
     String humorStyle,
     String selectedVoice,
@@ -1649,7 +1649,7 @@ $speechPattern
     final apiKey = dotenv.env['OPENAI_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
       // 폴백: 기본 하드코딩된 값들
-      return _fallbackVoiceCharacteristics(selectedVoice, warmth, introversion);
+      return _fallbackVoiceCharacteristics(selectedVoice, warmth, extroversion);
     }
 
     // 🎯 성격 프로필 요약 (AI 입력용)
@@ -1660,9 +1660,9 @@ $speechPattern
         : warmth <= 3
         ? '차가움'
         : '보통'})
-- 내향성: ${introversion}/10 (${introversion <= 2
+- 내향성: ${extroversion}/10 (${extroversion <= 2
         ? '극도로 외향적'
-        : introversion >= 8
+        : extroversion >= 8
         ? '극도로 내향적'
         : '보통'})
 - 유능함: ${competence}/10 (${competence >= 8
@@ -1766,12 +1766,12 @@ $speechPattern
         return _fallbackVoiceCharacteristics(
           selectedVoice,
           warmth,
-          introversion,
+          extroversion,
         );
       }
     } catch (e) {
       debugPrint('🚨 음성 특성 생성 오류: $e');
-      return _fallbackVoiceCharacteristics(selectedVoice, warmth, introversion);
+      return _fallbackVoiceCharacteristics(selectedVoice, warmth, extroversion);
     }
   }
 
@@ -1779,12 +1779,12 @@ $speechPattern
   Map<String, String> _fallbackVoiceCharacteristics(
     String selectedVoice,
     int warmth,
-    int introversion,
+    int extroversion,
   ) {
     // 기본적인 하드코딩된 특성들
     final isWarm = warmth >= 7;
-    final isIntroverted = introversion >= 7;
-    final isEnergetic = introversion <= 3;
+    final isIntroverted = extroversion >= 7;
+    final isEnergetic = extroversion <= 3;
 
     return {
       'breathingPattern':

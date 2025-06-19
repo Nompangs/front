@@ -837,7 +837,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           // ⚠️ TODO: DB 스키마 개선 필요 - PersonalityProfile 전체 저장하도록
                           'userInput': {
                             'warmth': 7, // 기본값을 조금 더 따뜻하게
-                            'introversion': 5,
+                            'extroversion': 5,
                             'competence': 6,
                             'humorStyle': '따뜻한',
                             'duration': '오래된 친구',

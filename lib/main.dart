@@ -46,7 +46,7 @@ final Map<String, dynamic> _defaultCharacterProfile = {
   'contradictions': <Map<String, String>>[],
   'userInput': {
     'warmth': 5,
-    'introversion': 5,
+    'extroversion': 5,
     'competence': 5,
     'humorStyle': '기본',
   },
