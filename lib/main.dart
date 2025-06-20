@@ -27,6 +27,7 @@ import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 String? pendingRoomId;
 
@@ -85,14 +86,12 @@ class TestScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) => ChangeNotifierProvider(
-                          create:
-                              (_) => ChatProvider(
-                                characterProfile: _defaultCharacterProfile,
-                              ),
-                          child: const ChatTextScreen(),
-                        ),
+                    builder: (context) => ChangeNotifierProvider(
+                      create: (_) => ChatProvider(
+                        characterProfile: _defaultCharacterProfile,
+                      ),
+                      child: const ChatTextScreen(),
+                    ),
                   ),
                 );
               },
@@ -191,26 +190,17 @@ class _NompangsAppState extends State<NompangsApp> {
         // 불러온 프로필 데이터를 Map으로 변환
         final characterProfileMap = profile.toMap();
 
-        // ChatTextScreen에서 사용할 태그를 추가합니다.
-        characterProfileMap['personalityTags'] =
-            profile.aiPersonalityProfile?.coreValues.isNotEmpty == true
-                ? profile.aiPersonalityProfile!.coreValues
-                : ['친구'];
-
         // 🎯 딥링크 진입 시에도 서버에서 받은 실제 데이터 사용
         // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
 
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder:
-                (context) => ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(
-                        // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
-                        characterProfile: characterProfileMap,
-                      ),
-                  child: const ChatTextScreen(),
-                ),
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(
+                characterProfile: characterProfileMap,
+              ),
+              child: const ChatTextScreen(),
+            ),
           ),
         );
       } catch (e) {

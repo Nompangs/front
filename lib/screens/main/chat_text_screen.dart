@@ -33,6 +33,13 @@ class _ChatTextScreenContent extends StatefulWidget {
 class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
+  Stream<QuerySnapshot>? _messagesStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _messagesStream = context.read<ChatProvider>().getMessagesStream();
+  }
 
   @override
   void dispose() {
@@ -44,17 +51,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
-    final messages = chatProvider.messages;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -69,63 +65,93 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
             Expanded(
               child: Container(
                 color: const Color(0xFFF2F2F2),
-                child: Column(
-                  children: [
-                    if (!messages.any((msg) => msg.isUser))
-                      _ProfileCard(
-                        characterName: chatProvider.characterName,
-                        characterHandle: chatProvider.characterHandle,
-                        personalityTags: chatProvider.personalityTags,
-                      ),
-                    if (chatProvider.isProcessing)
-                      const LinearProgressIndicator(),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
-                        child: ListView.builder(
-                          reverse: true,
-                          controller: _scrollController,
-                          itemCount: messages.length,
-                          itemBuilder: (context, index) {
-                            final msg = messages[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              child: _ChatBubble(
-                                text: msg.text,
-                                isUser: msg.isUser,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                    _ChatInputBar(
-                      controller: _inputController,
-                      isProcessing: chatProvider.isProcessing,
-                      onSend: () {
-                        context.read<ChatProvider>().sendMessage(
-                          _inputController.text,
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _messagesStream,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final messages = snapshot.data!.docs;
+
+                    final showProfileCard = !messages.any((doc) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      return data?['sender'] == 'user';
+                    });
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_scrollController.hasClients) {
+                        _scrollController.animateTo(
+                          0.0,
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeOut,
                         );
-                        _inputController.clear();
-                      },
-                      onSpeakerModePressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (_) => ChangeNotifierProvider.value(
-                                  value: context.read<ChatProvider>(),
-                                  child: const ChatSpeakerScreen(),
-                                ),
+                      }
+                    });
+
+                    return Column(
+                      children: [
+                        if (showProfileCard)
+                          _ProfileCard(
+                            characterName: chatProvider.characterName,
+                            characterHandle: chatProvider.characterHandle,
+                            personalityTags: chatProvider.personalityTags,
                           ),
-                        );
-                      },
-                    ),
-                  ],
+                        if (chatProvider.isProcessing)
+                          const LinearProgressIndicator(),
+                        Expanded(
+                          child: Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 32),
+                            child: ListView.builder(
+                              reverse: true,
+                              controller: _scrollController,
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final message =
+                                    messages[index].data() as Map<String, dynamic>;
+                                final messageText = message['text'] ?? '';
+                                final isUser = message['sender'] == 'user';
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: _ChatBubble(
+                                    text: messageText,
+                                    isUser: isUser,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
+            ),
+            _ChatInputBar(
+              controller: _inputController,
+              isProcessing: chatProvider.isProcessing,
+              onSend: () {
+                context.read<ChatProvider>().sendMessage(
+                      _inputController.text,
+                    );
+                _inputController.clear();
+              },
+              onSpeakerModePressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => ChangeNotifierProvider.value(
+                      value: context.read<ChatProvider>(),
+                      child: const ChatSpeakerScreen(),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
