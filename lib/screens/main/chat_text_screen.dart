@@ -72,7 +72,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final messages = snapshot.data?.docs ?? [];
+                    final messages = snapshot.data!.docs;
 
                     final showProfileCard = !messages.any((doc) {
                       final data = doc.data() as Map<String, dynamic>?;
@@ -108,20 +108,17 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                               controller: _scrollController,
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
-                                final doc = messages[index];
-                                final msg =
-                                    doc.data() as Map<String, dynamic>?;
-
-                                if (msg == null || msg['content'] == null) {
-                                  return const SizedBox.shrink();
-                                }
+                                final message =
+                                    messages[index].data() as Map<String, dynamic>;
+                                final messageText = message['content'] ?? '';
+                                final isUser = message['sender'] == 'user';
 
                                 return Padding(
                                   padding:
                                       const EdgeInsets.symmetric(vertical: 4.0),
                                   child: _ChatBubble(
-                                    text: msg['content'] as String,
-                                    isUser: msg['sender'] == 'user',
+                                    text: messageText,
+                                    isUser: isUser,
                                   ),
                                 );
                               },

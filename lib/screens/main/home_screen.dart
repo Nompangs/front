@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nompangs/models/personality_profile.dart';
+import 'package:nompangs/screens/main/chat_text_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -207,11 +208,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       initialUserMessage: inputText,
     );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        // ChatScreen에는 profile 객체 하나만 전달합니다.
-        builder: (context) => ChatScreen(profile: defaultProfile),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        maxChildSize: 1,
+        minChildSize: 0.5,
+        builder: (context, scrollController) {
+          // ChatScreen에는 profile 객체 하나만 전달합니다.
+          return ChatScreen(profile: defaultProfile);
+        },
       ),
     );
   }

@@ -26,12 +26,9 @@ class _ChatScreenState extends State<ChatScreen> {
   final List<ChatMessage> _messages = [];
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  StreamSubscription<String>? _apiStreamSubscription;
   late OpenAiTtsService _openAiTtsService;
   late OpenAiChatService _openAiChatService;
   bool _isProcessing = false;
-  String _sentenceBuffer = '';
-  Future<void>? _firstSentencePlaybackFuture;
 
   @override
   void initState() {
@@ -48,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (widget.profile.initialUserMessage != null &&
         widget.profile.initialUserMessage!.isNotEmpty) {
       _addMessage(widget.profile.initialUserMessage!, true, speak: false);
-      _requestAiResponseStream(widget.profile.initialUserMessage!);
+      _requestAiResponse(widget.profile.initialUserMessage!);
     }
   }
 
@@ -57,67 +54,29 @@ class _ChatScreenState extends State<ChatScreen> {
     await _speech.initialize();
   }
 
-  void _requestAiResponseStream(String userInput) {
+  Future<void> _requestAiResponse(String userInput) async {
     if (_isProcessing) return;
-    _sentenceBuffer = '';
-    _firstSentencePlaybackFuture = null;
 
     setState(() {
       _isProcessing = true;
-      _messages.insert(0, ChatMessage(text: '', isUser: false));
     });
 
-    _apiStreamSubscription = _openAiChatService
-        .getChatCompletionStream(userInput, profile: widget.profile)
-        .listen(
-          (textChunk) {
-            if (mounted) {
-              setState(() => _messages[0].text += textChunk);
-              if (_firstSentencePlaybackFuture == null) {
-                _sentenceBuffer += textChunk;
-                RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-                if (sentenceEnd.hasMatch(_sentenceBuffer)) {
-                  final match = sentenceEnd.firstMatch(_sentenceBuffer)!;
-                  final firstSentence =
-                      _sentenceBuffer.substring(0, match.end).trim();
-                  if (firstSentence.isNotEmpty) {
-                    _firstSentencePlaybackFuture = _openAiTtsService.speak(
-                      firstSentence,
-                    );
-                  }
-                }
-              }
-            }
-          },
-          onDone: () async {
-            if (mounted) {
-              await _firstSentencePlaybackFuture;
-              String fullText = _messages[0].text;
-              String restOfText = '';
-              if (_firstSentencePlaybackFuture != null) {
-                RegExp sentenceEnd = RegExp(r'[.?!]\s|\n');
-                final firstMatch = sentenceEnd.firstMatch(fullText);
-                if (firstMatch != null && fullText.length > firstMatch.end) {
-                  restOfText = fullText.substring(firstMatch.end).trim();
-                }
-              } else if (fullText.isNotEmpty) {
-                restOfText = fullText;
-              }
-              if (restOfText.isNotEmpty) {
-                await _openAiTtsService.speak(restOfText);
-              }
-              setState(() => _isProcessing = false);
-            }
-          },
-          onError: (e) {
-            if (mounted) {
-              setState(() {
-                _messages[0].text = "AI 응답 중 오류 발생";
-                _isProcessing = false;
-              });
-            }
-          },
-        );
+    try {
+      final botResponse =
+          await _openAiChatService.getResponseFromGpt(null, [], userInput);
+
+      if (mounted) {
+        _addMessage(botResponse, false, speak: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        _addMessage("AI 응답 중 오류 발생: $e", false);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isProcessing = false);
+      }
+    }
   }
 
   void _addMessage(String text, bool isUser, {bool speak = false}) {
@@ -134,7 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final userMessage = text.trim();
     _textController.clear();
     _addMessage(userMessage, true);
-    _requestAiResponseStream(userMessage);
+    _requestAiResponse(userMessage);
   }
 
   void _startListening() async {
@@ -167,9 +126,7 @@ class _ChatScreenState extends State<ChatScreen> {
     print('[ChatScreen] dispose 호출, 리소스 해제 시작');
     _textController.dispose();
     _speech.stop();
-    _apiStreamSubscription?.cancel();
     _openAiTtsService.dispose();
-    _openAiChatService.dispose();
     print('[ChatScreen] dispose 완료');
     super.dispose();
   }
@@ -189,7 +146,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 widget.profile.aiPersonalityProfile?.name?.isNotEmpty == true
                     ? widget.profile.aiPersonalityProfile!.name[0]
                     : 'C',
-                style: TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white),
               ),
             ),
             const SizedBox(width: 8),
@@ -199,10 +156,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: [
                   Text(
                     widget.profile.aiPersonalityProfile?.name ?? '페르소나',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                        fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  SizedBox(height: 2),
-                  Text(
+                  const SizedBox(height: 2),
+                  const Text(
                     "다정함",
                     style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
@@ -212,7 +170,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -221,7 +179,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: ListView.builder(
               reverse: true,
-              padding: EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16.0),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final message = _messages[index];
@@ -239,92 +197,90 @@ class _ChatScreenState extends State<ChatScreen> {
               padding: const EdgeInsets.all(8.0),
               child: LinearProgressIndicator(
                 backgroundColor: Colors.grey[800],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
+                valueColor:
+                    const AlwaysStoppedAnimation<Color>(Colors.purpleAccent),
               ),
             ),
           Container(
             decoration: BoxDecoration(
               color: Colors.grey[900],
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                IconButton(
-                  icon: Icon(Icons.text_fields, color: Colors.white),
-                  onPressed: () {},
-                ),
                 Expanded(
                   child: TextField(
                     controller: _textController,
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
-                      hintText: '메시지를 입력하세요...',
-                      hintStyle: TextStyle(color: Colors.grey),
+                      hintText: "메시지 보내기",
+                      hintStyle: TextStyle(color: Colors.grey[400]),
                       border: InputBorder.none,
                     ),
-                    onSubmitted: _handleSubmitted,
-                    textInputAction: TextInputAction.send,
+                    onSubmitted: _isProcessing ? null : _handleSubmitted,
                   ),
                 ),
                 IconButton(
-                  icon: Icon(
-                    _isListening ? Icons.mic_off : Icons.mic,
-                    color: _isListening ? Colors.red : Colors.white,
-                  ),
+                  icon: Icon(_isListening ? Icons.mic_off : Icons.mic,
+                      color: Colors.white),
                   onPressed: _isListening ? _stopListening : _startListening,
                 ),
                 IconButton(
-                  icon: Icon(Icons.send, color: Colors.white),
-                  onPressed: () => _handleSubmitted(_textController.text),
+                  icon: const Icon(Icons.send, color: Colors.white),
+                  onPressed: _isProcessing
+                      ? null
+                      : () => _handleSubmitted(_textController.text),
                 ),
               ],
             ),
-          ),
+          )
         ],
       ),
     );
   }
 
-  Widget _buildMessage(ChatMessage message, String senderName) {
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.symmetric(vertical: 5.0),
-        padding: EdgeInsets.symmetric(horizontal: 15.0, vertical: 10.0),
-        decoration: BoxDecoration(
-          color: message.isUser ? Colors.deepPurpleAccent : Colors.grey[800],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20.0),
-            topRight: Radius.circular(20.0),
-            bottomLeft:
-                message.isUser ? Radius.circular(20.0) : Radius.circular(0),
-            bottomRight:
-                message.isUser ? Radius.circular(0) : Radius.circular(20.0),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment:
-              message.isUser
+  Widget _buildMessage(ChatMessage message, String sender) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 10.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: <Widget>[
+          if (!message.isUser)
+            CircleAvatar(
+              child: Text(sender[0]),
+            ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: message.isUser
                   ? CrossAxisAlignment.end
                   : CrossAxisAlignment.start,
-          children: [
-            Text(
-              senderName,
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
+              children: <Widget>[
+                Text(sender, style: Theme.of(context).textTheme.titleMedium),
+                Container(
+                  margin: const EdgeInsets.only(top: 5.0),
+                  padding: const EdgeInsets.all(10.0),
+                  decoration: BoxDecoration(
+                    color:
+                        message.isUser ? Colors.blue : Colors.grey.shade800,
+                    borderRadius: BorderRadius.circular(15.0),
+                  ),
+                  child: Text(message.text,
+                      style: const TextStyle(color: Colors.white)),
+                ),
+              ],
             ),
-            SizedBox(height: 4),
-            Text(
-              message.text,
-              style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+          if (message.isUser) const SizedBox(width: 10),
+          if (message.isUser)
+            const CircleAvatar(
+              child: Text("나"),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
-}
+} 
