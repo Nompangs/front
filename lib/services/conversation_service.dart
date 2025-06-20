@@ -48,6 +48,7 @@ class ConversationService {
 
     // conversations 문서에 마지막 메시지 정보 및 messageCount 업데이트
     await conversationRef.set({
+      'conversationId': conversationId,
       'uid': uid,
       'uuid': uuid,
       'lastMessageAt': timestamp,
