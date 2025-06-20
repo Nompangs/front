@@ -54,6 +54,110 @@ class OpenAiChatService {
     _handleStreamingRequest(request, controller);
   }
 
+  /// 일반적인(non-streaming) GPT 응답을 요청하고 전체 텍스트를 반환합니다.
+  Future<String> getResponseFromGpt(
+      String? summary, List<Map<String, dynamic>> recentMessages, String userInput) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('API 키가 설정되지 않았습니다.');
+    }
+
+    final messages = _buildMessagesForGpt(summary, recentMessages, userInput);
+
+    final response = await _client.post(
+      Uri.parse('https://api.openai.com/v1/chat/completions'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: jsonEncode({
+        'model': 'gpt-4o',
+        'messages': messages,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['choices'][0]['message']['content'];
+    } else {
+      throw Exception('OpenAI API Error: ${response.statusCode}\n${response.body}');
+    }
+  }
+
+  /// 대화 내용을 요약하는 새로운 메서드
+  Future<String> summarizeConversation(String? currentSummary, List<Map<String, dynamic>> messagesToSummarize) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      throw Exception('API 키가 설정되지 않았습니다.');
+    }
+
+    final prompt = _buildSummaryPrompt(currentSummary, messagesToSummarize);
+
+    final response = await _client.post(
+      Uri.parse('https://api.openai.com/v1/chat/completions'),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Bearer $apiKey',
+      },
+      body: jsonEncode({
+        'model': 'gpt-4o-mini', // 요약에는 더 작고 빠른 모델 사용
+        'messages': [
+          {'role': 'system', 'content': 'You are a helpful assistant that summarizes conversations.'},
+          {'role': 'user', 'content': prompt}
+        ],
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      return body['choices'][0]['message']['content'];
+    } else {
+      throw Exception('Failed to summarize conversation: ${response.statusCode}\n${response.body}');
+    }
+  }
+
+  // 요약 프롬프트를 생성하는 헬퍼 메서드
+  String _buildSummaryPrompt(String? currentSummary, List<Map<String, dynamic>> messages) {
+    final buffer = StringBuffer();
+    buffer.writeln("다음 대화 내용을 3~4 문장으로 요약해줘. 핵심 내용과 감정의 흐름을 잘 파악해서, 다음 대화에서 이 요약본만 봐도 전체 맥락을 이해할 수 있도록 만들어줘. 한국어로 요약해줘.");
+    buffer.writeln("\n--- 이전 요약 ---");
+    buffer.writeln(currentSummary ?? "이전 요약 없음");
+    buffer.writeln("\n--- 최근 대화 ---");
+    for (var msg in messages) {
+      buffer.writeln("${msg['sender']}: ${msg['content']}");
+    }
+    buffer.writeln("\n--- 요약 결과 ---");
+    return buffer.toString();
+  }
+
+  List<Map<String, String>> _buildMessagesForGpt(String? summary, List<Map<String, dynamic>> recentMessages, String userInput) {
+    final messages = <Map<String, String>>[];
+    
+    // 시스템 프롬프트는 항상 고정
+    messages.add({
+      "role": "system", 
+      "content": "너는 사용자에게 친근하게 대답하는 AI 친구야. 사용자의 말을 잘 들어주고, 이전 대화의 맥락을 기억하며 자연스럽게 대화를 이어가줘."
+    });
+
+    // 이전 요약본 추가
+    if (summary != null && summary.isNotEmpty) {
+      messages.add({"role": "system", "content": "이전 대화의 요약본이야: $summary"});
+    }
+
+    // 최근 대화 내용 추가
+    for (var msg in recentMessages) {
+      messages.add({
+        "role": msg['sender'] == 'user' ? 'user' : 'assistant',
+        "content": msg['content']
+      });
+    }
+
+    // 현재 사용자 입력 추가
+    messages.add({"role": "user", "content": userInput});
+
+    return messages;
+  }
+
   // 스트리밍 요청을 처리하는 내부 로직
   Future<void> _handleStreamingRequest(
     http.Request request,

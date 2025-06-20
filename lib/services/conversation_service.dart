@@ -98,4 +98,17 @@ class ConversationService {
       'recentMessages': recentMessages,
     };
   }
+
+  // conversation 문서를 직접 가져오는 메서드
+  Future<DocumentSnapshot> getConversationDocument(String uuid) {
+    return _firestore.collection('conversations').doc(uuid).get();
+  }
+
+  // 요약 및 마지막 요약 시간 업데이트
+  Future<void> updateSummary(String uuid, String summary) {
+    return _firestore.collection('conversations').doc(uuid).update({
+      'summary': summary,
+      'summaryLastMessageTimestamp': FieldValue.serverTimestamp(),
+    });
+  }
 } 

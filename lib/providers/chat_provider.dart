@@ -73,6 +73,9 @@ class ChatProvider with ChangeNotifier {
 
       await _conversationService.sendMessage(uuid, botResponse, 'bot');
 
+      // 요약 트리거 로직 추가
+      _triggerSummaryIfNeeded();
+
       // await _ttsService.play(botResponse);
 
     } catch (e) {
@@ -85,6 +88,36 @@ class ChatProvider with ChangeNotifier {
     } finally {
       _isProcessing = false;
       notifyListeners();
+    }
+  }
+
+  // 요약 실행을 확인하고 트리거하는 메서드
+  Future<void> _triggerSummaryIfNeeded() async {
+    try {
+      final conversationDoc = await _conversationService.getConversationDocument(uuid);
+      if (!conversationDoc.exists) return;
+
+      final data = conversationDoc.data() as Map<String, dynamic>;
+      final messageCount = data['messageCount'] ?? 0;
+
+      // 메시지 수가 10의 배수이고 0이 아닐 때 요약 실행
+      if (messageCount > 0 && messageCount % 10 == 0) {
+        debugPrint("🚀 요약 조건 충족 (메시지: $messageCount). 요약을 시작합니다.");
+
+        // 요약에 필요한 데이터 가져오기
+        final summaryContext = await _conversationService.getConversationContext(uuid);
+        final currentSummary = summaryContext['summary'] as String?;
+        final messagesToSummarize = (summaryContext['recentMessages'] as List).cast<Map<String, dynamic>>();
+
+        // 요약 실행
+        final newSummary = await _chatService.summarizeConversation(currentSummary, messagesToSummarize);
+
+        // Firestore에 새로운 요약 업데이트
+        await _conversationService.updateSummary(uuid, newSummary);
+        debugPrint("✅ 새로운 요약이 Firestore에 저장되었습니다.");
+      }
+    } catch (e) {
+      debugPrint("🚨 요약 실행 중 오류 발생: $e");
     }
   }
 
