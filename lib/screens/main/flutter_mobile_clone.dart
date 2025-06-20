@@ -194,7 +194,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ObjectData(
             title: "디자인 체어",
             location: "내 방",
-            duration: "42 min",
+            duration: "42 분",
             isNew: true,
             imageUrl: "assets/testImg_1.png",
             uuid: "test-1",
@@ -203,7 +203,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ObjectData(
             title: "제임쓰 카페인쓰",
             location: "사무실",
-            duration: "5 min",
+            duration: "5 분",
             imageUrl: "assets/testImg_2.png",
             uuid: "test-2",
             uid: "test-2-uid",
@@ -211,7 +211,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ObjectData(
             title: "빈백",
             location: "우리집 안방",
-            duration: "139 min",
+            duration: "139 분",
             imageUrl: "assets/testImg_3.png",
             uuid: "test-3",
             uid: "test-3-uid",
@@ -220,7 +220,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ObjectData(
             title: "테스트 소파",
             location: "단골 카페",
-            duration: "12 min",
+            duration: "12 분",
             isNew: false,
             imageUrl: "assets/testImg_4.png",
             uuid: "test-4",
@@ -230,7 +230,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           ObjectData(
             title: "테스트 램프",
             location: "내 방",
-            duration: "88 min",
+            duration: "88 분",
             isNew: true,
             imageUrl: "assets/testImg_5.png",
             uuid: "test-5",
@@ -975,7 +975,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   // 가장 마지막으로 대화한 사물카드의 이름을 반환
   String get lastChattedObjectName {
     if (objectData.isEmpty) return '';
-    // duration이 '숫자 min' 또는 '숫자 h' 형식이라고 가정
+    // duration이 '숫자 분', '숫자 시간', '숫자 일' 형식이라고 가정
     ObjectData? lastObject = objectData.reduce((a, b) {
       int aMinutes = _parseDurationToMinutes(a.duration);
       int bMinutes = _parseDurationToMinutes(b.duration);
@@ -985,11 +985,13 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   int _parseDurationToMinutes(String duration) {
-    // 예: '42 min', '5 min', '2 h', '1 h', '139 min'
-    if (duration.contains('min')) {
+    // 예: '42 분', '5 분', '2 시간', '139 분'
+    if (duration.contains('분')) {
       return int.tryParse(duration.split(' ')[0]) ?? 99999;
-    } else if (duration.contains('h')) {
+    } else if (duration.contains('시간')) {
       return (int.tryParse(duration.split(' ')[0]) ?? 99999) * 60;
+    } else if (duration.contains('일')) {
+      return (int.tryParse(duration.split(' ')[0]) ?? 99999) * 60 * 24;
     }
     return 99999;
   }
@@ -1113,8 +1115,6 @@ class ObjectCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maskPath = 'assets/ui_assets/cardShape_${(index % 3) + 1}.png';
-
-    print('카드 이미지 경로: ${data.imageUrl}, 사물 이름: ${data.title}');
 
     return SizedBox(
       width: 130 * scale,
