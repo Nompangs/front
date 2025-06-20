@@ -264,7 +264,7 @@ class ObjectDetailScreen extends StatelessWidget {
                       'contradictions': [],
                       'userInput': {
                         'warmth': 5,
-                        'introversion': 5,
+                        'extroversion': 5,
                         'competence': 5,
                         'humorStyle': '기본',
                       },
