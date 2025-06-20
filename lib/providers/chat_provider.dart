@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nompangs/services/conversation_service.dart';
-import 'package:nompangs/services/elevenlabs_tts_service.dart';
+import 'package:nompangs/services/openai_tts_service.dart';
 import 'package:nompangs/services/openai_chat_service.dart';
 
 class ChatProvider with ChangeNotifier {
   final ConversationService _conversationService = ConversationService();
   final OpenAiChatService _chatService = OpenAiChatService();
-  final ElevenLabsTtsService _ttsService = ElevenLabsTtsService();
+  final OpenAiTtsService _ttsService = OpenAiTtsService();
 
   bool _isProcessing = false;
   bool get isProcessing => _isProcessing;
@@ -52,7 +52,7 @@ class ChatProvider with ChangeNotifier {
   }
 
   Future<void> stopTts() async {
-    // _ttsService.stop();
+    await _ttsService.stop();
   }
 
   Future<void> sendMessage(String text, {bool isInitialGreeting = false}) async {
@@ -76,7 +76,7 @@ class ChatProvider with ChangeNotifier {
       // 요약 트리거 로직 추가
       _triggerSummaryIfNeeded();
 
-      // await _ttsService.play(botResponse);
+      await _ttsService.speak(botResponse);
 
     } catch (e) {
       debugPrint("메시지 전송/처리 중 에러 발생: $e");
