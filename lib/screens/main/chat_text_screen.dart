@@ -110,7 +110,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                               itemBuilder: (context, index) {
                                 final message =
                                     messages[index].data() as Map<String, dynamic>;
-                                final messageText = message['content'] ?? '';
+                                final messageText = message['text'] ?? '';
                                 final isUser = message['sender'] == 'user';
 
                                 return Padding(
