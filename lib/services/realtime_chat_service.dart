@@ -227,6 +227,43 @@ class RealtimeChatService {
     }
   }
 
+  // 🗣️ 오디오 스트림을 직접 서버로 전송
+  Future<void> sendAudioStream(Stream<Uint8List> audioStream) async {
+    if (!_isConnected) {
+      debugPrint("❌ RealtimeAPI가 연결되지 않았습니다. 오디오 스트림 전송 실패");
+      throw Exception("RealtimeAPI is not connected. Please connect first.");
+    }
+    if (_isConnecting) {
+      debugPrint("⏳ RealtimeAPI 연결 중입니다. 잠시 후 다시 시도해주세요.");
+      throw Exception("RealtimeAPI is still connecting. Please wait.");
+    }
+
+    try {
+      debugPrint("📤 오디오 스트림 전송 시작...");
+
+      // 오디오 스트림의 각 청크를 서버로 보냅니다.
+      await for (final audioChunk in audioStream) {
+        if (!_isConnected) {
+          debugPrint("🔌 연결이 끊겨 오디오 스트림 전송을 중단합니다.");
+          break;
+        }
+        // Uint8List로 변환하여 전송
+        await _client.appendInputAudio(audioChunk);
+      }
+
+      // 모든 오디오 청크를 보낸 후, 모델에게 응답을 생성하라고 명시적으로 요청합니다.
+      await _client.createResponse();
+
+      debugPrint("✅ 오디오 스트림 전송 완료 및 응답 요청됨.");
+    } catch (e) {
+      debugPrint("❌ 오디오 스트림 전송 실패: $e");
+      if (e.toString().contains('not connected')) {
+        _isConnected = false;
+      }
+      rethrow;
+    }
+  }
+
   // 🆕 realtimeSettings를 반영한 고급 시스템 프롬프트
   Future<String> _buildEnhancedSystemPrompt(
     Map<String, dynamic> characterProfile,
@@ -524,7 +561,7 @@ ${_getHumorStyleGuidance(humorStyle)}
     } else if (humorStyle.contains('위트있는 재치꾼')) {
       return '말장난, 언어유희, 순간 기지로 웃음을 만드세요. 사물 이름이나 특성을 활용한 영리한 단어 놀이를 사용하세요.';
     } else if (humorStyle.contains('날카로운 관찰자')) {
-      return '예리한 관찰력으로 상황의 아이러니나 모순을 찾아 웃긴 포인트를 만드세요. 인간의 행동을 관찰한 현실적 웃음을 사용하세요.';
+      return '예리한 관찰력으로 상황의 아이러니를 지적하기';
     } else if (humorStyle.contains('자기 비하적')) {
       return '자신의 한계나 특성을 소재로 한 겸손한 사물 개그를 하세요. 귀여운 자학으로 웃음을 만들어내세요.';
     } else if (humorStyle.contains('장난꾸러기')) {

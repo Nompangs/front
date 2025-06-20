@@ -15,6 +15,7 @@ class ChatTextScreen extends StatelessWidget {
     return Consumer<ChatProvider>(
       builder: (context, provider, child) {
         return _ChatTextScreenContent(
+          provider: provider,
           showHomeInsteadOfBack: showHomeInsteadOfBack,
         );
       },
@@ -23,8 +24,12 @@ class ChatTextScreen extends StatelessWidget {
 }
 
 class _ChatTextScreenContent extends StatefulWidget {
+  final ChatProvider provider;
   final bool showHomeInsteadOfBack;
-  const _ChatTextScreenContent({this.showHomeInsteadOfBack = false});
+  const _ChatTextScreenContent({
+    required this.provider,
+    this.showHomeInsteadOfBack = false,
+  });
 
   @override
   State<_ChatTextScreenContent> createState() => __ChatTextScreenContentState();
@@ -33,13 +38,6 @@ class _ChatTextScreenContent extends StatefulWidget {
 class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
-  Stream<QuerySnapshot>? _messagesStream;
-
-  @override
-  void initState() {
-    super.initState();
-    _messagesStream = context.read<ChatProvider>().getMessagesStream();
-  }
 
   @override
   void dispose() {
@@ -50,7 +48,18 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
 
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
+    final chatProvider = widget.provider;
+
+    // ListView를 항상 아래로 스크롤하는 콜백
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0.0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -65,69 +74,44 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
             Expanded(
               child: Container(
                 color: const Color(0xFFF2F2F2),
-                child: StreamBuilder<QuerySnapshot>(
-                  stream: _messagesStream,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final messages = snapshot.data!.docs;
-
-                    final showProfileCard = !messages.any((doc) {
-                      final data = doc.data() as Map<String, dynamic>?;
-                      return data?['sender'] == 'user';
-                    });
-
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (_scrollController.hasClients) {
-                        _scrollController.animateTo(
-                          0.0,
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeOut,
-                        );
-                      }
-                    });
-
-                    return Column(
-                      children: [
-                        if (showProfileCard)
-                          _ProfileCard(
-                            characterName: chatProvider.characterName,
-                            characterHandle: chatProvider.characterHandle,
-                            personalityTags: chatProvider.personalityTags,
-                          ),
-                        if (chatProvider.isProcessing)
-                          const LinearProgressIndicator(),
-                        Expanded(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 32),
-                            child: ListView.builder(
-                              reverse: true,
-                              controller: _scrollController,
-                              itemCount: messages.length,
-                              itemBuilder: (context, index) {
-                                final message =
-                                    messages[index].data() as Map<String, dynamic>;
-                                final messageText = message['text'] ?? '';
-                                final isUser = message['sender'] == 'user';
-
-                                return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4.0),
-                                  child: _ChatBubble(
-                                    text: messageText,
-                                    isUser: isUser,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
+                child: Column(
+                  children: [
+                    // --- 실시간 상태 표시 UI ---
+                    if (chatProvider.isConnecting)
+                      const LinearProgressIndicator(),
+                    if (chatProvider.realtimeError != null)
+                      Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          chatProvider.realtimeError!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                    // --- 메시지 목록 ---
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: ListView.builder(
+                          reverse: true,
+                          controller: _scrollController,
+                          itemCount: chatProvider.messages.length,
+                          itemBuilder: (context, index) {
+                            final message = chatProvider.messages[index];
+                            final isUser = message.sender == 'user';
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 4.0,
+                              ),
+                              child: _ChatBubble(
+                                text: message.text,
+                                isUser: isUser,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -135,10 +119,10 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
               controller: _inputController,
               isProcessing: chatProvider.isProcessing,
               onSend: () {
-                context.read<ChatProvider>().sendMessage(
-                      _inputController.text,
-                    );
-                _inputController.clear();
+                if (_inputController.text.isNotEmpty) {
+                  chatProvider.sendMessage(_inputController.text);
+                  _inputController.clear();
+                }
               },
               onSpeakerModePressed: () {
                 Navigator.push(
@@ -146,9 +130,9 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                   MaterialPageRoute(
                     builder:
                         (_) => ChangeNotifierProvider.value(
-                      value: context.read<ChatProvider>(),
-                      child: const ChatSpeakerScreen(),
-                    ),
+                          value: context.read<ChatProvider>(),
+                          child: const ChatSpeakerScreen(),
+                        ),
                   ),
                 );
               },
@@ -509,9 +493,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   // AI가 응답 중일 때 배경색 변경
-                  color: widget.isProcessing
-                      ? const Color(0xFFE8E8E8)
-                      : const Color(0xFFF0F0F0),
+                  color:
+                      widget.isProcessing
+                          ? const Color(0xFFE8E8E8)
+                          : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextField(
@@ -521,7 +506,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.only(top: 10),
                     // 힌트 텍스트 수정 및 상태에 따른 변경
-                    hintText: widget.isProcessing ? 'AI가 답변 중입니다...' : '메시지를 입력하세요...',
+                    hintText:
+                        widget.isProcessing
+                            ? 'AI가 답변 중입니다...'
+                            : '메시지를 입력하세요...',
                     hintStyle: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFFAAAAAA),
@@ -552,20 +540,22 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   _hasText ? Icons.send : Icons.call,
                   size: 20,
                   // AI 응답 중일 때 아이콘 색상 변경
-                  color: widget.isProcessing
-                      ? Colors.grey
-                      : (_hasText ? Colors.black : Colors.white),
+                  color:
+                      widget.isProcessing
+                          ? Colors.grey
+                          : (_hasText ? Colors.black : Colors.white),
                 ),
                 // AI 응답 중일 때 버튼 비활성화
-                onPressed: widget.isProcessing
-                    ? null
-                    : () {
-                        if (_hasText) {
-                          widget.onSend();
-                        } else {
-                          widget.onSpeakerModePressed();
-                        }
-                      },
+                onPressed:
+                    widget.isProcessing
+                        ? null
+                        : () {
+                          if (_hasText) {
+                            widget.onSend();
+                          } else {
+                            widget.onSpeakerModePressed();
+                          }
+                        },
               ),
             ),
           ],

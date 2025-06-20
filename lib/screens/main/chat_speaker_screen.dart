@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
-import 'package:speech_to_text/speech_to_text.dart' as stt;
-import 'dart:async';
 
 class ChatSpeakerScreen extends StatefulWidget {
   const ChatSpeakerScreen({super.key});
@@ -12,297 +10,147 @@ class ChatSpeakerScreen extends StatefulWidget {
 }
 
 class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  
-  bool _isListening = false;
-  bool _isConfirmingEndTurn = false;
-  double _lastSoundLevel = 0.0;
-  String _currentRecognizedText = "";
-  bool _hasHadFirstInteraction = false;
-  
-  
-  Timer? _endTurnTimer;
+  // --- UI 상태 ---
+  // 이 화면의 모든 상태는 이제 ChatProvider가 관리합니다.
+  // 따라서 이 클래스 내의 상태 변수는 대부분 필요 없습니다.
+
+  // 예시: 간단한 시각적 피드백을 위한 변수
+  double _soundLevelForUi = 0.0;
 
   @override
   void initState() {
     super.initState();
+    // 화면이 시작될 때 TTS가 재생 중일 수 있으므로 중지합니다.
+    context.read<ChatProvider>().stopTts();
   }
 
-  @override
-  void dispose() {
-    _speech.stop();
-    
-    _endTurnTimer?.cancel();
-    super.dispose();
-  }
+  // --- 비즈니스 로직은 모두 Provider로 이동 ---
+  // _activateMicrophone, _sendFinalResult 등은 모두 제거됩니다.
 
-  void _restartListeningLoop() {
-    if (!_hasHadFirstInteraction || !mounted || context.read<ChatProvider>().isProcessing || _isListening) {
-      return;
-    }
-    Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && !context.read<ChatProvider>().isProcessing && !_isListening) {
-            _activateMicrophone();
-        }
-    });
-  }
-  
-  Future<void> _activateMicrophone() async {
-    if (_isListening || !mounted) return;
-
-    bool isInitialized = await _speech.initialize(
-        onError: (error) {
-          print('STT Init Error: $error');
-          _showErrorDialog("음성 인식 중 오류가 발생했습니다: ${error.errorMsg}");
-        },
-        onStatus: (status) {
-            if (status == stt.SpeechToText.notListeningStatus && mounted) {
-                
-                
-                if (_isListening) {
-                    setState(() => _isListening = false);
-                }
-            }
-        },
-    );
-
-    if (isInitialized && mounted) {
-        setState(() {
-            _isListening = true;
-            _isConfirmingEndTurn = false; 
-            _currentRecognizedText = "";
-        });
-
-        _speech.listen(
-          onResult: (result) {
-            if (!mounted) return;
-            setState(() { _currentRecognizedText = result.recognizedWords; });
-
-            
-            if (!_isConfirmingEndTurn) {
-                _endTurnTimer?.cancel(); 
-                _endTurnTimer = Timer(const Duration(seconds: 3), () {
-                    if (_isListening) {
-                        print("⏰ 자동 종료 타이머 실행 (일반 모드)");
-                        _sendFinalResult();
-                    }
-                });
-            }
-          },
-          
-          listenFor: const Duration(minutes: 10),
-          pauseFor: const Duration(minutes: 10),
-          localeId: 'ko_KR',
-          onSoundLevelChange: (level) {
-            if (mounted) setState(() => _lastSoundLevel = level);
-          },
-        );
-    } else if (mounted) {
-        _showErrorDialog("음성 인식 엔진을 시작할 수 없습니다.");
-    }
-  }
-
-  void _showErrorDialog(String message) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('오류'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _sendFinalResult() {
-    if (!mounted || !_isListening) return;
-    
-    
-    _endTurnTimer?.cancel();
-    
-    final textToSend = _currentRecognizedText.trim();
-    
-    _speech.stop();
-    setState(() {
-      _isListening = false;
-      _isConfirmingEndTurn = false;
-      _currentRecognizedText = "";
-    });
-
-    if (textToSend.isNotEmpty) {
-      context.read<ChatProvider>().sendMessage(textToSend);
-    }
-  }
-  
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
-    if (!chatProvider.isProcessing) {
-      _restartListeningLoop();
-    }
 
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
-        child: GestureDetector(
-          onTap: () {
-            if (_isConfirmingEndTurn) {
-              
-              setState(() => _isConfirmingEndTurn = false);
-            }
-          },
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    IconButton(icon: const Icon(Icons.close, color: Colors.white, size: 24),
-                      onPressed: () { _speech.stop(); Navigator.of(context).pop(); },
-                    ),
-                    IconButton(icon: const Icon(Icons.settings, color: Colors.white, size: 24),
-                      onPressed: () {},
-                    ),
-                  ],
-                ),
+        child: Column(
+          children: [
+            // --- 상단 네비게이션 ---
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
               ),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(chatProvider.characterName, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 40),
-                    WhiteEqualizerBars(soundLevel: _lastSoundLevel),
-                    const SizedBox(height: 32),
-                    Text(_determineStatusText(), style: const TextStyle(color: Colors.white70, fontSize: 16)),
-                    const SizedBox(height: 40),
-                    _buildButton(),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      // 화면을 닫기 전에 스트리밍을 중단합니다.
+                      chatProvider.stopAudioStreaming();
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.settings,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                    onPressed: () {},
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            // --- 메인 콘텐츠 ---
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    chatProvider.characterName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  // TODO: 실제 오디오 레벨에 따른 시각화 구현 필요
+                  WhiteEqualizerBars(soundLevel: _soundLevelForUi),
+                  const SizedBox(height: 32),
+                  Text(
+                    _determineStatusText(chatProvider),
+                    style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  ),
+                  const SizedBox(height: 40),
+                  // --- 마이크 버튼 ---
+                  _buildMicButton(chatProvider),
+                  const SizedBox(height: 80),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
-  
-  String _determineStatusText() {
-    final chatProvider = context.watch<ChatProvider>();
-    if (chatProvider.isProcessing) return "생각중이에요.";
-    if (_isConfirmingEndTurn) return "얘기가 끝나면 알려주세요.";
-    if (_isListening) return "귀 기울여 듣고 있어요.";
-    return "탭하여 말하기";
+
+  String _determineStatusText(ChatProvider provider) {
+    if (provider.isConnecting) return "연결 중이에요...";
+    if (provider.realtimeError != null) return "오류가 발생했어요.";
+    if (provider.isProcessing) return "귀 기울여 듣고 있어요...";
+    return "버튼을 누르고 말하기";
   }
 
-  Widget _buildButton() {
-    final chatProvider = context.watch<ChatProvider>();
-    if (chatProvider.isProcessing) {
-      return _buildStartOrInterruptButton(); 
-    } else if (_isConfirmingEndTurn) {
-      return _buildConfirmEndTurnButton();
-    } else if (_isListening) {
-      return _buildListeningButton();
-    } else {
-      return _buildStartOrInterruptButton(); 
-    }
-  }
-
-  Widget _buildStartOrInterruptButton() {
+  Widget _buildMicButton(ChatProvider provider) {
+    // GestureDetector를 사용하여 길게 누르는 동작을 감지
     return GestureDetector(
-      onTap: () {
-        if (!_hasHadFirstInteraction) {
-          setState(() => _hasHadFirstInteraction = true);
-        }
-        context.read<ChatProvider>().stopTts();
-        _activateMicrophone();
+      onLongPressStart: (_) {
+        debugPrint("🎤 길게 누르기 시작 -> 오디오 스트리밍 시작");
+        provider.startAudioStreaming();
+      },
+      onLongPressEnd: (_) {
+        debugPrint("🛑 길게 누르기 종료 -> 오디오 스트리밍 중지");
+        provider.stopAudioStreaming();
       },
       child: Container(
-        width: 80, height: 80,
-        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-        child: const Icon(Icons.mic, color: Colors.white, size: 40),
-      ),
-    );
-  }
-
-  Widget _buildListeningButton() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _isConfirmingEndTurn = true;
-          
-          _endTurnTimer?.cancel(); 
-        });
-      },
-      child: Container(
-        width: 80, height: 80,
-        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-        child: const Icon(Icons.lock, color: Colors.white, size: 40),
-      ),
-    );
-  }
-  
-  Widget _buildConfirmEndTurnButton() {
-    return GestureDetector(
-      onTap: _sendFinalResult,
-      child: Container(
-        width: 80, height: 80,
-        decoration: BoxDecoration(color: Colors.grey[800], shape: BoxShape.circle),
-        child: const Icon(Icons.lock_open, color: Colors.white, size: 40),
+        width: 100,
+        height: 100,
+        decoration: BoxDecoration(
+          color: provider.isProcessing ? Colors.green : Colors.red,
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 4),
+        ),
+        child: const Icon(Icons.mic, color: Colors.white, size: 50),
       ),
     );
   }
 }
 
-class WhiteEqualizerBars extends StatefulWidget {
+// 이퀄라이저 위젯 (시각적 요소, 기능은 동일)
+class WhiteEqualizerBars extends StatelessWidget {
   final double soundLevel;
-  const WhiteEqualizerBars({super.key, required this.soundLevel});
-  @override
-  _WhiteEqualizerBarsState createState() => _WhiteEqualizerBarsState();
-}
-class _WhiteEqualizerBarsState extends State<WhiteEqualizerBars> with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _animations;
-  @override
-  void initState() {
-    super.initState();
-    _controllers = List.generate(5, (i) => AnimationController(duration: Duration(milliseconds: 800 + (i * 50)), vsync: this)..repeat(reverse: true));
-    _animations = _controllers.map((c) => Tween<double>(begin: 0.3, end: 1.0).animate(CurvedAnimation(parent: c, curve: Curves.easeInOut))).toList();
-  }
-  @override
-  void dispose() {
-    for (var c in _controllers) { c.dispose(); }
-    super.dispose();
-  }
+  const WhiteEqualizerBars({Key? key, required this.soundLevel})
+    : super(key: key);
+
   @override
   Widget build(BuildContext context) {
+    // 간단한 시각적 표현
     return SizedBox(
-      width: 300, height: 150,
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: List.generate(5, (i) => AnimatedBuilder(
-          animation: _animations[i],
-          builder: (context, child) {
-            double baseHeight = 150 - ((i - 2).abs() * 40.0);
-            double scale = 0.5 + (widget.soundLevel * 1.5);
-            double height = (baseHeight * _animations[i].value * scale).clamp(10.0, baseHeight);
-            return Container(
-              width: 20, height: height,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.3 + (_animations[i].value * 0.4)),
-                borderRadius: BorderRadius.circular(20),
-              ),
-            );
-          },
-        )),
+      height: 50,
+      width: 100,
+      child: Center(
+        child:
+            soundLevel > 0.1
+                ? const Icon(Icons.graphic_eq, color: Colors.white, size: 40)
+                : const Icon(Icons.mic_none, color: Colors.white70, size: 40),
       ),
     );
   }
