@@ -72,30 +72,20 @@ class ConversationService {
         conversationSnap.data() as Map<String, dynamic>? ?? {};
 
     final summary = conversationData['summary'] as String? ?? '';
-    final summaryLastMessageTimestamp =
-        conversationData['summaryLastMessageTimestamp'] as Timestamp?;
 
-    // 요약 이후의 모든 메시지를 가져옵니다.
-    QuerySnapshot messagesSnap;
-    if (summaryLastMessageTimestamp != null) {
-      messagesSnap = await conversationRef
-          .collection('messages')
-          .where('timestamp', isGreaterThan: summaryLastMessageTimestamp)
-          .orderBy('timestamp', descending: false)
-          .get();
-    } else {
-      // 요약이 아직 없으면 모든 메시지를 가져옵니다.
-      messagesSnap = await conversationRef
-          .collection('messages')
-          .orderBy('timestamp', descending: false)
-          .get();
-    }
+    // 항상 최근 10개의 메시지를 가져오도록 로직 변경
+    final messagesSnap = await conversationRef
+        .collection('messages')
+        .orderBy('timestamp', descending: true)
+        .limit(10) // 가장 최신 10개만 가져옴
+        .get();
 
-    final recentMessages = messagesSnap.docs.map((doc) {
+    // 가져온 문서를 오래된 순 -> 최신 순으로 다시 정렬 (API 전달용)
+    final recentMessages = messagesSnap.docs.reversed.map((doc) {
       final data = doc.data() as Map<String, dynamic>;
       // LLM에게 전달할 형식으로 가공
       return {
-        'role': data['sender'] == 'user' ? 'user' : 'assistant',
+        'role': data['role'],
         'content': data['text'], // DB 필드는 'text'이지만, OpenAI API에 전달하는 필드는 'content'를 유지
       };
     }).toList();
@@ -117,7 +107,42 @@ class ConversationService {
     final conversationId = getConversationId(uid, uuid);
     return _firestore.collection('conversations').doc(conversationId).update({
       'summary': summary,
-      'summaryLastMessageTimestamp': FieldValue.serverTimestamp(),
     });
+  }
+
+  // 메시지 추가 및 대화 업데이트 (원래 버전으로 복원 및 정리)
+  Future<void> addMessage({
+    required String uid,
+    required String uuid,
+    required String text,
+    required String role,
+    int? messageCount,
+    String? summary,
+  }) async {
+    final conversationId = getConversationId(uid, uuid);
+    final conversationRef =
+        _firestore.collection('conversations').doc(conversationId);
+    final messageRef = conversationRef.collection('messages');
+
+    final messageData = {
+      'text': text,
+      'timestamp': FieldValue.serverTimestamp(),
+      'role': role,
+    };
+
+    await messageRef.add(messageData);
+
+    // 대화 메타데이터 업데이트
+    final updateData = <String, dynamic>{
+      'lastMessage': text,
+      'lastTimestamp': FieldValue.serverTimestamp(),
+      'messageCount': messageCount,
+    };
+
+    if (summary != null) {
+      updateData['summary'] = summary;
+    }
+
+    await conversationRef.set(updateData, SetOptions(merge: true));
   }
 } 
