@@ -199,7 +199,7 @@ class PersonalityService {
     final userInputMap = {
       'photoPath': finalState.photoPath,
       'objectType': finalState.objectType,
-      'purpose': finalState.purpose,
+      'purpose': finalState.purpose ?? '일상 대화',
       'nickname': finalState.nickname,
       'location': finalState.location,
       'duration': finalState.duration,
@@ -865,7 +865,8 @@ JSON 배열 형식으로만 응답하세요: ["결점1", "결점2", "결점3"]
                   utf8.decode(response.bodyBytes),
                 )['choices'][0]['message']['content']
                 as String;
-        final List<dynamic> flawsList = jsonDecode(content);
+        final List<dynamic> flawsList =
+            jsonDecode(_sanitizeJsonString(content));
         return List<String>.from(flawsList);
       } else {
         debugPrint('🚨 매력적 결점 AI 생성 실패: ${response.statusCode}');
@@ -975,7 +976,8 @@ JSON 배열 형식으로만 응답하세요: ["모순1", "모순2", "모순3"]
         }
         cleanContent = cleanContent.trim();
 
-        final List<dynamic> contradictionsList = jsonDecode(cleanContent);
+        final List<dynamic> contradictionsList =
+            jsonDecode(_sanitizeJsonString(cleanContent));
         return List<String>.from(contradictionsList);
       } else {
         debugPrint('🚨 모순점 AI 생성 실패: ${response.statusCode}');
@@ -1699,9 +1701,16 @@ ${npsScores.isEmpty ? '- NPS 점수 정보 없음' : (npsScores.entries.toList()
                 as String;
 
         debugPrint("✅ [음성특성] AI 생성 성공! 내용 길이: ${content.length}자");
-        final result = jsonDecode(content) as Map<String, String>;
-        debugPrint("🎭 [음성특성] 생성된 특성들: ${result.keys.join(', ')}");
-        return result;
+        final result =
+            jsonDecode(_sanitizeJsonString(content)) as Map<String, dynamic>;
+
+        // 🔥 모든 값이 문자열인지 확인하고 변환 (안전장치)
+        final finalResult = result.map(
+          (key, value) => MapEntry(key, value.toString()),
+        );
+
+        debugPrint("🎭 [음성특성] 생성된 특성들: ${finalResult.keys.join(', ')}");
+        return finalResult;
       } else {
         debugPrint('🚨 [음성특성] AI 생성 실패 (HTTP ${response.statusCode}) → 폴백 사용');
         return _fallbackVoiceCharacteristics(
@@ -1852,7 +1861,8 @@ JSON 배열 형식으로만 응답하세요: ["특성1", "특성2", "특성3"]
                   utf8.decode(response.bodyBytes),
                 )['choices'][0]['message']['content']
                 as String;
-        final List<dynamic> traitsList = jsonDecode(content);
+        final List<dynamic> traitsList =
+            jsonDecode(_sanitizeJsonString(content));
         return List<String>.from(traitsList);
       } else {
         debugPrint('🚨 [핵심특성] AI 생성 실패 (HTTP ${response.statusCode}) → 폴백 사용');
@@ -1960,5 +1970,17 @@ ${_getTopScores(npsScores, 3)}
       debugPrint('🚨 성격 설명 생성 오류: $e');
       return "균형 잡힌 성격으로, 상황에 따라 유연하게 대처해요. 안정적이면서도 적응력이 뛰어나 다양한 환경에서 자신만의 매력을 발휘할 수 있어요.";
     }
+  }
+
+  /// AI가 반환한 JSON 문자열에서 마크다운 코드 블록을 제거합니다.
+  String _sanitizeJsonString(String content) {
+    content = content.trim();
+    if (content.startsWith('```json')) {
+      content = content.substring(7);
+      if (content.endsWith('```')) {
+        content = content.substring(0, content.length - 3);
+      }
+    }
+    return content.trim();
   }
 }
