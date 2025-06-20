@@ -27,6 +27,7 @@ import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/services/api_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 String? pendingRoomId;
 
@@ -85,14 +86,12 @@ class TestScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (context) => ChangeNotifierProvider(
-                          create:
-                              (_) => ChatProvider(
-                                characterProfile: _defaultCharacterProfile,
-                              ),
-                          child: const ChatTextScreen(),
-                        ),
+                    builder: (context) => ChangeNotifierProvider(
+                      create: (_) => ChatProvider(
+                        characterProfile: _defaultCharacterProfile,
+                      ),
+                      child: const ChatTextScreen(),
+                    ),
                   ),
                 );
               },
@@ -196,15 +195,12 @@ class _NompangsAppState extends State<NompangsApp> {
 
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder:
-                (context) => ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(
-                        // 기본값이 아닌, 서버에서 불러온 프로필 맵을 전달합니다.
-                        characterProfile: characterProfileMap,
-                      ),
-                  child: const ChatTextScreen(),
-                ),
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(
+                characterProfile: characterProfileMap,
+              ),
+              child: const ChatTextScreen(),
+            ),
           ),
         );
       } catch (e) {
