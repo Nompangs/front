@@ -52,6 +52,7 @@ class ChatProvider with ChangeNotifier {
   StreamSubscription? _messageSubscription;
   StreamSubscription? _completionSubscription;
   StreamSubscription? _userTranscriptSubscription;
+  StreamSubscription? _audioSubscription;
 
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
@@ -228,6 +229,19 @@ class ChatProvider with ChangeNotifier {
       await stopTts();
       // UI에 즉시 피드백을 주기 위해 빈 사용자 메시지 추가
       addMessage('', 'user');
+
+      // 🎤 [복원] 오디오 스트림 구독 시작
+      _audioSubscription = _audioStreamService.audioStream.listen(
+        (chunk) {
+          _realtimeChatService.sendAudioChunk(chunk);
+        },
+        onError: (e) {
+          debugPrint("❌ ChatProvider 오디오 스트림 에러: $e");
+          _onErrorReceived("오디오 입력 중 오류가 발생했습니다.");
+          stopAudioStreaming();
+        },
+      );
+
       await _audioStreamService.startStreaming();
     } catch (e) {
       debugPrint("❌ 오디오 스트리밍 시작 중 에러: $e");
@@ -236,6 +250,7 @@ class ChatProvider with ChangeNotifier {
       // ⏸️▶️ 스트림 구독 상태 원상 복구
       _userTranscriptSubscription?.pause();
       _messageSubscription?.resume();
+      await _audioSubscription?.cancel(); // 구독 취소
       notifyListeners();
     }
   }
@@ -246,6 +261,9 @@ class ChatProvider with ChangeNotifier {
     // ⏸️▶️ 스트림 구독 상태 전환
     _userTranscriptSubscription?.pause(); // 사용자 STT 중지
     _messageSubscription?.resume(); // AI 응답 시작
+
+    await _audioSubscription?.cancel(); // 🎤 [복원] 오디오 스트림 구독 중단
+    _audioSubscription = null;
 
     await _audioStreamService.stopStreaming();
     // 🗣️ AI 응답 생성을 명시적으로 요청
@@ -266,6 +284,7 @@ class ChatProvider with ChangeNotifier {
     _messageSubscription?.cancel();
     _completionSubscription?.cancel();
     _userTranscriptSubscription?.cancel();
+    _audioSubscription?.cancel(); // 🎤 [복원] dispose시 오디오 구독 취소
     _realtimeChatService.dispose();
     _audioStreamService.dispose();
     _ttsService.dispose();

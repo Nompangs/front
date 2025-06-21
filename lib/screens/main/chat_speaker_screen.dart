@@ -32,7 +32,12 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
     final chatProvider = context.watch<ChatProvider>();
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color.fromARGB(
+        255,
+        130,
+        135,
+        139,
+      ).withOpacity(0.7),
       body: SafeArea(
         child: Column(
           children: [

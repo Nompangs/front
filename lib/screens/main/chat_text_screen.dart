@@ -144,12 +144,22 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
               onSpeakerModePressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ChangeNotifierProvider.value(
-                          value: context.read<ChatProvider>(),
-                          child: const ChatSpeakerScreen(),
-                        ),
+                  PageRouteBuilder(
+                    opaque: false, // 배경을 투명하게 만듭니다.
+                    pageBuilder:
+                        (context, animation, secondaryAnimation) =>
+                            ChangeNotifierProvider.value(
+                              value: chatProvider,
+                              child: const ChatSpeakerScreen(),
+                            ),
+                    transitionsBuilder: (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
                   ),
                 );
               },

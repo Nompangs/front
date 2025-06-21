@@ -239,6 +239,21 @@ class RealtimeChatService {
     }
   }
 
+  /// [추가] 오디오 데이터 청크를 실시간으로 전송합니다.
+  Future<void> sendAudioChunk(Uint8List chunk) async {
+    if (!_isConnected) {
+      return;
+    }
+    try {
+      await _client.appendInputAudio(chunk);
+    } catch (e) {
+      debugPrint("❌ 오디오 청크 전송 실패: $e");
+      if (e.toString().contains('not connected')) {
+        _isConnected = false;
+      }
+    }
+  }
+
   /// [추가] 사용자의 오디오 입력이 끝났음을 서버에 알리고 응답을 요청합니다.
   Future<void> commitAudioAndTriggerResponse() async {
     if (!_isConnected) {
@@ -435,7 +450,7 @@ class RealtimeChatService {
     debugPrint("  - 성격: 따뜻함=$warmth, 외향성=$extroversion, 유능함=$competence");
     debugPrint("  - 유머: $humorStyle");
     debugPrint("  - 관계: $relationshipStyle");
-    debugPrint("  - 감정범위: $emotionalRange");
+    debugPrint("  - 감정범위: $emotionalRange/10");
     debugPrint("  - 핵심가치: ${coreValues.length}개");
     debugPrint("  - 음성: $selectedVoice");
     debugPrint("  - 매력적결함: ${attractiveFlawsList.length}개");
