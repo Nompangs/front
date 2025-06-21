@@ -87,11 +87,11 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
           characterProfile['userDisplayName'] = '게스트';
         }
 
-        // 4. 온보딩 화면과 마찬가지로, 태그를 생성하여 추가합니다.
-        characterProfile['personalityTags'] =
-            profile.aiPersonalityProfile!.coreValues.isNotEmpty
-                ? profile.aiPersonalityProfile!.coreValues
-                : ['친구'];
+        // 🚨 [삭제] 불필요한 personalityTags 덮어쓰기 로직을 제거합니다.
+        // characterProfile['personalityTags'] =
+        //     profile.aiPersonalityProfile!.coreValues.isNotEmpty
+        //         ? profile.aiPersonalityProfile!.coreValues
+        //         : ['친구'];
 
         debugPrint('✅ [QR 스캔 진입] ChatProvider로 전달되는 프로필: $characterProfile');
 

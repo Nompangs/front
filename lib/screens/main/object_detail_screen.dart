@@ -8,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nompangs/services/api_service.dart';
 
 class ObjectDetailScreen extends StatelessWidget {
   final ObjectData objectData;
@@ -240,92 +241,127 @@ class ObjectDetailScreen extends StatelessWidget {
               children: [
                 ElevatedButton(
                   onPressed: () async {
-                    final user = FirebaseAuth.instance.currentUser;
-                    String displayName = 'unknown';
-                    if (user != null) {
-                      final doc =
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .get();
-                      displayName = doc.data()?['displayName'] ?? 'unknown';
-                    }
-                    final characterProfile = {
-                      'uuid': objectData.uuid,
-                      'greeting': objectData.greeting ?? '다시 만나서 반가워!',
-                      'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
-                      'initialUserMessage': '오랜만이야!',
-                      'aiPersonalityProfile': {
-                        'name': objectData.title,
-                        'npsScores': {},
-                      },
-                      'photoAnalysis': {},
-                      'attractiveFlaws': [],
-                      'contradictions': [],
-                      'userInput': {
-                        'warmth': 5,
-                        'extroversion': 5,
-                        'competence': 5,
-                        'humorStyle': '기본',
-                      },
-                      'userDisplayName': displayName,
-                    };
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ChangeNotifierProvider(
-                              create:
-                                  (_) => ChatProvider(
-                                    characterProfile: characterProfile,
-                                  ),
-                              child: const ChatTextScreen(
-                                showHomeInsteadOfBack: true,
+                    // 🚨 [수정] 채팅 시작 시 서버에서 전체 프로필 다시 로드
+                    try {
+                      final apiService = ApiService();
+                      final profile = await apiService.loadProfile(
+                        objectData.uuid,
+                      );
+                      final characterProfile = profile.toMap();
+
+                      // 현재 사용자 이름 주입
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user != null) {
+                        final doc =
+                            await FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user.uid)
+                                .get();
+                        characterProfile['userDisplayName'] =
+                            doc.data()?['displayName'] ?? '게스트';
+                      } else {
+                        characterProfile['userDisplayName'] = '게스트';
+                      }
+
+                      if (!context.mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) => ChangeNotifierProvider(
+                                create:
+                                    (_) => ChatProvider(
+                                      characterProfile: characterProfile,
+                                    ),
+                                child: const ChatTextScreen(),
                               ),
-                            ),
-                      ),
-                    );
-                  },
-                  child: const Text('채팅하기'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () {
-                    // TODO: 수정 기능 구현
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('수정 기능은 추후 지원됩니다.')),
-                    );
-                  },
-                  child: const Text('수정하기'),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: () async {
-                    // TODO: 삭제 기능 구현
-                    final confirm = await showDialog<bool>(
-                      context: context,
-                      builder:
-                          (context) => AlertDialog(
-                            title: const Text('정말 삭제하시겠어요?'),
-                            content: const Text('이 사물은 되돌릴 수 없이 삭제됩니다.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('취소'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('삭제'),
-                              ),
-                            ],
+                        ),
+                      );
+                    } catch (e) {
+                      print('🚨 상세 화면에서 프로필 로딩 실패: $e');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('캐릭터 정보를 불러오는 데 실패했습니다.'),
+                            backgroundColor: Colors.red,
                           ),
-                    );
-                    if (confirm == true) {
-                      await _deleteObject(context);
+                        );
+                      }
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text('삭제하기'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFC5FF35),
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '대화 시작하기',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          // TODO: 수정 기능 구현
+                          print('수정 버튼 클릭');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '수정하기',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          // TODO: 삭제 기능 구현
+                          final confirm = await showDialog<bool>(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('정말 삭제하시겠어요?'),
+                                  content: const Text('이 사물은 되돌릴 수 없이 삭제됩니다.'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, false),
+                                      child: const Text('취소'),
+                                    ),
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(context, true),
+                                      child: const Text('삭제'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                          if (confirm == true) {
+                            await _deleteObject(context);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text('삭제하기'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

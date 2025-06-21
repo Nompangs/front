@@ -62,13 +62,13 @@ class ChatProvider with ChangeNotifier {
     characterName =
         characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음';
     characterHandle =
-        '@${(characterProfile['aiPersonalityProfile']?['name'] ?? 'unknown').toLowerCase().replaceAll(' ', '')}';
+        '@${(characterProfile['userDisplayName'] ?? 'guest').toLowerCase().replaceAll(' ', '')}';
     personalityTags =
         (characterProfile['personalityTags'] as List<dynamic>?)
             ?.map((tag) => tag.toString())
             .toList() ??
         [];
-    userDisplayName = characterProfile['userDisplayName'] ?? 'unknown';
+    userDisplayName = characterProfile['userDisplayName'] ?? 'guest';
 
     // 실시간 서비스 초기화
     _initializeServices(characterProfile);
