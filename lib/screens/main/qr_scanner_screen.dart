@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
-import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -72,14 +73,27 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         // 3. 프로필 객체를 그대로 Map으로 변환합니다.
         final characterProfile = profile.toMap();
 
+        // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final doc =
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .get();
+          characterProfile['userDisplayName'] =
+              doc.data()?['displayName'] ?? '게스트';
+        } else {
+          characterProfile['userDisplayName'] = '게스트';
+        }
+
         // 4. 온보딩 화면과 마찬가지로, 태그를 생성하여 추가합니다.
         characterProfile['personalityTags'] =
             profile.aiPersonalityProfile!.coreValues.isNotEmpty
                 ? profile.aiPersonalityProfile!.coreValues
                 : ['친구'];
 
-        // 🎯 QR 진입 시에도 서버에서 받은 실제 데이터 사용
-        // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
+        debugPrint('✅ [QR 스캔 진입] ChatProvider로 전달되는 프로필: $characterProfile');
 
         // 5. 완성된 Map으로 ChatProvider를 생성하고 채팅 화면으로 이동합니다.
         await Navigator.pushReplacement(
@@ -89,7 +103,9 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
                 (context) => ChangeNotifierProvider(
                   create:
                       (_) => ChatProvider(characterProfile: characterProfile),
-                  child: const ChatTextScreen(),
+                  child: const ChatTextScreen(
+                    showHomeInsteadOfBack: true,
+                  ), // 홈 버튼 표시
                 ),
           ),
         );

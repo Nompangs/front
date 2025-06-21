@@ -46,6 +46,11 @@ class ChatProvider with ChangeNotifier {
   late final String characterHandle;
   late final List<String> personalityTags;
   final String? greeting;
+  late final String userDisplayName;
+
+  // 스트림 구독 관리
+  StreamSubscription? _messageSubscription;
+  StreamSubscription? _completionSubscription;
 
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
@@ -63,6 +68,7 @@ class ChatProvider with ChangeNotifier {
             ?.map((tag) => tag.toString())
             .toList() ??
         [];
+    userDisplayName = characterProfile['userDisplayName'] ?? 'unknown';
 
     // 실시간 서비스 초기화
     _initializeServices(characterProfile);
@@ -82,15 +88,19 @@ class ChatProvider with ChangeNotifier {
       _realtimeError = null;
 
       // 3. 실시간 응답 스트림 구독 (UI 업데이트용)
-      _realtimeChatService.responseStream.listen(_onResponseReceived);
+      _messageSubscription?.cancel();
+      _messageSubscription = _realtimeChatService.responseStream.listen(
+        _onResponseReceived,
+        onError: _onErrorReceived,
+      );
 
       // 4. 완성된 문장 스트림 구독 (TTS 재생용)
-      _realtimeChatService.completionStream.listen(_onCompletionReceived);
+      _completionSubscription?.cancel();
+      _completionSubscription = _realtimeChatService.completionStream.listen(
+        _onCompletionReceived,
+      );
 
-      // 5. 에러 스트림 구독
-      _realtimeChatService.responseStream.handleError(_onErrorReceived);
-
-      // 6. 초기 인사말 처리
+      // 5. 초기 인사말 처리
       _sendInitialGreetingIfNeeded();
     } catch (e) {
       _isConnecting = false;
@@ -217,9 +227,11 @@ class ChatProvider with ChangeNotifier {
 
   @override
   void dispose() {
+    _messageSubscription?.cancel();
+    _completionSubscription?.cancel();
     _realtimeChatService.dispose();
     _audioStreamService.dispose();
-    _ttsService.stop();
+    _ttsService.dispose();
     super.dispose();
   }
 }

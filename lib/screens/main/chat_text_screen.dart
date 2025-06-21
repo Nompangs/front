@@ -68,7 +68,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
           children: [
             _TopNavigationBar(
               characterName: chatProvider.characterName,
-              characterHandle: chatProvider.characterHandle,
+              characterHandle: chatProvider.userDisplayName,
               showHomeInsteadOfBack: widget.showHomeInsteadOfBack,
             ),
             Expanded(
@@ -87,14 +87,31 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                           style: const TextStyle(color: Colors.red),
                         ),
                       ),
-                    // --- 메시지 목록 ---
+                    // --- [수정] 프로필 카드와 메시지 목록을 분리하여 위치 복원 ---
+                    if (!chatProvider.messages.any((m) => m.sender == 'user'))
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          24,
+                          16,
+                          24,
+                          0,
+                        ), // 상단 여백 추가
+                        child: _ProfileCard(
+                          characterName: chatProvider.characterName,
+                          characterHandle: chatProvider.userDisplayName,
+                          personalityTags: chatProvider.personalityTags,
+                        ),
+                      ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                        ), // 메시지 좌우 여백 32로 복원
                         child: ListView.builder(
                           reverse: true,
                           controller: _scrollController,
-                          itemCount: chatProvider.messages.length,
+                          itemCount:
+                              chatProvider.messages.length, // itemCount 원상 복구
                           itemBuilder: (context, index) {
                             final message = chatProvider.messages[index];
                             final isUser = message.sender == 'user';
@@ -211,7 +228,7 @@ class _TopNavigationBar extends StatelessWidget {
               ),
               const SizedBox(height: 2),
               Text(
-                characterHandle,
+                '@$characterHandle',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -306,7 +323,7 @@ class _ProfileCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'By $characterHandle',
+                      'By @$characterHandle',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w400,

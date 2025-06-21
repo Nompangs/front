@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'package:nompangs/screens/main/find_momenti_screen.dart';
-import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nompangs/services/api_service.dart';
@@ -820,77 +819,56 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                           return aMinutes < bMinutes ? a : b;
                         });
 
-                        // 🚨 문제: DB에서 불러온 데이터는 PersonalityProfile 구조가 아님
-                        // 임시 해결책: 기본값 제공하되 실제 데이터를 활용할 수 있도록 개선 필요
+                        try {
+                          final apiService = ApiService();
+                          final profile = await apiService.loadProfile(
+                            lastObject.uuid,
+                          );
+                          final characterProfile = profile.toMap();
 
-                        // Firestore에서 displayName을 읽어옵니다.
-                        String displayName = 'unknown';
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          final doc =
-                              await FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid)
-                                  .get();
-                          final data = doc.data();
-                          if (data != null) {
-                            displayName = data['displayName'] ?? 'unknown';
+                          // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+                          final user = FirebaseAuth.instance.currentUser;
+                          if (user != null) {
+                            final doc =
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .get();
+                            characterProfile['userDisplayName'] =
+                                doc.data()?['displayName'] ?? '게스트';
+                          } else {
+                            characterProfile['userDisplayName'] = '게스트';
+                          }
+
+                          debugPrint(
+                            '✅ [홈 화면 진입] ChatProvider로 전달되는 프로필: $characterProfile',
+                          );
+
+                          if (!mounted) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => ChangeNotifierProvider(
+                                    create:
+                                        (_) => ChatProvider(
+                                          characterProfile: characterProfile,
+                                        ),
+                                    child: const ChatTextScreen(),
+                                  ),
+                            ),
+                          );
+                        } catch (e) {
+                          print('🚨 홈에서 프로필 로딩 실패: $e');
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('캐릭터 정보를 불러오는 데 실패했습니다.'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
                           }
                         }
-
-                        // ChatProvider가 요구하는 새로운 형식에 맞게 프로필 맵을 재조립합니다.
-                        final characterProfile = {
-                          'uuid': lastObject.uuid,
-                          'greeting': lastObject.greeting ?? '다시 만나서 반가워!',
-                          'communicationPrompt': '사용자에게 친절하고 상냥하게 응답해주세요.',
-                          'initialUserMessage': '오랜만이야!',
-                          'aiPersonalityProfile': {
-                            'name': lastObject.title,
-                            'npsScores': {},
-                          },
-                          'photoAnalysis': {},
-                          'attractiveFlaws': [],
-                          'contradictions': [],
-                          // ⚠️ TODO: DB 스키마 개선 필요 - PersonalityProfile 전체 저장하도록
-                          'userInput': {
-                            'warmth': 7, // 기본값을 조금 더 따뜻하게
-                            'introversion': 5,
-                            'competence': 6,
-                            'humorStyle': '따뜻한',
-                            'duration': '오래된 친구',
-                          },
-                          // realtimeSettings도 기본값 제공
-                          'realtimeSettings': {
-                            'voice': 'alloy',
-                            'voiceRationale': '기본 친근한 음성',
-                            'temperature': 0.9,
-                            'topP': 0.8,
-                            'frequencyPenalty': 0.7,
-                            'presencePenalty': 0.6,
-                            'pronunciation': 'Warm, gentle, and nurturing',
-                            'pausePattern': 'Natural, comforting pauses',
-                            'speechRhythm': 'Relaxed and flowing',
-                            'responseFormat': 'audio+text',
-                            'enableVAD': true,
-                            'vadThreshold': 0.5,
-                            'maxTokens': 300,
-                          },
-                          'userDisplayName': displayName, // 반드시 포함
-                        };
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder:
-                                (context) => ChangeNotifierProvider(
-                                  create:
-                                      (_) => ChatProvider(
-                                        characterProfile: characterProfile,
-                                      ),
-                                  child: const ChatTextScreen(),
-                                ),
-                          ),
-                        );
                       },
                       child: Container(
                         width: 54 * scale,

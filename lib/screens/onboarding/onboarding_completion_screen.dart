@@ -18,6 +18,8 @@ import 'package:nompangs/services/api_service.dart';
 import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/providers/chat_provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -42,6 +44,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   String? _qrCodeUrl;
   bool _isLoading = true;
   String _message = "최종 페르소나를 완성하고 있어요...";
+  bool _isProfileReady = false;
 
   @override
   void initState() {
@@ -194,6 +197,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         _qrImageData = result['qrUrl'] as String?;
         _isLoading = false;
         _message = "페르소나 생성 완료!";
+        _isProfileReady = true;
       });
     } catch (e) {
       debugPrint('\n[API 오류]:');
@@ -201,11 +205,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       debugPrint(e.toString());
       debugPrint('----------------------------------------\n');
 
-      setState(() {
-        _isLoading = false;
-        _message = "오류가 발생했어요: ${e.toString()}";
-      });
-    } catch (e) {
       setState(() {
         _isLoading = false;
         _message = "오류가 발생했어요: ${e.toString()}";
@@ -728,44 +727,65 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {
-                    // 1. OnboardingProvider에서 현재 상태(state)를 가져옵니다.
-                    final onboardingState =
-                        context.read<OnboardingProvider>().state;
+                  onPressed:
+                      _isProfileReady
+                          ? () async {
+                            final provider = context.read<OnboardingProvider>();
+                            final characterProfile =
+                                provider.personalityProfile.toMap();
 
-                    // 2. _getPersonalityTag 함수들을 사용하여 태그를 생성합니다.
-                    final tag1 = _getPersonalityTag1(onboardingState);
-                    final tag2 = _getPersonalityTag2(onboardingState);
-                    final personalityTags = [tag1, tag2];
+                            // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user != null) {
+                              final doc =
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .get();
+                              characterProfile['userDisplayName'] =
+                                  doc.data()?['displayName'] ?? '게스트';
+                            } else {
+                              characterProfile['userDisplayName'] = '게스트';
+                            }
 
-                    // 3. ChatProvider에 전달할 최종 프로필 맵을 구성합니다.
-                    final profileMap = character.toMap();
-                    profileMap['userInput'] = provider.getUserInputAsMap();
-                    // 4. 생성된 태그를 profileMap에 추가합니다.
-                    profileMap['personalityTags'] = personalityTags;
+                            characterProfile['personalityTags'] =
+                                provider
+                                            .personalityProfile
+                                            .aiPersonalityProfile
+                                            ?.coreValues
+                                            .isNotEmpty ==
+                                        true
+                                    ? provider
+                                        .personalityProfile
+                                        .aiPersonalityProfile!
+                                        .coreValues
+                                    : ['친구'];
 
-                    debugPrint(
-                      '[OnboardingCompletionScreen] Passing profile to ChatProvider: $profileMap',
-                    );
+                            debugPrint(
+                              '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',
+                            );
 
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) => ChangeNotifierProvider(
-                              // ChatProvider에 characterProfile 맵 전체를 전달합니다.
-                              create:
-                                  (_) => ChatProvider(
-                                    characterProfile: profileMap,
-                                  ),
-                              child: const ChatTextScreen(),
-                            ),
-                      ),
-                      (Route<dynamic> route) => false, // 이전 모든 라우트를 제거
-                    );
-                  },
+                            if (!mounted) return;
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ChangeNotifierProvider(
+                                      create:
+                                          (_) => ChatProvider(
+                                            characterProfile: characterProfile,
+                                          ),
+                                      child: const ChatTextScreen(
+                                        showHomeInsteadOfBack: true,
+                                      ),
+                                    ),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                          : null,
                   child: const Text(
-                    '지금 바로 대화해요',
+                    '대화 시작하기',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),

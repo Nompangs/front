@@ -8,7 +8,6 @@ import 'package:nompangs/providers/chat_provider.dart';
 import 'dart:async';
 import 'package:nompangs/screens/auth/intro_screen.dart';
 import 'package:nompangs/screens/auth/login_screen.dart';
-import 'package:nompangs/screens/main/home_screen.dart';
 import 'package:nompangs/screens/auth/register_screen.dart';
 import 'package:nompangs/screens/main/qr_scanner_screen.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
@@ -25,9 +24,9 @@ import 'package:nompangs/screens/chat/chat_history_screen.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:nompangs/screens/main/flutter_mobile_clone.dart';
 import 'package:nompangs/models/personality_profile.dart';
-import 'package:nompangs/screens/main/chat_screen.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 String? pendingRoomId;
 
@@ -86,12 +85,14 @@ class TestScreen extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ChangeNotifierProvider(
-                      create: (_) => ChatProvider(
-                        characterProfile: _defaultCharacterProfile,
-                      ),
-                      child: const ChatTextScreen(),
-                    ),
+                    builder:
+                        (context) => ChangeNotifierProvider(
+                          create:
+                              (_) => ChatProvider(
+                                characterProfile: _defaultCharacterProfile,
+                              ),
+                          child: const ChatTextScreen(),
+                        ),
                   ),
                 );
               },
@@ -111,13 +112,6 @@ class TestScreen extends StatelessWidget {
               style: TextStyle(fontSize: 18, color: Colors.white),
             ),
             SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.pushNamed(context, '/home');
-              },
-              child: Text('홈으로 이동'),
-            ),
-            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/flutter-mobile-clone');
@@ -187,20 +181,33 @@ class _NompangsAppState extends State<NompangsApp> {
         final apiService = ApiService();
         final profile = await apiService.loadProfile(uuid);
 
-        // 불러온 프로필 데이터를 Map으로 변환
         final characterProfileMap = profile.toMap();
 
-        // 🎯 딥링크 진입 시에도 서버에서 받은 실제 데이터 사용
-        // userInput과 realtimeSettings는 서버에 저장된 값을 그대로 사용
+        // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final doc =
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user.uid)
+                  .get();
+          characterProfileMap['userDisplayName'] =
+              doc.data()?['displayName'] ?? '게스트';
+        } else {
+          characterProfileMap['userDisplayName'] = '게스트';
+        }
+
+        debugPrint('✅ [딥링크 진입] ChatProvider로 전달되는 프로필: $characterProfileMap');
 
         _navigatorKey.currentState?.push(
           MaterialPageRoute(
-            builder: (context) => ChangeNotifierProvider(
-              create: (_) => ChatProvider(
-                characterProfile: characterProfileMap,
-              ),
-              child: const ChatTextScreen(),
-            ),
+            builder:
+                (context) => ChangeNotifierProvider(
+                  create:
+                      (_) =>
+                          ChatProvider(characterProfile: characterProfileMap),
+                  child: const ChatTextScreen(showHomeInsteadOfBack: true),
+                ),
           ),
         );
       } catch (e) {
@@ -230,7 +237,6 @@ class _NompangsAppState extends State<NompangsApp> {
           '/': (context) => IntroScreen(),
           '/test': (context) => TestScreen(),
           '/login': (context) => LoginScreen(),
-          '/home': (context) => HomeScreen(),
           '/register': (context) => RegisterScreen(),
           '/qr-scanner': (context) => const QRScannerScreen(),
           '/chat-history': (context) => const ChatHistoryScreen(),
@@ -252,34 +258,13 @@ class _NompangsAppState extends State<NompangsApp> {
           // '/chat/{characterId}' 형태의 경로를 처리
           if (uri.pathSegments.length == 2 &&
               uri.pathSegments.first == 'chat') {
-            final characterId = uri.pathSegments.last;
-
-            // 라우트 인자(arguments)에서 PersonalityProfile 객체를 가져옴
-            final profile = settings.arguments as PersonalityProfile?;
-
-            // profile 객체가 정상적으로 전달되었는지 확인
-            if (profile != null) {
-              return MaterialPageRoute(
-                builder: (context) {
-                  // ChatScreen은 profile 객체를 직접 인자로 받음
-                  return ChatScreen(profile: profile);
-                },
-              );
-            } else {
-              // 딥링크를 통해 들어왔지만 profile 정보가 없는 경우 등 예외 처리
-              // TODO: characterId를 사용하여 Firestore 등에서 프로필 정보를 가져오는 로직 구현 필요
-              return MaterialPageRoute(
-                builder:
-                    (_) => Scaffold(
-                      body: Center(
-                        child: Text('캐릭터 정보를 불러올 수 없습니다. (ID: $characterId)'),
-                      ),
-                    ),
-              );
-            }
+            // 이 로직은 딥링크 핸들러(_handleDeepLink)와 중복되므로,
+            // _handleDeepLink에서 모든 딥링크를 처리하도록 유도하고 여기서는 비워두거나 제거할 수 있습니다.
+            // 현재 앱에서는 _handleDeepLink가 AppLinks를 통해 비동기적으로 처리하므로 onGenerateRoute는 사용되지 않을 가능성이 높습니다.
+            // 만약을 위해 null을 반환하여 정의되지 않은 경로임을 명시합니다.
+            return null;
           }
-          // 일치하는 라우트가 없으면 null을 반환
-          return null;
+          return null; // 처리되지 않은 다른 모든 경로
         },
       ),
     );
