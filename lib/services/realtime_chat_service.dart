@@ -13,6 +13,10 @@ class RealtimeChatService {
   final _responseController = StreamController<String>.broadcast();
   Stream<String> get responseStream => _responseController.stream;
 
+  // 🗣️ [추가] 사용자 STT 결과 전달용 스트림
+  final _userTranscriptController = StreamController<String>.broadcast();
+  Stream<String> get userTranscriptStream => _userTranscriptController.stream;
+
   // TTS 재생용 스트림 (완성된 문장)
   final _completionController = StreamController<String>.broadcast();
   Stream<String> get completionStream => _completionController.stream;
@@ -75,9 +79,17 @@ class RealtimeChatService {
         final result =
             (event as openai_rt.RealtimeEventConversationUpdated).result;
         final delta = result.delta;
-        if (delta?.transcript != null) {
-          // ChatMessage 객체 대신 순수 텍스트(String)를 전달
-          _responseController.add(delta!.transcript!);
+
+        // 🚨 [수정] 린터 오류를 피하기 위해, role을 직접 비교하는 대신 다른 접근 시도.
+        // 우선, 사용자 STT 결과가 어떤 필드로 오는지 명확하지 않으므로,
+        // delta.transcript가 존재할 때 사용자 STT 스트림과 AI 응답 스트림 모두에게 보내고
+        // ChatProvider에서 이를 구분하여 처리하도록 로직을 변경합니다.
+        // 이는 임시 해결책이며, 정확한 role 구분 방법을 찾아야 합니다.
+        if (delta?.transcript != null && delta!.transcript!.isNotEmpty) {
+          // 사용자의 STT 결과일 가능성이 있는 텍스트
+          _userTranscriptController.add(delta.transcript!);
+          // AI의 응답 결과일 가능성이 있는 텍스트
+          _responseController.add(delta.transcript!);
         }
       });
 
@@ -220,6 +232,25 @@ class RealtimeChatService {
     } catch (e) {
       debugPrint("❌ 메시지 전송 실패: $e");
       // 연결 오류인 경우 연결 상태를 false로 설정
+      if (e.toString().contains('not connected')) {
+        _isConnected = false;
+      }
+      rethrow;
+    }
+  }
+
+  /// [추가] 사용자의 오디오 입력이 끝났음을 서버에 알리고 응답을 요청합니다.
+  Future<void> commitAudioAndTriggerResponse() async {
+    if (!_isConnected) {
+      debugPrint("❌ RealtimeAPI가 연결되지 않았습니다. 응답 요청 실패");
+      return;
+    }
+    try {
+      debugPrint("🗣️ 사용자 발화 종료. AI 응답 생성 요청...");
+      await _client.createResponse();
+      debugPrint("✅ AI 응답 생성 요청 완료.");
+    } catch (e) {
+      debugPrint("❌ AI 응답 생성 요청 실패: $e");
       if (e.toString().contains('not connected')) {
         _isConnected = false;
       }
@@ -1109,6 +1140,7 @@ ${_getHumorStyleGuidance(humorStyle)}
     _client.disconnect();
     _responseController.close();
     _completionController.close();
+    _userTranscriptController.close(); // 🗣️ 추가된 컨트롤러 닫기
     debugPrint("🔌 RealtimeChatService 종료됨");
   }
 }

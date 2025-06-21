@@ -70,7 +70,7 @@ class OpenAiTtsService {
         'Content-Type': 'application/json',
       };
       final body = jsonEncode({
-        'model': 'tts-1',
+        'model': 'tts-1-hd',
         'input': text,
         'voice': voiceToUse,
       });

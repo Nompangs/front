@@ -13,10 +13,12 @@ class AudioStreamService {
 
   Stream<Uint8List> get audioStream => _audioStreamController.stream;
 
+  /// 현재 녹음(스트리밍) 중인지 여부를 반환합니다.
+  bool get isStreaming => _recorder.isRecording;
+
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    // 마이크 권한 요청
     final status = await Permission.microphone.request();
     if (status != PermissionStatus.granted) {
       throw Exception('Microphone permission not granted');

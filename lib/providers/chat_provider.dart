@@ -51,6 +51,7 @@ class ChatProvider with ChangeNotifier {
   // 스트림 구독 관리
   StreamSubscription? _messageSubscription;
   StreamSubscription? _completionSubscription;
+  StreamSubscription? _userTranscriptSubscription;
 
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
@@ -79,6 +80,9 @@ class ChatProvider with ChangeNotifier {
     Map<String, dynamic> characterProfile,
   ) async {
     try {
+      // 0. TTS 서비스에 캐릭터 프로필 전달
+      _ttsService.setCharacterVoiceSettings(characterProfile);
+
       // 1. 오디오 서비스 초기화 (마이크 권한 요청 등)
       await _audioStreamService.initialize();
 
@@ -93,6 +97,12 @@ class ChatProvider with ChangeNotifier {
         _onResponseReceived,
         onError: _onErrorReceived,
       );
+
+      // 🗣️ [추가] 사용자 STT 스트림 구독
+      _userTranscriptSubscription = _realtimeChatService.userTranscriptStream
+          .listen(_onUserTranscriptReceived, onError: _onErrorReceived);
+      _userTranscriptSubscription
+          ?.pause(); // ⏸️ [추가] 초기에는 사용자 STT 입력을 받지 않도록 즉시 일시 중지
 
       // 4. 완성된 문장 스트림 구독 (TTS 재생용)
       _completionSubscription?.cancel();
@@ -157,6 +167,25 @@ class ChatProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  // 🗣️ [추가] 사용자 STT 스트림 리스너
+  void _onUserTranscriptReceived(String textChunk) {
+    // 사용자가 말을 시작하면, 기존에 있던 (아마도 비어있는) user 메시지를 찾아 업데이트
+    final lastMessage = _messages.isNotEmpty ? _messages.first : null;
+    if (lastMessage != null && lastMessage.sender == 'user') {
+      final updatedMessage = ChatMessage(
+        id: lastMessage.id,
+        text: textChunk,
+        sender: 'user',
+        timestamp: lastMessage.timestamp,
+      );
+      _messages[0] = updatedMessage;
+    } else {
+      // 새로운 user 메시지 시작
+      addMessage(textChunk, 'user');
+    }
+    notifyListeners();
+  }
+
   // --- 초기 인사말 ---
   void _sendInitialGreetingIfNeeded() {
     if (_messages.isEmpty && greeting != null && greeting!.isNotEmpty) {
@@ -184,37 +213,44 @@ class ChatProvider with ChangeNotifier {
     }
   }
 
-  // --- 공개 메서드 (오디오) ---
+  // --- 스트리밍 제어 ---
   Future<void> startAudioStreaming() async {
     if (_isConnecting || _isProcessing) return;
-
     _isProcessing = true;
     notifyListeners();
 
+    // ⏸️▶️ 스트림 구독 상태 전환
+    _messageSubscription?.pause(); // AI 응답 중지
+    _userTranscriptSubscription?.resume(); // 사용자 STT 시작
+
     try {
       // 이전 TTS 중지
-      await _ttsService.stop();
-
-      // 1. 오디오 스트림을 먼저 구독하고
-      final audioStream = _audioStreamService.audioStream;
-      // 2. 이 스트림을 실시간 서비스로 전달합니다. (Future를 기다리지 않음)
-      _realtimeChatService.sendAudioStream(audioStream);
-
-      // 3. 그런 다음 녹음을 시작합니다.
+      await stopTts();
+      // UI에 즉시 피드백을 주기 위해 빈 사용자 메시지 추가
+      addMessage('', 'user');
       await _audioStreamService.startStreaming();
     } catch (e) {
-      debugPrint("오디오 스트리밍 시작/처리 중 에러 발생: $e");
-      _onErrorReceived(e);
+      debugPrint("❌ 오디오 스트리밍 시작 중 에러: $e");
       // 에러 발생 시 처리 상태 복원
       _isProcessing = false;
+      // ⏸️▶️ 스트림 구독 상태 원상 복구
+      _userTranscriptSubscription?.pause();
+      _messageSubscription?.resume();
       notifyListeners();
     }
-    // 스트리밍이 중지될 때 isProcessing은 stopAudioStreaming에서 false로 바뀝니다.
   }
 
   Future<void> stopAudioStreaming() async {
+    if (!_audioStreamService.isStreaming) return;
+
+    // ⏸️▶️ 스트림 구독 상태 전환
+    _userTranscriptSubscription?.pause(); // 사용자 STT 중지
+    _messageSubscription?.resume(); // AI 응답 시작
+
     await _audioStreamService.stopStreaming();
-    // 스트리밍이 중지되었으므로 처리 상태를 false로 설정합니다.
+    // 🗣️ AI 응답 생성을 명시적으로 요청
+    await _realtimeChatService.commitAudioAndTriggerResponse();
+
     if (_isProcessing) {
       _isProcessing = false;
       notifyListeners();
@@ -229,6 +265,7 @@ class ChatProvider with ChangeNotifier {
   void dispose() {
     _messageSubscription?.cancel();
     _completionSubscription?.cancel();
+    _userTranscriptSubscription?.cancel();
     _realtimeChatService.dispose();
     _audioStreamService.dispose();
     _ttsService.dispose();
