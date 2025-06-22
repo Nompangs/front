@@ -51,22 +51,36 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   }
 
   void _initializeImages() {
+    final userPhotoPath = widget.provider.userPhotoPath;
     final imageUrl = widget.provider.imageUrl;
-    bool usePlaceholder = true;
+    bool imageFound = false;
 
-    if (imageUrl != null && imageUrl.isNotEmpty) {
+    // 1. 사용자가 직접 찍은 사진을 최우선으로 확인
+    if (userPhotoPath != null && userPhotoPath.isNotEmpty) {
+      final file = File(userPhotoPath);
+      if (file.existsSync()) {
+        _displayImageProvider = FileImage(file);
+        imageFound = true;
+      }
+    }
+
+    // 2. 사용자 사진이 없으면, 서버에서 받은 URL 확인
+    if (!imageFound && imageUrl != null && imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http')) {
         _displayImageProvider = NetworkImage(imageUrl);
-        usePlaceholder = false;
+        imageFound = true;
       } else {
-        if (File(imageUrl).existsSync()) {
-          _displayImageProvider = FileImage(File(imageUrl));
-          usePlaceholder = false;
+        // http로 시작하지 않는 로컬 경로일 경우도 처리
+        final file = File(imageUrl);
+        if (file.existsSync()) {
+          _displayImageProvider = FileImage(file);
+          imageFound = true;
         }
       }
     }
 
-    if (usePlaceholder) {
+    // 3. 이미지를 찾지 못했으면 플레이스홀더 사용
+    if (!imageFound) {
       final placeholderIndex = Random().nextInt(19) + 1;
       _displayImageProvider = AssetImage(
         'assets/ui_assets/object_png/obj ($placeholderIndex).png',

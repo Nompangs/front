@@ -50,6 +50,7 @@ class ChatProvider with ChangeNotifier {
   final String? greeting;
   late final String userDisplayName;
   final String? imageUrl; // 사물 이미지 URL
+  final String? userPhotoPath; // 사용자가 찍은 사진 경로
 
   // 스트림 구독 관리
   StreamSubscription? _messageSubscription;
@@ -59,7 +60,8 @@ class ChatProvider with ChangeNotifier {
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
     : greeting = characterProfile['greeting'] as String?,
-      imageUrl = characterProfile['imageUrl'] as String? {
+      imageUrl = characterProfile['imageUrl'] as String?,
+      userPhotoPath = characterProfile['userPhotoPath'] as String? {
     // 페르소나 정보 초기화
     uuid =
         characterProfile['uuid'] ??

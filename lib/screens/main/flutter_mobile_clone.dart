@@ -16,32 +16,15 @@ import 'package:nompangs/screens/main/object_detail_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class FlutterMobileClone extends StatefulWidget {
+  const FlutterMobileClone({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Momenti App',
-      theme: ThemeData(primarySwatch: Colors.blue, fontFamily: 'Pretendard'),
-      home: MainScreen(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
+  _FlutterMobileCloneState createState() => _FlutterMobileCloneState();
 }
 
-class MainScreen extends StatefulWidget {
-  const MainScreen({super.key});
-
-  @override
-  _MainScreenState createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
+class _FlutterMobileCloneState extends State<FlutterMobileClone>
+    with TickerProviderStateMixin {
   String selectedFilter = "전체";
   final List<String> filterOptions = [
     "전체",
@@ -75,6 +58,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _checkAuthAndInitialize();
+  }
+
+  Future<void> _checkAuthAndInitialize() async {
+    // 사용자가 로그인했는지 확인
+    if (_authService.currentUser == null) {
+      // 로그인하지 않았다면 로그인 화면으로 이동
+      // 위젯 빌드가 완료된 후에 네비게이션을 호출하기 위해 addPostFrameCallback 사용
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/login');
+        }
+      });
+      return; // 초기화 중단
+    }
+
+    // 로그인했다면 데이터 초기화 진행
     _fetchDisplayName();
     _initializeData();
 

@@ -30,6 +30,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 String? pendingRoomId;
 
+// 앱 전체에서 사용할 기본/임시 캐릭터 프로필
 final Map<String, dynamic> _defaultCharacterProfile = {
   'uuid': 'default_character_uuid',
   'greeting': '안녕하세요! 저와 대화를 시작해 보세요.',
@@ -64,7 +65,71 @@ void main() async {
   await Firebase.initializeApp();
   await FirebaseManager.initialize();
 
-  runApp(const NompangsApp());
+  runApp(NompangsApp());
+}
+
+// 간단한 테스트 화면
+class TestScreen extends StatelessWidget {
+  const TestScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('테스트 화면')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ChangeNotifierProvider(
+                          create:
+                              (_) => ChatProvider(
+                                characterProfile: _defaultCharacterProfile,
+                              ),
+                          child: const ChatTextScreen(),
+                        ),
+                  ),
+                );
+              },
+              child: const Text('정적 캐릭터로 채팅 테스트'),
+            ),
+            Text(
+              '테스트 화면',
+              style: TextStyle(
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Flutter iOS가 작동합니다!',
+              style: TextStyle(fontSize: 18, color: Colors.white),
+            ),
+            SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/flutter-mobile-clone');
+              },
+              child: Text('뉴홈 화면 UI'),
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/login');
+              },
+              child: const Text('로그인 화면으로 이동'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class NompangsApp extends StatefulWidget {
@@ -118,6 +183,7 @@ class _NompangsAppState extends State<NompangsApp> {
 
         final characterProfileMap = profile.toMap();
 
+        // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
         final user = FirebaseAuth.instance.currentUser;
         if (user != null) {
           final doc =
@@ -167,11 +233,12 @@ class _NompangsAppState extends State<NompangsApp> {
         navigatorKey: _navigatorKey,
         title: 'Nompangs',
         theme: AppTheme.lightTheme,
-        initialRoute: '/',
+        initialRoute: '/test',
         routes: {
-          '/': (context) => const IntroScreen(),
-          '/login': (context) => const LoginScreen(),
-          '/register': (context) => const RegisterScreen(),
+          '/': (context) => IntroScreen(),
+          '/test': (context) => TestScreen(),
+          '/login': (context) => LoginScreen(),
+          '/register': (context) => RegisterScreen(),
           '/qr-scanner': (context) => const QRScannerScreen(),
           '/chat-history': (context) => const ChatHistoryScreen(),
           '/onboarding/intro': (context) => const OnboardingIntroScreen(),
@@ -184,16 +251,21 @@ class _NompangsAppState extends State<NompangsApp> {
               (context) => const OnboardingPersonalityScreen(),
           '/onboarding/completion':
               (context) => const OnboardingCompletionScreen(),
-          '/flutter-mobile-clone': (context) => const FlutterMobileClone(),
+          '/flutter-mobile-clone': (context) => MainScreen(),
         },
         onGenerateRoute: (settings) {
           final uri = Uri.parse(settings.name ?? '');
 
+          // '/chat/{characterId}' 형태의 경로를 처리
           if (uri.pathSegments.length == 2 &&
               uri.pathSegments.first == 'chat') {
+            // 이 로직은 딥링크 핸들러(_handleDeepLink)와 중복되므로,
+            // _handleDeepLink에서 모든 딥링크를 처리하도록 유도하고 여기서는 비워두거나 제거할 수 있습니다.
+            // 현재 앱에서는 _handleDeepLink가 AppLinks를 통해 비동기적으로 처리하므로 onGenerateRoute는 사용되지 않을 가능성이 높습니다.
+            // 만약을 위해 null을 반환하여 정의되지 않은 경로임을 명시합니다.
             return null;
           }
-          return null;
+          return null; // 처리되지 않은 다른 모든 경로
         },
       ),
     );
