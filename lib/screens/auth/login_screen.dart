@@ -143,17 +143,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     padding: EdgeInsets.symmetric(vertical: 16),
                   ),
                   onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text('Login', style: TextStyle(fontSize: 16)),
+                  child:
+                      _isLoading
+                          ? CircularProgressIndicator(color: Colors.white)
+                          : Text('Login', style: TextStyle(fontSize: 16)),
                 ),
               ),
               SizedBox(height: 20),
               Center(
-                child: Text(
-                  'OR',
-                  style: TextStyle(color: Colors.white70),
-                ),
+                child: Text('OR', style: TextStyle(color: Colors.white70)),
               ),
               SizedBox(height: 20),
               SizedBox(

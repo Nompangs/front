@@ -21,7 +21,8 @@ class CharacterCompleteScreen extends StatefulWidget {
   });
 
   @override
-  State<CharacterCompleteScreen> createState() => _CharacterCompleteScreenState();
+  State<CharacterCompleteScreen> createState() =>
+      _CharacterCompleteScreenState();
 }
 
 class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
@@ -52,12 +53,12 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
         'contradictions': [],
         'communicationStyle': {},
         'structuredPrompt': widget.greeting,
-      }
+      },
     };
     try {
       final result = await CharacterManager.instance.saveCharacterForQR(data);
       final qrUrl = result['qrUrl'] as String?;
-      
+
       if (mounted) {
         setState(() {
           _qrImageData = qrUrl;
@@ -86,14 +87,17 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
 
   Future<void> _shareQRCode() async {
     if (_qrImageData == null) return;
-    final boundary = _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+    final boundary =
+        _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
     final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
     final bytes = byteData!.buffer.asUint8List();
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/qr.png');
     await file.writeAsBytes(bytes);
-    await Share.shareXFiles([XFile(file.path)], text: '${widget.characterName} 캐릭터의 QR 코드입니다.');
+    await Share.shareXFiles([
+      XFile(file.path),
+    ], text: '${widget.characterName} 캐릭터의 QR 코드입니다.');
   }
 
   // Base64 데이터를 이미지 바이트로 변환하는 헬퍼 함수
@@ -119,24 +123,27 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
             children: [
               Text(
                 widget.characterName,
-                style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 20),
               RepaintBoundary(
                 key: _qrKey,
-                child: qrBytes != null
-                    ? Image.memory(
-                        qrBytes,
-                        width: 200,
-                        height: 200,
-                      )
-                    : SizedBox(
-                        width: 200,
-                        height: 200,
-                        child: _loading
-                            ? const Center(child: CircularProgressIndicator())
-                            : const Center(child: Text("QR 생성 실패")),
-                      ),
+                child:
+                    qrBytes != null
+                        ? Image.memory(qrBytes, width: 200, height: 200)
+                        : SizedBox(
+                          width: 200,
+                          height: 200,
+                          child:
+                              _loading
+                                  ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
+                                  : const Center(child: Text("QR 생성 실패")),
+                        ),
               ),
               const SizedBox(height: 20),
               ElevatedButton.icon(
@@ -149,7 +156,8 @@ class _CharacterCompleteScreenState extends State<CharacterCompleteScreen> {
                 onPressed: () {
                   final characterData = {
                     'characterName': widget.characterName,
-                    'characterHandle': '@User_${DateTime.now().millisecondsSinceEpoch}',
+                    'characterHandle':
+                        '@User_${DateTime.now().millisecondsSinceEpoch}',
                     'personalityTags': widget.personalityTags,
                     'greeting': widget.greeting,
                   };

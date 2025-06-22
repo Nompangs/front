@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/onboarding_provider.dart';
 import 'package:nompangs/models/onboarding_state.dart';
@@ -37,62 +38,86 @@ class _OnboardingPersonalityScreenState
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5DC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF5F5DC),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          TextButton(
-            onPressed:
-                () => Navigator.pushNamed(context, '/onboarding/completion'),
-            child: const Text(
-              '건너뛰기',
-              style: TextStyle(color: Colors.grey, fontSize: 16),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFFFDF7E9),
+        statusBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFFFDF7E9),
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(60.0),
+          child: SafeArea(
+            child: Container(
+              height: 60,
+              decoration: const BoxDecoration(
+                color: Color(0xFFFDF7E9),
+                border: Border(
+                  left: BorderSide(color: Colors.black, width: 1),
+                  right: BorderSide(color: Colors.black, width: 1),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.black),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // 상단 베이지 섹션 (이미지)
-              Expanded(
-                flex: 4,
-                child: Container(
-                  width: double.infinity,
-                  color: const Color(0xFFF5F5DC),
-                  padding: EdgeInsets.fromLTRB(
-                    screenWidth * 0.1,
-                    20,
-                    screenWidth * 0.05,
-                    24,
+        ),
+        body: Column(
+          children: [
+            // 상단 베이지 섹션 (이미지)
+            Expanded(
+              flex: 5,
+              child: Container(
+                width: double.infinity,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFDF7E9),
+                  border: Border(
+                    left: BorderSide(color: Colors.black, width: 1),
+                    right: BorderSide(color: Colors.black, width: 1),
+                    bottom: BorderSide(color: Colors.black, width: 1),
                   ),
-                  child: Center(
-                    child: Container(
-                      width: screenWidth * 0.6,
-                      height: screenWidth * 0.6,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(40),
+                    bottomRight: Radius.circular(40),
+                  ),
+                ),
+                padding: EdgeInsets.fromLTRB(
+                  screenWidth * 0.1,
+                  20,
+                  screenWidth * 0.05,
+                  24,
+                ),
+                child: Center(
+                  child: Transform.translate(
+                    offset: const Offset(0, -15),
+                    child: SizedBox(
+                      width: screenWidth * 0.7,
+                      height: screenWidth * 0.7,
                       child: Image.asset(
                         'assets/ui_assets/placeHolder_1@2x.png',
-                        width: screenWidth * 0.6,
-                        height: screenWidth * 0.6,
                         fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ),
               ),
-              // 3개 조절 섹션 (동일 높이)
-              Expanded(
-                flex: 2,
+            ),
+            // 3개 조절 섹션 (동일 높이)
+            Expanded(
+              flex: 2,
+              child: Transform.translate(
+                offset: const Offset(0, -1),
                 child: _buildPersonalitySection(
                   screenWidth: screenWidth,
-                  color: const Color(0xFFFFD700),
+                  color: const Color(0xFFFFCF00),
                   title: '외향성',
                   value: extroversionValue ?? 0.5,
                   leftLabel: '수줍음',
@@ -109,11 +134,14 @@ class _OnboardingPersonalityScreenState
                   },
                 ),
               ),
-              Expanded(
-                flex: 2,
+            ),
+            Expanded(
+              flex: 2,
+              child: Transform.translate(
+                offset: const Offset(0, -2),
                 child: _buildPersonalitySection(
                   screenWidth: screenWidth,
-                  color: const Color(0xFFFF8C42),
+                  color: const Color(0xFFFA9121),
                   title: '감정표현',
                   value: warmthValue ?? 0.5,
                   leftLabel: '차가운',
@@ -129,11 +157,14 @@ class _OnboardingPersonalityScreenState
                   },
                 ),
               ),
-              Expanded(
-                flex: 2,
+            ),
+            Expanded(
+              flex: 2,
+              child: Transform.translate(
+                offset: const Offset(0, -3),
                 child: _buildPersonalitySection(
                   screenWidth: screenWidth,
-                  color: const Color(0xFF90EE90),
+                  color: const Color(0xFF3FCB80),
                   title: '유능함',
                   value: competenceValue ?? 0.5,
                   leftLabel: '서툰',
@@ -149,64 +180,72 @@ class _OnboardingPersonalityScreenState
                   },
                 ),
               ),
-              // 투명 스페이서
-              Container(height: 15, color: Colors.transparent),
-              // 하단 여백
-              SizedBox(height: MediaQuery.of(context).padding.bottom + 80),
-            ],
-          ),
-          // 플로팅 저장 버튼
-          Positioned(
-            left: screenWidth * 0.06,
-            right: screenWidth * 0.06,
-            bottom: MediaQuery.of(context).padding.bottom + 24,
-            child: Container(
-              width: double.infinity,
-              height: 56,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(28),
-                border: Border.all(color: Colors.grey.shade400, width: 1),
-              ),
-              child: ElevatedButton(
-                onPressed: () {
-                  // 현재 슬라이더 값으로 최종 업데이트 보장
-                  final provider = context.read<OnboardingProvider>();
-                  final extroVal = ((extroversionValue ?? 0.5) * 10).round();
-                  final warmthVal = ((warmthValue ?? 0.5) * 10).round();
-                  final compVal = ((competenceValue ?? 0.5) * 10).round();
-
-                  debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
-                  debugPrint("  - 외향성: ${extroversionValue} → $extroVal");
-                  debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
-                  debugPrint("  - 유능함: ${competenceValue} → $compVal");
-
-                  provider.updatePersonalitySlider('extroversion', extroVal);
-                  provider.updatePersonalitySlider('warmth', warmthVal);
-                  provider.updatePersonalitySlider('competence', compVal);
-
-                  // 최종 완료 화면으로 이동
-                  Navigator.pushNamed(context, '/onboarding/completion');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
+            ),
+            // 저장 버튼
+            Expanded(
+              flex: 2,
+              child: Container(
+                color: const Color(0xFFFDF7E9),
+                alignment: Alignment.center,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: screenWidth * 0.06,
+                    vertical: 24,
                   ),
-                ),
-                child: const Text(
-                  '성격 저장하기',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                  child: Container(
+                    width: double.infinity,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(28),
+                      border: Border.all(color: Colors.grey.shade400, width: 1),
+                    ),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // 현재 슬라이더 값으로 최종 업데이트 보장
+                        final provider = context.read<OnboardingProvider>();
+                        final extroVal =
+                            ((extroversionValue ?? 0.5) * 10).round();
+                        final warmthVal = ((warmthValue ?? 0.5) * 10).round();
+                        final compVal = ((competenceValue ?? 0.5) * 10).round();
+
+                        debugPrint("🎯 [성격화면] 성격 저장하기 버튼 클릭:");
+                        debugPrint("  - 외향성: ${extroversionValue} → $extroVal");
+                        debugPrint("  - 따뜻함: ${warmthValue} → $warmthVal");
+                        debugPrint("  - 유능함: ${competenceValue} → $compVal");
+
+                        provider.updatePersonalitySlider(
+                          'extroversion',
+                          extroVal,
+                        );
+                        provider.updatePersonalitySlider('warmth', warmthVal);
+                        provider.updatePersonalitySlider('competence', compVal);
+
+                        // 최종 완료 화면으로 이동
+                        Navigator.pushNamed(context, '/onboarding/completion');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(28),
+                        ),
+                      ),
+                      child: const Text(
+                        '성격 저장하기',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -225,7 +264,7 @@ class _OnboardingPersonalityScreenState
       decoration: BoxDecoration(
         color: color,
         border: Border.all(color: Colors.black, width: 1),
-        borderRadius: BorderRadius.circular(25),
+        borderRadius: BorderRadius.circular(40),
       ),
       child: Center(
         child: Padding(
@@ -240,12 +279,11 @@ class _OnboardingPersonalityScreenState
                     title,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
                 // 슬라이더
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),

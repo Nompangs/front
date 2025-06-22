@@ -43,10 +43,7 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        title: Text(
-          '캐릭터 만들기',
-          style: TextStyle(color: Colors.white),
-        ),
+        title: Text('캐릭터 만들기', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
@@ -131,32 +128,40 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: _personalityTags.asMap().entries.map((entry) {
-                    return Chip(
-                      label: Text(
-                        '#${entry.value}',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                      backgroundColor: Colors.blue[700],
-                      deleteIcon: Icon(Icons.close, color: Colors.white, size: 18),
-                      onDeleted: () => _removeTag(entry.key),
-                    );
-                  }).toList(),
+                  children:
+                      _personalityTags.asMap().entries.map((entry) {
+                        return Chip(
+                          label: Text(
+                            '#${entry.value}',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                          backgroundColor: Colors.blue[700],
+                          deleteIcon: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                          onDeleted: () => _removeTag(entry.key),
+                        );
+                      }).toList(),
                 ),
                 SizedBox(height: 40),
                 // 완료 버튼
                 Center(
                   child: ElevatedButton(
                     onPressed: () {
-                      if (_formKey.currentState!.validate() && _personalityTags.isNotEmpty) {
+                      if (_formKey.currentState!.validate() &&
+                          _personalityTags.isNotEmpty) {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CharacterCompleteScreen(
-                              characterName: _nameController.text,
-                              personalityTags: _personalityTags,
-                              greeting: '안녕! 나는 ${_nameController.text}이야~ 잘 부탁해!',
-                            ),
+                            builder:
+                                (context) => CharacterCompleteScreen(
+                                  characterName: _nameController.text,
+                                  personalityTags: _personalityTags,
+                                  greeting:
+                                      '안녕! 나는 ${_nameController.text}이야~ 잘 부탁해!',
+                                ),
                           ),
                         );
                       } else if (_personalityTags.isEmpty) {
@@ -167,15 +172,15 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
-                      padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 40,
+                        vertical: 15,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    child: Text(
-                      '캐릭터 만들기',
-                      style: TextStyle(fontSize: 18),
-                    ),
+                    child: Text('캐릭터 만들기', style: TextStyle(fontSize: 18)),
                   ),
                 ),
               ],
@@ -185,4 +190,4 @@ class _CharacterCreateScreenState extends State<CharacterCreateScreen> {
       ),
     );
   }
-} 
+}

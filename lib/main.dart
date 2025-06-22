@@ -229,6 +229,7 @@ class _NompangsAppState extends State<NompangsApp> {
     return MultiProvider(
       providers: [ChangeNotifierProvider(create: (_) => OnboardingProvider())],
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         navigatorKey: _navigatorKey,
         title: 'Nompangs',
         theme: AppTheme.lightTheme,

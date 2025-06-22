@@ -308,29 +308,29 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                               Text(
                                 '오늘, ${_getTodayString()}',
                                 style: TextStyle(
-                                  color: Color(0xFF666666),
+                                  color: Colors.black,
                                   fontSize: 12 * scale,
                                   fontWeight: FontWeight.w400,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 12 * scale),
+                              SizedBox(height: 8 * scale),
                               Text(
                                 '안냥,${(displayName != null && displayName!.isNotEmpty) ? displayName : '게스트'}님',
                                 style: TextStyle(
-                                  color: Color(0xFF222222),
+                                  color: Colors.black,
                                   fontSize: 26 * scale,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                              SizedBox(height: 2 * scale),
+                              SizedBox(height: 1 * scale),
                               Text(
                                 '오늘은 누구랑 대화할까요?',
                                 style: TextStyle(
-                                  color: Color(0xFF666666),
+                                  color: Colors.black,
                                   fontSize: 20 * scale,
                                   fontWeight: FontWeight.w400,
                                 ),

@@ -10,13 +10,13 @@ class AppTheme {
   static const Color error = Color(0xFFFF5252);
   static const Color inputBackground = Color(0xFFFFFFFF);
   static const Color sectionBackground = Color.fromRGBO(87, 179, 230, 0.1);
-  
+
   // Semantic Colors
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFFC107);
   static const Color info = Color(0xFF2196F3);
   static const Color accent = Color(0xFF57B3E6);
-  
+
   // Personality Colors
   static const Color warmthHigh = Color(0xFFFF9F40);
   static const Color warmthLow = Color(0xFF4ECDC4);
@@ -24,7 +24,7 @@ class AppTheme {
   static const Color competenceLow = Color(0xFF95E1D3);
   static const Color extroversionHigh = Color(0xFFFF6B6B);
   static const Color extroversionLow = Color(0xFFA8E6CF);
-  
+
   static ThemeData get lightTheme => ThemeData(
     primarySwatch: _createMaterialColor(primary),
     scaffoldBackgroundColor: background,
@@ -45,9 +45,7 @@ class AppTheme {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(100),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         minimumSize: const Size(343, 56),
         textStyle: const TextStyle(
           fontFamily: 'Pretendard',
@@ -119,7 +117,7 @@ class AppTheme {
       ),
     ),
   );
-  
+
   static MaterialColor _createMaterialColor(Color color) {
     List strengths = <double>[.05];
     Map<int, Color> swatch = {};
@@ -160,4 +158,4 @@ class AppColors {
         return AppTheme.accent;
     }
   }
-} 
+}
