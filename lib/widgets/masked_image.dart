@@ -8,6 +8,7 @@ class MaskedImage extends StatefulWidget {
   final ImageProvider? stroke;
   final double width;
   final double height;
+  final Color? backgroundColor;
 
   const MaskedImage({
     super.key,
@@ -16,6 +17,7 @@ class MaskedImage extends StatefulWidget {
     this.stroke,
     this.width = 130,
     this.height = 130,
+    this.backgroundColor,
   });
 
   @override
@@ -83,11 +85,14 @@ class _MaskedImageState extends State<MaskedImage> {
         );
       },
       blendMode: BlendMode.dstIn,
-      child: Image(
-        image: widget.image,
-        width: widget.width,
-        height: widget.height,
-        fit: BoxFit.cover,
+      child: Container(
+        color: widget.backgroundColor,
+        child: Image(
+          image: widget.image,
+          width: widget.width,
+          height: widget.height,
+          fit: BoxFit.cover,
+        ),
       ),
     );
 

@@ -13,6 +13,7 @@ import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'dart:io';
 import 'package:nompangs/screens/main/object_detail_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -249,7 +250,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   }
 
   void _playAnimation2() {
-    Navigator.pushNamed(context, '/onboarding/intro');
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder:
+            (context, animation, secondaryAnimation) => OnboardingIntroScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
   }
 
   void _playAnimation3() {
@@ -257,6 +267,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(builder: (context) => FindMomentiScreen()),
     );
+  }
+
+  ImageProvider _buildCardImage(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (imageUrl.startsWith('assets/')) {
+        return AssetImage(imageUrl);
+      }
+      // Check if the file exists before creating a FileImage
+      // Note: existsSync is synchronous and can have performance implications.
+      if (File(imageUrl).existsSync()) {
+        return FileImage(File(imageUrl));
+      }
+    }
+    // Return a fallback asset image if the file doesn't exist or path is null
+    return const AssetImage('assets/testImg_1.png');
   }
 
   @override
@@ -705,30 +730,23 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                                                 context,
                                                 index,
                                               ) => GestureDetector(
-                                                onTap: () async {
-                                                  final result = await Navigator.push(
+                                                onTap: () {
+                                                  setState(() {
+                                                    selectedCardIndex = index;
+                                                  });
+                                                  Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
                                                       builder:
                                                           (
                                                             context,
                                                           ) => ObjectDetailScreen(
-                                                            objectData:
-                                                                filteredObjectData[index],
+                                                            objectId:
+                                                                filteredObjectData[index]
+                                                                    .uuid,
                                                           ),
                                                     ),
                                                   );
-                                                  if (result == true) {
-                                                    // Firestore에서 삭제된 사물 uuid로 objectData에서 제거
-                                                    setState(() {
-                                                      objectData.removeWhere(
-                                                        (obj) =>
-                                                            obj.uuid ==
-                                                            filteredObjectData[index]
-                                                                .uuid,
-                                                      );
-                                                    });
-                                                  }
                                                 },
                                                 child: ObjectCard(
                                                   data:
@@ -1105,10 +1123,7 @@ class ObjectCard extends StatelessWidget {
             width: 130 * scale,
             height: 130 * scale,
             child: MaskedImage(
-              image:
-                  data.imageUrl != null && data.imageUrl!.startsWith('assets/')
-                      ? AssetImage(data.imageUrl!)
-                      : FileImage(File(data.imageUrl!)) as ImageProvider,
+              image: _buildCardImage(data.imageUrl),
               mask: AssetImage(maskPath),
               width: 130 * scale,
               height: 130 * scale,
@@ -1217,6 +1232,21 @@ class ObjectCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  ImageProvider _buildCardImage(String? imageUrl) {
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (imageUrl.startsWith('assets/')) {
+        return AssetImage(imageUrl);
+      }
+      // Check if the file exists before creating a FileImage
+      // Note: existsSync is synchronous and can have performance implications.
+      if (File(imageUrl).existsSync()) {
+        return FileImage(File(imageUrl));
+      }
+    }
+    // Return a fallback asset image if the file doesn't exist or path is null
+    return const AssetImage('assets/testImg_1.png');
   }
 }
 

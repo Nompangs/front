@@ -57,6 +57,7 @@ flutter:
   assets:
     - assets/
     - assets/ui_assets/
+    - assets/ui_assets/object_png/
     - assets/ui_assets/cardShape_1.png
     - assets/ui_assets/cardShape_2.png
     - assets/ui_assets/cardShape_3.png
