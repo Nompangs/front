@@ -24,6 +24,7 @@ import 'package:nompangs/widgets/masked_image.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math' as math;
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -37,6 +38,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     with TickerProviderStateMixin {
   late AnimationController _celebrationController;
   late AnimationController _bounceController;
+  late AnimationController _floatingAnimationController;
   late Animation<double> _celebrationAnimation;
   late Animation<double> _bounceAnimation;
   final GlobalKey _qrKey = GlobalKey();
@@ -63,6 +65,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
+
+    _floatingAnimationController = AnimationController(
+      duration: const Duration(seconds: 5),
+      vsync: this,
+    )..repeat();
 
     _celebrationAnimation = Tween<double>(begin: 0, end: 1).animate(
       CurvedAnimation(parent: _celebrationController, curve: Curves.elasticOut),
@@ -106,6 +113,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   void dispose() {
     _celebrationController.dispose();
     _bounceController.dispose();
+    _floatingAnimationController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
@@ -644,121 +652,141 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 SizedBox(
                                   height: 480, // 420에서 480으로 증가하여 말풍선 잘림 방지
                                   child: Stack(
+                                    alignment: Alignment.topCenter,
                                     children: [
                                       // 촬영한 사진 표시 (마스크 이미지 적용 및 중앙 정렬)
                                       Container(
-                                        width: double.infinity,
-                                        alignment:
-                                            Alignment
-                                                .topCenter, // 이미지를 수평 중앙에 배치
-                                        child: Container(
-                                          width:
-                                              screenWidth *
-                                              0.8, // 화면 가로 비율의 80%
-                                          height:
-                                              screenWidth *
-                                              0.8, // 화면 가로 비율의 80%
-                                          child:
-                                              character.photoPath != null
-                                                  ? MaskedImage(
-                                                    image: FileImage(
-                                                      File(
-                                                        character.photoPath!,
-                                                      ),
-                                                    ),
-                                                    mask: const AssetImage(
-                                                      'assets/ui_assets/cardShape_1.png',
-                                                    ),
-                                                    stroke: const AssetImage(
-                                                      'assets/ui_assets/cardShape_stroke_1.png',
-                                                    ),
-                                                    width: screenWidth * 0.8,
-                                                    height: screenWidth * 0.8,
-                                                  )
-                                                  : Container(
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: Colors.black,
-                                                        width: 2,
-                                                      ),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.access_time,
-                                                      size: 60,
-                                                      color: Colors.red,
+                                        width:
+                                            screenWidth * 0.8, // 화면 가로 비율의 80%
+                                        height:
+                                            screenWidth * 0.8, // 화면 가로 비율의 80%
+                                        child:
+                                            character.photoPath != null
+                                                ? MaskedImage(
+                                                  image: FileImage(
+                                                    File(character.photoPath!),
+                                                  ),
+                                                  mask: const AssetImage(
+                                                    'assets/ui_assets/cardShape_1.png',
+                                                  ),
+                                                  stroke: const AssetImage(
+                                                    'assets/ui_assets/cardShape_stroke_1.png',
+                                                  ),
+                                                  width: screenWidth * 0.8,
+                                                  height: screenWidth * 0.8,
+                                                )
+                                                : Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.black,
+                                                      width: 2,
                                                     ),
                                                   ),
-                                        ),
+                                                  child: const Icon(
+                                                    Icons.access_time,
+                                                    size: 60,
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
                                       ),
 
-                                      // 버블 배경 이미지 위에 태그와 텍스트 - 170px에서 시작
-                                      Positioned(
-                                        top: 170, // 사물 이미지의 170px 높이에서 시작
-                                        left: 0, // 마스크 이미지의 왼쪽에 정렬
-                                        child: Container(
-                                          width:
-                                              screenWidth *
-                                              0.8, // 화면 가로 너비의 80%로 설정
-                                          height: 320, // 높이는 유지, 필요시 조정
-                                          decoration: const BoxDecoration(
-                                            image: DecorationImage(
-                                              image: AssetImage(
-                                                'assets/ui_assets/speechBubble.png',
+                                      // 버블 배경 이미지 위에 태그와 텍스트
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          top: 170,
+                                        ),
+                                        child: AnimatedBuilder(
+                                          animation:
+                                              _floatingAnimationController,
+                                          builder: (context, child) {
+                                            final angle =
+                                                _floatingAnimationController
+                                                    .value *
+                                                2 *
+                                                math.pi;
+                                            final offset = Offset(
+                                              math.cos(angle) * 5,
+                                              math.sin(angle) * 5,
+                                            );
+                                            return Transform.translate(
+                                              offset: offset,
+                                              child: child,
+                                            );
+                                          },
+                                          child: RepaintBoundary(
+                                            child: Container(
+                                              width:
+                                                  screenWidth *
+                                                  0.8, // 화면 가로 너비의 80%로 설정
+                                              height: 320, // 높이는 유지, 필요시 조정
+                                              decoration: const BoxDecoration(
+                                                image: DecorationImage(
+                                                  image: AssetImage(
+                                                    'assets/ui_assets/speechBubble.png',
+                                                  ),
+                                                  fit:
+                                                      BoxFit
+                                                          .contain, // 이미지가 잘리지 않고 비율에 맞게 포함되도록 contain으로 변경
+                                                ),
                                               ),
-                                              fit:
-                                                  BoxFit
-                                                      .contain, // 이미지가 잘리지 않고 비율에 맞게 포함되도록 contain으로 변경
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 51,
-                                              vertical: 40,
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                // 성격 태그들 (성격 슬라이더 기반)
-                                                Row(
+                                              child: Padding(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 51,
+                                                      vertical: 40,
+                                                    ),
+                                                child: Column(
                                                   mainAxisAlignment:
                                                       MainAxisAlignment.center,
                                                   children: [
-                                                    _buildPersonalityTag(
-                                                      _getPersonalityTag1(
-                                                        provider.state,
-                                                      ),
+                                                    // 성격 태그들 (성격 슬라이더 기반)
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .center,
+                                                      children: [
+                                                        _buildPersonalityTag(
+                                                          _getPersonalityTag1(
+                                                            provider.state,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(
+                                                          width: 8,
+                                                        ),
+                                                        _buildPersonalityTag(
+                                                          _getPersonalityTag2(
+                                                            provider.state,
+                                                          ),
+                                                        ),
+                                                      ],
                                                     ),
-                                                    const SizedBox(width: 8),
-                                                    _buildPersonalityTag(
-                                                      _getPersonalityTag2(
-                                                        provider.state,
+
+                                                    const SizedBox(height: 12),
+
+                                                    // 말풍선 텍스트 (버블 배경 위에)
+                                                    Text(
+                                                      character.greeting ??
+                                                          '만나서 반가워!',
+                                                      style: const TextStyle(
+                                                        fontFamily:
+                                                            'Pretendard',
+                                                        fontSize: 17,
+                                                        color: Colors.black,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        height: 1.5,
                                                       ),
+                                                      textAlign:
+                                                          TextAlign.center,
                                                     ),
                                                   ],
                                                 ),
-
-                                                const SizedBox(height: 12),
-
-                                                // 말풍선 텍스트 (버블 배경 위에)
-                                                Text(
-                                                  character.greeting ??
-                                                      '만나서 반가워!',
-                                                  style: const TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 17,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                    height: 1.5,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
+                                              ),
                                             ),
                                           ),
                                         ),
