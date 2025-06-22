@@ -5,6 +5,9 @@ import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:math';
+import 'dart:io';
+import 'package:nompangs/widgets/masked_image.dart';
 
 class ChatTextScreen extends StatelessWidget {
   final bool showHomeInsteadOfBack;
@@ -38,6 +41,43 @@ class _ChatTextScreenContent extends StatefulWidget {
 class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _inputController = TextEditingController();
+  late ImageProvider _displayImageProvider;
+  Color? _placeholderColor;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeImages();
+  }
+
+  void _initializeImages() {
+    final imageUrl = widget.provider.imageUrl;
+    bool usePlaceholder = true;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (imageUrl.startsWith('http')) {
+        _displayImageProvider = NetworkImage(imageUrl);
+        usePlaceholder = false;
+      } else {
+        if (File(imageUrl).existsSync()) {
+          _displayImageProvider = FileImage(File(imageUrl));
+          usePlaceholder = false;
+        }
+      }
+    }
+
+    if (usePlaceholder) {
+      final placeholderIndex = Random().nextInt(19) + 1;
+      _displayImageProvider = AssetImage(
+        'assets/ui_assets/object_png/obj ($placeholderIndex).png',
+      );
+      final random = Random();
+      final hue = random.nextDouble() * 360;
+      _placeholderColor = HSLColor.fromAHSL(1.0, hue, 0.8, 0.9).toColor();
+    } else {
+      _placeholderColor = null;
+    }
+  }
 
   @override
   void dispose() {
@@ -69,6 +109,8 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
             _TopNavigationBar(
               characterName: chatProvider.characterName,
               characterHandle: chatProvider.userDisplayName,
+              imageProvider: _displayImageProvider,
+              placeholderColor: _placeholderColor,
               showHomeInsteadOfBack: widget.showHomeInsteadOfBack,
             ),
             Expanded(
@@ -91,15 +133,17 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                     if (!chatProvider.messages.any((m) => m.sender == 'user'))
                       Padding(
                         padding: const EdgeInsets.fromLTRB(
-                          24,
+                          32,
                           16,
-                          24,
+                          32,
                           0,
                         ), // 상단 여백 추가
                         child: _ProfileCard(
                           characterName: chatProvider.characterName,
                           characterHandle: chatProvider.userDisplayName,
                           personalityTags: chatProvider.personalityTags,
+                          imageProvider: _displayImageProvider,
+                          placeholderColor: _placeholderColor,
                         ),
                       ),
                     Expanded(
@@ -174,11 +218,15 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
 class _TopNavigationBar extends StatelessWidget {
   final String characterName;
   final String characterHandle;
+  final ImageProvider imageProvider;
+  final Color? placeholderColor;
   final bool showHomeInsteadOfBack;
 
   const _TopNavigationBar({
     required this.characterName,
     required this.characterHandle,
+    required this.imageProvider,
+    this.placeholderColor,
     this.showHomeInsteadOfBack = false,
   });
 
@@ -207,19 +255,24 @@ class _TopNavigationBar extends StatelessWidget {
               )
               : IconButton(
                 icon: const Icon(
-                  Icons.arrow_back_ios,
+                  Icons.arrow_back,
                   size: 24,
                   color: Color(0xFF333333),
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
 
-          ClipOval(
-            child: Image.asset(
-              'assets/profile.png',
+          SizedBox(
+            width: 32,
+            height: 32,
+            child: MaskedImage(
+              image: imageProvider,
+              mask: const AssetImage(
+                'assets/ui_assets/cardShape_ph_tiny_3.png',
+              ),
               width: 32,
               height: 32,
-              fit: BoxFit.cover,
+              backgroundColor: placeholderColor,
             ),
           ),
           const SizedBox(width: 8),
@@ -287,17 +340,20 @@ class _ProfileCard extends StatelessWidget {
   final String characterName;
   final String characterHandle;
   final List<String> personalityTags;
+  final ImageProvider imageProvider;
+  final Color? placeholderColor;
 
   const _ProfileCard({
     required this.characterName,
     required this.characterHandle,
     required this.personalityTags,
+    required this.imageProvider,
+    this.placeholderColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 16, left: 32, right: 32),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -309,12 +365,15 @@ class _ProfileCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ClipOval(
-                child: Image.asset(
-                  'assets/profile.png',
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: MaskedImage(
+                  image: imageProvider,
+                  mask: const AssetImage('assets/ui_assets/cardShape_ph_2.png'),
                   width: 100,
                   height: 100,
-                  fit: BoxFit.cover,
+                  backgroundColor: placeholderColor,
                 ),
               ),
               const SizedBox(width: 16),
@@ -341,31 +400,27 @@ class _ProfileCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        for (int i = 0; i < personalityTags.length; i++) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 6,
-                              horizontal: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEEEEEE),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '#${personalityTags[i]}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w400,
-                                color: Color(0xFF555555),
-                              ),
+                    const Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '8.4K',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF333333),
                             ),
                           ),
-                          if (i != personalityTags.length - 1)
-                            const SizedBox(width: 8),
+                          TextSpan(
+                            text: ' followers',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                              color: Color(0xFF333333),
+                            ),
+                          ),
                         ],
-                      ],
+                      ),
                     ),
                   ],
                 ),
@@ -375,43 +430,30 @@ class _ProfileCard extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          const Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: '56K',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
+          Row(
+            children: [
+              for (int i = 0; i < personalityTags.length; i++) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 6,
+                    horizontal: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEEEEE),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '#${personalityTags[i]}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF555555),
+                    ),
                   ),
                 ),
-                TextSpan(
-                  text: ' monthly users · ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                TextSpan(
-                  text: '8.4K',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                  ),
-                ),
-                TextSpan(
-                  text: ' followers',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF333333),
-                  ),
-                ),
+                if (i != personalityTags.length - 1) const SizedBox(width: 8),
               ],
-            ),
+            ],
           ),
         ],
       ),

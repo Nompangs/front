@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
 import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'dart:io';
+import 'dart:math';
 import 'package:nompangs/screens/main/object_detail_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
@@ -1112,6 +1113,35 @@ class ObjectCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final maskPath = 'assets/ui_assets/cardShape_${(index % 3) + 1}.png';
 
+    ImageProvider imageProvider;
+    Color? backgroundColor;
+    final imageUrl = data.imageUrl;
+    bool usePlaceholder = true;
+
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      if (imageUrl.startsWith('assets/')) {
+        usePlaceholder = false;
+      } else if (File(imageUrl).existsSync()) {
+        usePlaceholder = false;
+      }
+    }
+
+    if (usePlaceholder) {
+      final placeholderIndex = Random().nextInt(19) + 1;
+      imageProvider = AssetImage(
+        'assets/ui_assets/object_png/obj ($placeholderIndex).png',
+      );
+      final random = Random();
+      final hue = random.nextDouble() * 360;
+      backgroundColor = HSLColor.fromAHSL(1.0, hue, 0.8, 0.9).toColor();
+    } else {
+      if (imageUrl!.startsWith('assets/')) {
+        imageProvider = AssetImage(imageUrl);
+      } else {
+        imageProvider = FileImage(File(imageUrl));
+      }
+    }
+
     return SizedBox(
       width: 130 * scale,
       height: 220 * scale,
@@ -1123,8 +1153,9 @@ class ObjectCard extends StatelessWidget {
             width: 130 * scale,
             height: 130 * scale,
             child: MaskedImage(
-              image: _buildCardImage(data.imageUrl),
+              image: imageProvider,
               mask: AssetImage(maskPath),
+              backgroundColor: backgroundColor,
               width: 130 * scale,
               height: 130 * scale,
             ),
@@ -1233,21 +1264,6 @@ class ObjectCard extends StatelessWidget {
       ),
     );
   }
-
-  ImageProvider _buildCardImage(String? imageUrl) {
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      if (imageUrl.startsWith('assets/')) {
-        return AssetImage(imageUrl);
-      }
-      // Check if the file exists before creating a FileImage
-      // Note: existsSync is synchronous and can have performance implications.
-      if (File(imageUrl).existsSync()) {
-        return FileImage(File(imageUrl));
-      }
-    }
-    // Return a fallback asset image if the file doesn't exist or path is null
-    return const AssetImage('assets/testImg_1.png');
-  }
 }
 
 class MaskedImage extends StatefulWidget {
@@ -1255,6 +1271,7 @@ class MaskedImage extends StatefulWidget {
   final ImageProvider mask;
   final double width;
   final double height;
+  final Color? backgroundColor;
 
   const MaskedImage({
     super.key,
@@ -1262,6 +1279,7 @@ class MaskedImage extends StatefulWidget {
     required this.mask,
     this.width = 130,
     this.height = 130,
+    this.backgroundColor,
   });
 
   @override
@@ -1319,11 +1337,14 @@ class _MaskedImageState extends State<MaskedImage> {
           );
         },
         blendMode: BlendMode.dstIn,
-        child: Image(
-          image: widget.image,
-          width: widget.width,
-          height: widget.height,
-          fit: BoxFit.cover,
+        child: Container(
+          color: widget.backgroundColor,
+          child: Image(
+            image: widget.image,
+            width: widget.width,
+            height: widget.height,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );

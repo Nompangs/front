@@ -435,22 +435,64 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
                                 Container(
                                   width: double.infinity,
                                   alignment: Alignment.topCenter,
-                                  child: Container(
+                                  child: SizedBox(
                                     width: screenWidth * 0.8,
                                     height: screenWidth * 0.8,
-                                    child: MaskedImage(
-                                      image: getSafeFileImageProvider(
-                                        photoPath,
-                                        'assets/ui_assets/cardShape_ph_1.png',
-                                      ),
-                                      mask: const AssetImage(
-                                        'assets/ui_assets/cardShape_1.png',
-                                      ),
-                                      stroke: const AssetImage(
-                                        'assets/ui_assets/cardShape_stroke_1.png',
-                                      ),
-                                      width: screenWidth * 0.8,
-                                      height: screenWidth * 0.8,
+                                    child: Builder(
+                                      builder: (context) {
+                                        final userPhotoPath =
+                                            _profile?.userInput?['photoPath']
+                                                as String?;
+                                        final serverImageUrl =
+                                            _profile?.imageUrl;
+
+                                        ImageProvider imageProvider;
+                                        Color? backgroundColor;
+
+                                        if (userPhotoPath != null &&
+                                            userPhotoPath.isNotEmpty &&
+                                            File(userPhotoPath).existsSync()) {
+                                          imageProvider = FileImage(
+                                            File(userPhotoPath),
+                                          );
+                                          backgroundColor = null;
+                                        } else if (serverImageUrl != null &&
+                                            serverImageUrl.isNotEmpty &&
+                                            serverImageUrl.startsWith('http')) {
+                                          imageProvider = NetworkImage(
+                                            serverImageUrl,
+                                          );
+                                          backgroundColor = null;
+                                        } else {
+                                          final placeholderIndex =
+                                              Random().nextInt(19) + 1;
+                                          imageProvider = AssetImage(
+                                            'assets/ui_assets/object_png/obj ($placeholderIndex).png',
+                                          );
+                                          final random = Random();
+                                          final hue = random.nextDouble() * 360;
+                                          backgroundColor =
+                                              HSLColor.fromAHSL(
+                                                1.0,
+                                                hue,
+                                                0.8,
+                                                0.9,
+                                              ).toColor();
+                                        }
+
+                                        return MaskedImage(
+                                          image: imageProvider,
+                                          mask: const AssetImage(
+                                            'assets/ui_assets/cardShape_1.png',
+                                          ),
+                                          stroke: const AssetImage(
+                                            'assets/ui_assets/cardShape_stroke_1.png',
+                                          ),
+                                          width: screenWidth * 0.8,
+                                          height: screenWidth * 0.8,
+                                          backgroundColor: backgroundColor,
+                                        );
+                                      },
                                     ),
                                   ),
                                 ),

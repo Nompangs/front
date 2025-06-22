@@ -16,6 +16,9 @@ class PersonalityProfile {
   // 🆕 AI 생성 추가 필드들
   final List<String> coreTraits;
   final String personalityDescription;
+  final String? imageUrl;
+  final String? persona;
+  final List<String>? coreValues;
 
   PersonalityProfile({
     this.aiPersonalityProfile,
@@ -33,6 +36,9 @@ class PersonalityProfile {
     // 🆕 AI 생성 추가 필드들
     this.coreTraits = const [],
     this.personalityDescription = '',
+    this.imageUrl,
+    this.persona,
+    this.coreValues,
   });
 
   PersonalityProfile copyWith({
@@ -50,6 +56,9 @@ class PersonalityProfile {
     Map<String, dynamic>? userInput,
     List<String>? coreTraits,
     String? personalityDescription,
+    String? imageUrl,
+    String? persona,
+    List<String>? coreValues,
   }) {
     return PersonalityProfile(
       aiPersonalityProfile: aiPersonalityProfile ?? this.aiPersonalityProfile,
@@ -67,6 +76,9 @@ class PersonalityProfile {
       coreTraits: coreTraits ?? this.coreTraits,
       personalityDescription:
           personalityDescription ?? this.personalityDescription,
+      imageUrl: imageUrl ?? this.imageUrl,
+      persona: persona ?? this.persona,
+      coreValues: coreValues ?? this.coreValues,
     );
   }
 
@@ -84,6 +96,9 @@ class PersonalityProfile {
     userInput: null,
     coreTraits: [],
     personalityDescription: '',
+    imageUrl: null,
+    persona: null,
+    coreValues: null,
   );
 
   Map<String, dynamic> toMap() {
@@ -101,17 +116,20 @@ class PersonalityProfile {
       'userInput': userInput,
       'coreTraits': coreTraits,
       'personalityDescription': personalityDescription,
+      'imageUrl': imageUrl,
+      'persona': persona,
+      'coreValues': coreValues,
     };
   }
 
   factory PersonalityProfile.fromMap(Map<String, dynamic> map) {
+    final aiProfile = map['aiPersonalityProfile'] as Map<String, dynamic>?;
+    final imageUrl =
+        map['imageUrl'] as String? ?? aiProfile?['imageUrl'] as String?;
+
     return PersonalityProfile(
       aiPersonalityProfile:
-          map['aiPersonalityProfile'] != null
-              ? AiPersonalityProfile.fromMap(
-                map['aiPersonalityProfile'] as Map<String, dynamic>,
-              )
-              : null,
+          aiProfile != null ? AiPersonalityProfile.fromMap(aiProfile) : null,
       photoAnalysis:
           map['photoAnalysis'] != null
               ? PhotoAnalysis.fromMap(
@@ -143,6 +161,12 @@ class PersonalityProfile {
         (map['coreTraits'] as List<dynamic>? ?? []).map((e) => e.toString()),
       ),
       personalityDescription: map['personalityDescription'] as String? ?? '',
+      imageUrl: imageUrl,
+      persona: map['persona'] as String?,
+      coreValues:
+          map['coreValues'] != null && map['coreValues'] is List
+              ? List<String>.from(map['coreValues'])
+              : null,
     );
   }
 }

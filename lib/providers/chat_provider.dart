@@ -49,6 +49,7 @@ class ChatProvider with ChangeNotifier {
   late final List<String> personalityTags;
   final String? greeting;
   late final String userDisplayName;
+  final String? imageUrl; // 사물 이미지 URL
 
   // 스트림 구독 관리
   StreamSubscription? _messageSubscription;
@@ -57,7 +58,8 @@ class ChatProvider with ChangeNotifier {
 
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
-    : greeting = characterProfile['greeting'] as String? {
+    : greeting = characterProfile['greeting'] as String?,
+      imageUrl = characterProfile['imageUrl'] as String? {
     // 페르소나 정보 초기화
     uuid =
         characterProfile['uuid'] ??
