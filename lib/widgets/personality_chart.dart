@@ -153,12 +153,19 @@ class _PersonalityChartState extends State<PersonalityChart> {
 
         const SizedBox(height: 30),
 
-        Text(
-          '차트를 터치해서 수치를 확인해보세요',
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.black.withOpacity(0.7),
-            fontStyle: FontStyle.italic,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFA9121),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            '차트를 터치해서 수치를 확인해보세요',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.white,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
 

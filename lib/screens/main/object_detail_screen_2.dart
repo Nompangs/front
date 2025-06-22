@@ -21,19 +21,15 @@ import 'package:nompangs/providers/chat_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:nompangs/widgets/masked_image.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
-class OnboardingCompletionScreen extends StatefulWidget {
-  const OnboardingCompletionScreen({super.key});
+class ObjectDetailScreen2 extends StatefulWidget {
+  const ObjectDetailScreen2({super.key});
 
   @override
-  State<OnboardingCompletionScreen> createState() =>
-      _OnboardingCompletionScreenState();
+  State<ObjectDetailScreen2> createState() => _ObjectDetailScreen2State();
 }
 
-class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
+class _ObjectDetailScreen2State extends State<ObjectDetailScreen2>
     with TickerProviderStateMixin {
   late AnimationController _celebrationController;
   late AnimationController _bounceController;
@@ -48,6 +44,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
   String? _qrCodeUrl;
   bool _isLoading = true;
   String _message = "최종 페르소나를 완성하고 있어요...";
+  String _userHandle = '게스트';
   bool _isProfileReady = false;
 
   @override
@@ -83,7 +80,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _finalizeAndSaveProfile();
-      _performAutoScroll();
     });
   }
 
@@ -108,29 +104,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     _bounceController.dispose();
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _performAutoScroll() async {
-    // 프로필이 로드되고 스크롤 컨트롤러가 준비될 때까지 대기
-    while (!_isProfileReady ||
-        !_scrollController.hasClients ||
-        _scrollController.position.maxScrollExtent == 0.0) {
-      if (!mounted) return;
-      await Future.delayed(const Duration(milliseconds: 100));
-    }
-
-    // 시작 위치로 즉시 이동
-    _scrollController.jumpTo(129.0);
-
-    // 잠시 후, 맨 위로 스크롤 애니메이션 시작
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-
-    await _scrollController.animateTo(
-      0.0,
-      duration: const Duration(milliseconds: 1200),
-      curve: Curves.easeInOut,
-    );
   }
 
   Future<void> _finalizeAndSaveProfile() async {
@@ -221,7 +194,21 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       debugPrint('QR URL: ${result['qrUrl']}');
       debugPrint('----------------------------------------\n');
 
+      final user = FirebaseAuth.instance.currentUser;
+      String userHandle = '게스트';
+      if (user != null) {
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
+        if (doc.exists) {
+          userHandle = doc.data()?['displayName'] ?? '게스트';
+        }
+      }
+
       setState(() {
+        _userHandle = userHandle;
         _qrImageData = result['qrUrl'] as String?;
         _isLoading = false;
         _message = "페르소나 생성 완료!";
@@ -266,6 +253,10 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
             provider.personalityProfile.aiPersonalityProfile?.name ?? '페르소나';
         final character = provider.personalityProfile;
         final qrBytes = _decodeQrImage(_qrImageData);
+        final personalityTags = [
+          _getPersonalityTag1(provider.state),
+          _getPersonalityTag2(provider.state),
+        ];
 
         if (_isLoading) {
           return Scaffold(
@@ -288,67 +279,69 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
           );
         }
 
-        final appBar = PreferredSize(
-          preferredSize: const Size.fromHeight(90.0),
-          child: Container(
-            height: 90.0,
-            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
-            decoration: BoxDecoration(
-              color: const Color.fromRGBO(119, 206, 255, 1),
-              border: Border.all(color: Colors.black, width: 1),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(40),
-                bottomRight: Radius.circular(40),
-              ),
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.notifications,
-                    size: 18,
-                    color: Colors.black,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      '${character.aiPersonalityProfile?.name.isNotEmpty == true ? character.aiPersonalityProfile!.name : '털찐말랑이'}가 깨어났어요!',
-                      style: const TextStyle(
-                        fontFamily: 'Pretendard',
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+        return Scaffold(
+          backgroundColor: Colors.white, // 전체 배경은 흰색으로 유지
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            children: [
+              // 전체 스크롤 가능한 컨테이너 (앱바 아래부터 시작)
+              SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top,
+                  bottom: 150, // 80에서 150으로 증가하여 버튼과 겹치지 않게
+                ),
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    // 상단 프로필 카드
+                    _ObjectDetailProfileCard(
+                      characterName: characterName,
+                      characterHandle: _userHandle,
+                      personalityTags: personalityTags,
+                      photoProvider:
+                          character.photoPath != null
+                              ? FileImage(File(character.photoPath!))
+                              : const AssetImage('assets/profile.png')
+                                  as ImageProvider,
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
 
-        return AnnotatedRegion<SystemUiOverlayStyle>(
-          value: const SystemUiOverlayStyle(
-            statusBarColor: Colors.transparent,
-            statusBarIconBrightness: Brightness.dark, // 아이콘 색상 (어둡게)
-          ),
-          child: Scaffold(
-            backgroundColor: Colors.white, // 전체 배경은 흰색으로 유지
-            extendBodyBehindAppBar: true,
-            appBar: appBar,
-            resizeToAvoidBottomInset: false,
-            body: Stack(
-              children: [
-                // 전체 스크롤 가능한 컨테이너 (앱바 아래부터 시작)
-                SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.only(top: 90, bottom: 0),
-                  child: Column(
-                    children: [
-                      // 분홍+연보라 섹션 (QR 코드) - 가로로 나눔
-                      Container(
+                    // 앱바
+                    Container(
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(119, 206, 255, 1),
+                        borderRadius: BorderRadius.circular(40),
+                        border: Border.all(color: Colors.black, width: 1),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.notifications,
+                            size: 16,
+                            color: Colors.black,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              '${character?.aiPersonalityProfile?.name.isNotEmpty == true ? character!.aiPersonalityProfile!.name : '털찐말랑이'}가 깨어났어요!',
+                              style: const TextStyle(
+                                fontFamily: 'Pretendard',
+                                color: Colors.black,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 분홍+연보라 섹션 (QR 코드) - 가로로 나눔
+                    Transform.translate(
+                      offset: const Offset(0, -1),
+                      child: Container(
                         width: double.infinity,
                         height: 130,
                         decoration: BoxDecoration(
@@ -383,18 +376,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                           CrossAxisAlignment.start,
                                       children: [
                                         // QR 텍스트
-                                        Transform.translate(
-                                          offset: const Offset(0, 3),
-                                          child: const Text(
-                                            'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
-                                            style: TextStyle(
-                                              fontFamily: 'Pretendard',
-                                              fontSize: 18, // 16에서 18로 증가
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.black,
-                                            ),
-                                            maxLines: 2,
+                                        const Text(
+                                          'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
+                                          style: TextStyle(
+                                            fontFamily: 'Pretendard',
+                                            fontSize: 18, // 16에서 18로 증가
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.black,
                                           ),
+                                          maxLines: 2,
                                         ),
 
                                         const SizedBox(
@@ -500,7 +490,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 onTap: () => _showQRPopup(character),
                                 child: Container(
                                   decoration: const BoxDecoration(
-                                    color: Color(0xFFDBB7FA), // 연보라색
+                                    color: Color(0xFFC8A6FF), // 연보라색
                                     borderRadius: BorderRadius.only(
                                       topRight: Radius.circular(39),
                                       bottomRight: Radius.circular(39),
@@ -537,428 +527,420 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                           ],
                         ),
                       ),
+                    ),
 
-                      // 파란색 섹션 - 1px 위로 이동
-                      Transform.translate(
-                        offset: const Offset(0, -1),
-                        child: Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFDF7E9),
-                            border: Border.all(color: Colors.black, width: 1),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(40),
-                              topRight: Radius.circular(40),
-                              bottomLeft: Radius.circular(40),
-                              bottomRight: Radius.circular(40),
-                            ),
+                    // 파란색 섹션 - 1px 위로 이동
+                    Transform.translate(
+                      offset: const Offset(0, -2),
+                      child: Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDF7E9),
+                          border: Border.all(color: Colors.black, width: 1),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(40),
+                            topRight: Radius.circular(40),
+                            bottomLeft: Radius.circular(40),
+                            bottomRight: Radius.circular(40),
                           ),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: screenWidth * 0.08,
-                              vertical: 24,
-                            ),
-                            child: Column(
-                              children: [
-                                // 캐릭터 이름과 나이
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          characterName,
-                                          style: const TextStyle(
-                                            fontFamily: 'Pretendard',
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        Text(
-                                          '${DateTime.now().year}년 ${DateTime.now().month}월생',
-                                          style: TextStyle(
-                                            fontFamily: 'Pretendard',
-                                            fontSize: 15,
-                                            color: const Color.fromARGB(
-                                              255,
-                                              0,
-                                              0,
-                                              0,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.end,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.access_time,
-                                              size: 15,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              character
-                                                      .aiPersonalityProfile
-                                                      ?.objectType ??
-                                                  '멘탈지기',
-                                              style: const TextStyle(
-                                                fontFamily: 'Pretendard',
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on,
-                                              size: 15,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              provider.state.location,
-                                              style: const TextStyle(
-                                                fontFamily: 'Pretendard',
-                                                fontSize: 15,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-
-                                const SizedBox(height: 15),
-
-                                // 촬영한 사진과 말풍선 겹치게 배치
-                                SizedBox(
-                                  height: 480, // 420에서 480으로 증가하여 말풍선 잘림 방지
-                                  child: Stack(
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.08,
+                            vertical: 20,
+                          ),
+                          child: Column(
+                            children: [
+                              // 캐릭터 이름과 나이
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      // 촬영한 사진 표시 (마스크 이미지 적용 및 중앙 정렬)
-                                      Container(
-                                        width: double.infinity,
-                                        alignment:
-                                            Alignment
-                                                .topCenter, // 이미지를 수평 중앙에 배치
-                                        child: Container(
-                                          width:
-                                              screenWidth *
-                                              0.8, // 화면 가로 비율의 80%
-                                          height:
-                                              screenWidth *
-                                              0.8, // 화면 가로 비율의 80%
-                                          child:
-                                              character.photoPath != null
-                                                  ? MaskedImage(
-                                                    image: FileImage(
-                                                      File(
-                                                        character.photoPath!,
-                                                      ),
-                                                    ),
-                                                    mask: const AssetImage(
-                                                      'assets/ui_assets/cardShape_1.png',
-                                                    ),
-                                                    stroke: const AssetImage(
-                                                      'assets/ui_assets/cardShape_stroke_1.png',
-                                                    ),
-                                                    width: screenWidth * 0.8,
-                                                    height: screenWidth * 0.8,
-                                                  )
-                                                  : Container(
-                                                    decoration: BoxDecoration(
-                                                      color: Colors.white,
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: Colors.black,
-                                                        width: 2,
-                                                      ),
-                                                    ),
-                                                    child: const Icon(
-                                                      Icons.access_time,
-                                                      size: 60,
-                                                      color: Colors.red,
-                                                    ),
-                                                  ),
+                                      Text(
+                                        characterName,
+                                        style: const TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          fontSize: 26,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
                                         ),
                                       ),
-
-                                      // 버블 배경 이미지 위에 태그와 텍스트 - 170px에서 시작
-                                      Positioned(
-                                        top: 170, // 사물 이미지의 170px 높이에서 시작
-                                        left: 0, // 마스크 이미지의 왼쪽에 정렬
-                                        child: Container(
-                                          width:
-                                              screenWidth *
-                                              0.8, // 화면 가로 너비의 80%로 설정
-                                          height: 320, // 높이는 유지, 필요시 조정
-                                          decoration: const BoxDecoration(
-                                            image: DecorationImage(
-                                              image: AssetImage(
-                                                'assets/ui_assets/speechBubble.png',
-                                              ),
-                                              fit:
-                                                  BoxFit
-                                                      .contain, // 이미지가 잘리지 않고 비율에 맞게 포함되도록 contain으로 변경
-                                            ),
-                                          ),
-                                          child: Padding(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 51,
-                                              vertical: 40,
-                                            ),
-                                            child: Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.center,
-                                              children: [
-                                                // 성격 태그들 (성격 슬라이더 기반)
-                                                Row(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    _buildPersonalityTag(
-                                                      _getPersonalityTag1(
-                                                        provider.state,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    _buildPersonalityTag(
-                                                      _getPersonalityTag2(
-                                                        provider.state,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-
-                                                const SizedBox(height: 12),
-
-                                                // 말풍선 텍스트 (버블 배경 위에)
-                                                Text(
-                                                  character.greeting ??
-                                                      '만나서 반가워!',
-                                                  style: const TextStyle(
-                                                    fontFamily: 'Pretendard',
-                                                    fontSize: 17,
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.w500,
-                                                    height: 1.5,
-                                                  ),
-                                                  textAlign: TextAlign.center,
-                                                ),
-                                              ],
-                                            ),
+                                      Text(
+                                        '${DateTime.now().year}년 ${DateTime.now().month}월생',
+                                        style: TextStyle(
+                                          fontFamily: 'Pretendard',
+                                          fontSize: 15,
+                                          color: const Color.fromARGB(
+                                            255,
+                                            0,
+                                            0,
+                                            0,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-
-                                // 사진/말풍선과 성격차트 사이 간격
-                                const SizedBox(height: 0),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      // 베이지색 카드 (성격 차트 및 요약) - 1px 위로 이동
-                      Transform.translate(
-                        offset: const Offset(0, -2),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 24,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFDF7E9),
-                            borderRadius: BorderRadius.circular(40),
-                            border: Border.all(color: Colors.black, width: 1),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Builder(
-                                builder: (context) {
-                                  return PersonalityChart(
-                                    warmth: provider.state!.warmth! * 10,
-                                    competence:
-                                        provider.state!.competence! * 10,
-                                    extroversion:
-                                        provider.state!.extroversion! * 10,
-                                    creativity: _calculateCreativity(character),
-                                    humour: _calculateHumour(character),
-                                    reliability: _calculateReliability(
-                                      character,
-                                    ),
-                                    realtimeSettings:
-                                        character.realtimeSettings,
-                                    attractiveFlaws: character.attractiveFlaws,
-                                    contradictions: character.contradictions,
-                                    communicationPrompt:
-                                        character.communicationPrompt,
-                                    coreTraits: character.coreTraits,
-                                    personalityDescription:
-                                        character.personalityDescription,
-                                  );
-                                },
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.access_time,
+                                            size: 15,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            character
+                                                    .aiPersonalityProfile
+                                                    ?.objectType ??
+                                                '멘탈지기',
+                                            style: const TextStyle(
+                                              fontFamily: 'Pretendard',
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          const Icon(
+                                            Icons.location_on,
+                                            size: 15,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            provider.state.location,
+                                            style: const TextStyle(
+                                              fontFamily: 'Pretendard',
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 80),
+
+                              const SizedBox(height: 12),
+
+                              // 촬영한 사진과 말풍선 겹치게 배치
+                              SizedBox(
+                                height: 480, // 420에서 480으로 증가하여 말풍선 잘림 방지
+                                child: Stack(
+                                  children: [
+                                    // 촬영한 사진 표시 (마스크 이미지 적용 및 중앙 정렬)
+                                    Container(
+                                      width: double.infinity,
+                                      alignment:
+                                          Alignment.topCenter, // 이미지를 수평 중앙에 배치
+                                      child: Container(
+                                        width:
+                                            screenWidth * 0.8, // 화면 가로 비율의 80%
+                                        height:
+                                            screenWidth * 0.8, // 화면 가로 비율의 80%
+                                        child:
+                                            character.photoPath != null
+                                                ? MaskedImage(
+                                                  image: FileImage(
+                                                    File(character.photoPath!),
+                                                  ),
+                                                  mask: const AssetImage(
+                                                    'assets/ui_assets/cardShape_1.png',
+                                                  ),
+                                                  stroke: const AssetImage(
+                                                    'assets/ui_assets/cardShape_stroke_1.png',
+                                                  ),
+                                                  width: screenWidth * 0.8,
+                                                  height: screenWidth * 0.8,
+                                                )
+                                                : Container(
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.white,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: Colors.black,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.access_time,
+                                                    size: 60,
+                                                    color: Colors.red,
+                                                  ),
+                                                ),
+                                      ),
+                                    ),
+
+                                    // 버블 배경 이미지 위에 태그와 텍스트 - 170px에서 시작
+                                    Positioned(
+                                      top: 170, // 사물 이미지의 170px 높이에서 시작
+                                      left: 0, // 마스크 이미지의 왼쪽에 정렬
+                                      child: Container(
+                                        width:
+                                            screenWidth *
+                                            0.8, // 화면 가로 너비의 80%로 설정
+                                        height: 320, // 높이는 유지, 필요시 조정
+                                        decoration: const BoxDecoration(
+                                          image: DecorationImage(
+                                            image: AssetImage(
+                                              'assets/ui_assets/speechBubble.png',
+                                            ),
+                                            fit:
+                                                BoxFit
+                                                    .contain, // 이미지가 잘리지 않고 비율에 맞게 포함되도록 contain으로 변경
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 51,
+                                            vertical: 40,
+                                          ),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              // 성격 태그들 (성격 슬라이더 기반)
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  _buildPersonalityTag(
+                                                    _getPersonalityTag1(
+                                                      provider.state,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  _buildPersonalityTag(
+                                                    _getPersonalityTag2(
+                                                      provider.state,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+
+                                              const SizedBox(height: 12),
+
+                                              // 말풍선 텍스트 (버블 배경 위에)
+                                              Text(
+                                                character.greeting ??
+                                                    '만나서 반가워!',
+                                                style: const TextStyle(
+                                                  fontFamily: 'Pretendard',
+                                                  fontSize: 17,
+                                                  color: Colors.black,
+                                                  fontWeight: FontWeight.w500,
+                                                  height: 1.5,
+                                                ),
+                                                textAlign: TextAlign.center,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              // 사진/말풍선과 성격차트 사이 간격
+                              const SizedBox(height: 0),
                             ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                // 하단에 고정되는 "지금 바로 대화해요" 버튼
-                Positioned(
-                  bottom: MediaQuery.of(context).padding.bottom + 20,
-                  left: 20,
-                  right: 20,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
                     ),
-                    onPressed:
-                        _isProfileReady
-                            ? () async {
-                              final provider =
-                                  context.read<OnboardingProvider>();
-                              final characterProfile =
-                                  provider.personalityProfile.toMap();
 
-                              // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
-                              final user = FirebaseAuth.instance.currentUser;
-                              if (user != null) {
-                                final doc =
-                                    await FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(user.uid)
-                                        .get();
-                                characterProfile['userDisplayName'] =
-                                    doc.data()?['displayName'] ?? '게스트';
-                              } else {
-                                characterProfile['userDisplayName'] = '게스트';
-                              }
+                    // 베이지색 카드 (성격 차트 및 요약) - 1px 위로 이동
+                    Transform.translate(
+                      offset: const Offset(0, -3),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDF7E9),
+                          borderRadius: BorderRadius.circular(40),
+                          border: Border.all(color: Colors.black, width: 1),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                return PersonalityChart(
+                                  warmth: provider.state!.warmth! * 10,
+                                  competence: provider.state!.competence! * 10,
+                                  extroversion:
+                                      provider.state!.extroversion! * 10,
+                                  creativity: _calculateCreativity(character),
+                                  humour: _calculateHumour(character),
+                                  reliability: _calculateReliability(character),
+                                  realtimeSettings: character.realtimeSettings,
+                                  attractiveFlaws: character.attractiveFlaws,
+                                  contradictions: character.contradictions,
+                                  communicationPrompt:
+                                      character.communicationPrompt,
+                                  coreTraits: character.coreTraits,
+                                  personalityDescription:
+                                      character.personalityDescription,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                              characterProfile['personalityTags'] =
-                                  provider
-                                              .personalityProfile
-                                              .aiPersonalityProfile
-                                              ?.coreValues
-                                              .isNotEmpty ==
-                                          true
-                                      ? provider
-                                          .personalityProfile
-                                          .aiPersonalityProfile!
-                                          .coreValues
-                                      : ['친구'];
+              // 하단에 고정되는 "지금 바로 대화해요" 버튼
+              Positioned(
+                bottom: MediaQuery.of(context).padding.bottom + 20,
+                left: 20,
+                right: 20,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  onPressed:
+                      _isProfileReady
+                          ? () async {
+                            final provider = context.read<OnboardingProvider>();
+                            final characterProfile =
+                                provider.personalityProfile.toMap();
 
-                              debugPrint(
-                                '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',
-                              );
-
-                              if (!mounted) return;
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder:
-                                      (_) => ChangeNotifierProvider(
-                                        create:
-                                            (_) => ChatProvider(
-                                              characterProfile:
-                                                  characterProfile,
-                                            ),
-                                        child: const ChatTextScreen(
-                                          showHomeInsteadOfBack: true,
-                                        ),
-                                      ),
-                                ),
-                                (route) => false,
-                              );
+                            // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+                            final user = FirebaseAuth.instance.currentUser;
+                            if (user != null) {
+                              final doc =
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .get();
+                              characterProfile['userDisplayName'] =
+                                  doc.data()?['displayName'] ?? '게스트';
+                            } else {
+                              characterProfile['userDisplayName'] = '게스트';
                             }
-                            : null,
-                    child: const Text(
-                      '대화 시작하기',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
 
-                // 플로팅 스크롤 힌트 화살표 (말풍선 아래 오른쪽 고정 위치)
-                Positioned(
-                  right: 30,
-                  bottom:
-                      MediaQuery.of(context).padding.bottom +
-                      24 +
-                      56 +
-                      15, // 버튼 아래 여백 + 버튼 높이 + 15px 위
-                  child: GestureDetector(
-                    onTap: () {
-                      if (_scrollController.hasClients) {
-                        if (_isScrolledToBottom) {
-                          // 하단에서 클릭 시 사물 카드가 앱바 바로 아래에 오도록 스크롤
-                          _scrollController.animateTo(
-                            129.0, // QR카드 높이(130) - 겹침(1) = 129
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        } else {
-                          // 상단에서 클릭 시 하늘색 섹션 끝으로 이동
-                          _scrollController.animateTo(
-                            _scrollController.position.maxScrollExtent,
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeInOut,
-                          );
-                        }
+                            characterProfile['personalityTags'] =
+                                provider
+                                            .personalityProfile
+                                            .aiPersonalityProfile
+                                            ?.coreValues
+                                            .isNotEmpty ==
+                                        true
+                                    ? provider
+                                        .personalityProfile
+                                        .aiPersonalityProfile!
+                                        .coreValues
+                                    : ['친구'];
+
+                            debugPrint(
+                              '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',
+                            );
+
+                            if (!mounted) return;
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => ChangeNotifierProvider(
+                                      create:
+                                          (_) => ChatProvider(
+                                            characterProfile: characterProfile,
+                                          ),
+                                      child: const ChatTextScreen(
+                                        showHomeInsteadOfBack: true,
+                                      ),
+                                    ),
+                              ),
+                              (route) => false,
+                            );
+                          }
+                          : null,
+                  child: const Text(
+                    '대화 시작하기',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+
+              // 플로팅 스크롤 힌트 화살표 (말풍선 아래 오른쪽 고정 위치)
+              Positioned(
+                right: 30,
+                bottom:
+                    MediaQuery.of(context).padding.bottom +
+                    24 +
+                    56 +
+                    15, // 버튼 아래 여백 + 버튼 높이 + 15px 위
+                child: GestureDetector(
+                  onTap: () {
+                    if (_scrollController.hasClients) {
+                      if (_isScrolledToBottom) {
+                        // 하단에서 클릭 시 하늘색 영역 상단으로 이동 (앱바 바로 아래)
+                        _scrollController.animateTo(
+                          140.0, // QR 섹션 높이만큼 스크롤하여 하늘색 섹션이 앱바 바로 아래 오도록
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
+                      } else {
+                        // 상단에서 클릭 시 하늘색 섹션 끝으로 이동
+                        _scrollController.animateTo(
+                          _scrollController.position.maxScrollExtent,
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.easeInOut,
+                        );
                       }
-                    },
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        color: Colors.white, // opacity 100으로 변경 (0.9에서 1.0으로)
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 1.0),
-                        // boxShadow 제거
+                    }
+                  },
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.white, // opacity 100으로 변경 (0.9에서 1.0으로)
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color.fromARGB(
+                          255,
+                          255,
+                          255,
+                          255,
+                        ), // 검정색 1px 외곽선
+                        width: 1,
                       ),
-                      child: Icon(
-                        _isScrolledToBottom
-                            ? Icons.keyboard_arrow_up
-                            : Icons.keyboard_arrow_down,
-                        color: Colors.black,
-                        size: 24,
-                      ),
+                      // boxShadow 제거
+                    ),
+                    child: Icon(
+                      _isScrolledToBottom
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: Colors.black,
+                      size: 24,
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         );
       },
@@ -1330,5 +1312,139 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
     return (trustworthiness * 0.4 + responsibility * 0.4 + consistency * 0.2)
         .clamp(0.0, 100.0);
+  }
+}
+
+class _ObjectDetailProfileCard extends StatelessWidget {
+  final String characterName;
+  final String characterHandle;
+  final ImageProvider photoProvider;
+  final List<String> personalityTags;
+
+  const _ObjectDetailProfileCard({
+    required this.characterName,
+    required this.characterHandle,
+    required this.photoProvider,
+    required this.personalityTags,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.black, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ClipOval(
+                child: Image(
+                  image: photoProvider,
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.cover,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      characterName,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF222222),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'By @$characterHandle',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF5C6BC0),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        for (int i = 0; i < personalityTags.length; i++) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 6,
+                              horizontal: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEEEEEE),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '#${personalityTags[i]}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: Color(0xFF555555),
+                              ),
+                            ),
+                          ),
+                          if (i < personalityTags.length - 1)
+                            const SizedBox(width: 8),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '56K',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                TextSpan(
+                  text: ' monthly users · ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                TextSpan(
+                  text: '8.4K',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                TextSpan(
+                  text: ' followers',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
