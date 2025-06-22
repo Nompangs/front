@@ -1018,24 +1018,27 @@ ${_getHumorStyleGuidance(humorStyle)}
       case 'ash':
         debugPrint('🎵 [_parseVoice] ash 음성 선택됨');
         return openai_rt.Voice.ash;
-      case 'ballad':
-        debugPrint('🎵 [_parseVoice] ballad 음성 선택됨');
-        return openai_rt.Voice.ballad;
       case 'coral':
         debugPrint('🎵 [_parseVoice] coral 음성 선택됨');
         return openai_rt.Voice.coral;
       case 'echo':
         debugPrint('🎵 [_parseVoice] echo 음성 선택됨');
         return openai_rt.Voice.echo;
+      case 'fable':
+        debugPrint('🎵 [_parseVoice] fable 음성 선택됨 (실시간 API 미지원, alloy로 대체)');
+        return openai_rt.Voice.alloy;
+      case 'nova':
+        debugPrint('🎵 [_parseVoice] nova 음성 선택됨 (실시간 API 미지원, alloy로 대체)');
+        return openai_rt.Voice.alloy;
+      case 'onyx':
+        debugPrint('🎵 [_parseVoice] onyx 음성 선택됨 (실시간 API 미지원, alloy로 대체)');
+        return openai_rt.Voice.alloy;
       case 'sage':
         debugPrint('🎵 [_parseVoice] sage 음성 선택됨');
         return openai_rt.Voice.sage;
       case 'shimmer':
         debugPrint('🎵 [_parseVoice] shimmer 음성 선택됨');
         return openai_rt.Voice.shimmer;
-      case 'verse':
-        debugPrint('🎵 [_parseVoice] verse 음성 선택됨');
-        return openai_rt.Voice.verse;
       default:
         debugPrint('⚠️ 알 수 없는 음성: "$voiceString", 기본값 alloy 사용');
         return openai_rt.Voice.alloy;

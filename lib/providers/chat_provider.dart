@@ -250,37 +250,26 @@ class ChatProvider with ChangeNotifier {
         audioFilePath,
       );
 
+      // [수정] STT 결과를 기존 메시지에 업데이트하고 AI에게 전송
       if (transcript.isNotEmpty) {
-        // 1. UI의 사용자 메시지 업데이트
         final lastMessage = _messages.isNotEmpty ? _messages.first : null;
         if (lastMessage != null && lastMessage.sender == 'user') {
           final updatedMessage = ChatMessage(
             id: lastMessage.id,
-            text: transcript, // STT 결과로 텍스트 업데이트
+            text: transcript,
             sender: 'user',
             timestamp: lastMessage.timestamp,
           );
           _messages[0] = updatedMessage;
-          notifyListeners(); // UI 즉시 업데이트
+        } else {
+          addMessage(transcript, 'user');
         }
-
-        // 2. 변환된 텍스트를 AI에게 전송하여 응답 요청
+        // AI에게 전송
         await _realtimeChatService.sendMessage(transcript);
       }
-    } else {
-      // 오디오 파일이 없거나 STT 실패 시, 빈 메시지 제거
-      final lastMessage = _messages.isNotEmpty ? _messages.first : null;
-      if (lastMessage != null &&
-          lastMessage.sender == 'user' &&
-          lastMessage.text.isEmpty) {
-        _messages.removeAt(0);
-      }
     }
-
-    if (_isProcessing) {
-      _isProcessing = false;
-      notifyListeners();
-    }
+    _isProcessing = false;
+    notifyListeners();
   }
 
   Future<void> stopTts() async {

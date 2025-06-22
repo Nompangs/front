@@ -65,7 +65,25 @@ class OpenAiTtsService {
       return;
     }
 
-    final voiceToUse = voice ?? _currentVoice;
+    var voiceToUse = voice ?? _currentVoice;
+    const supportedVoices = [
+      'alloy',
+      'ash',
+      'coral',
+      'echo',
+      'fable',
+      'nova',
+      'onyx',
+      'sage',
+      'shimmer',
+    ];
+    if (!supportedVoices.contains(voiceToUse)) {
+      debugPrint(
+        '[TTS Service] ⚠️ 지원하지 않는 음성 "$voiceToUse"이(가) 요청되었습니다. 기본 음성 "alloy"로 대체합니다.',
+      );
+      voiceToUse = 'alloy';
+    }
+
     debugPrint('[TTS Service] speak 호출됨. 텍스트: "$text", 목소리: "$voiceToUse"');
     if (_apiKey == null || _apiKey!.isEmpty || text.trim().isEmpty) {
       debugPrint('[TTS Service] 🚨 API 키가 없거나 텍스트가 비어있어 실행 중단.');
