@@ -160,17 +160,32 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         finalState: provider.state,
       );
 
+      // --- [수정 시작] Base64 인코딩 로직 복원 ---
+      String? photoBase64;
+      if (provider.state.photoPath != null &&
+          provider.state.photoPath!.isNotEmpty) {
+        final file = File(provider.state.photoPath!);
+        if (await file.exists()) {
+          final imageBytes = await file.readAsBytes();
+          photoBase64 = base64Encode(imageBytes);
+        }
+      }
+
+      // photoBase64와 photoPath를 포함하여 프로필 객체 업데이트
+      final profileWithPhoto = finalProfile.copyWith(
+        photoBase64: photoBase64,
+        photoPath: provider.state.photoPath, // photoPath도 유지
+      );
+      // --- [수정 끝] ---
+
       // 2. 생성된 프로필을 Provider에 저장하여 UI를 업데이트
-      final profileMap = finalProfile.toMap();
+      final profileMap = profileWithPhoto.toMap();
       print('\n[프로필 정제 전] 원본 데이터:');
       print('----------------------------------------');
       profileMap.forEach((key, value) {
         print(' [33m$key:  [0m${value.runtimeType} = $value');
       });
       print('----------------------------------------\n');
-
-      // Base64 인코딩 및 photoBase64 저장 코드 제거
-      // photoPath(로컬 파일 경로)는 profileMap에 그대로 남겨둠
 
       // Firestore 호환을 위한 데이터 정제
       Map<String, dynamic> sanitizedProfile = {};
@@ -220,7 +235,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
       // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
       final serverUuid = result['uuid'] as String?;
-      final profileWithUuid = finalProfile.copyWith(uuid: serverUuid);
+      final profileWithUuid = profileWithPhoto.copyWith(uuid: serverUuid);
       provider.setPersonalityProfile(profileWithUuid);
 
       debugPrint('\n[API 응답] 성공:');

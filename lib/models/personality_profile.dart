@@ -1,4 +1,8 @@
 // import 'package:nompangs/models/nps_scores.dart'; // 존재하지 않는 파일 임포트 제거
+import 'dart:convert';
+
+import 'package:nompangs/advanced/humor_matrix.dart';
+import 'package:nompangs/services/personality_service.dart';
 
 class PersonalityProfile {
   final AiPersonalityProfile? aiPersonalityProfile;
@@ -10,6 +14,7 @@ class PersonalityProfile {
   final String? initialUserMessage;
   final String communicationPrompt;
   final String? photoPath;
+  final String? photoBase64;
   final String? uuid;
   final Map<String, dynamic>? realtimeSettings;
   final Map<String, dynamic>? userInput;
@@ -30,6 +35,7 @@ class PersonalityProfile {
     this.initialUserMessage,
     this.communicationPrompt = '',
     this.photoPath,
+    this.photoBase64,
     this.uuid,
     this.realtimeSettings,
     this.userInput,
@@ -51,6 +57,7 @@ class PersonalityProfile {
     String? initialUserMessage,
     String? communicationPrompt,
     String? photoPath,
+    String? photoBase64,
     String? uuid,
     Map<String, dynamic>? realtimeSettings,
     Map<String, dynamic>? userInput,
@@ -70,6 +77,7 @@ class PersonalityProfile {
       initialUserMessage: initialUserMessage ?? this.initialUserMessage,
       communicationPrompt: communicationPrompt ?? this.communicationPrompt,
       photoPath: photoPath ?? this.photoPath,
+      photoBase64: photoBase64 ?? this.photoBase64,
       uuid: uuid ?? this.uuid,
       realtimeSettings: realtimeSettings ?? this.realtimeSettings,
       userInput: userInput ?? this.userInput,
@@ -103,16 +111,18 @@ class PersonalityProfile {
 
   Map<String, dynamic> toMap() {
     return {
+      'uuid': uuid,
+      'photoPath': photoPath,
+      'photoBase64': photoBase64,
       'aiPersonalityProfile': aiPersonalityProfile?.toMap(),
+      'greeting': greeting,
+      'realtimeSettings': realtimeSettings,
       'photoAnalysis': photoAnalysis?.toMap(),
       'humorMatrix': humorMatrix?.toMap(),
       'attractiveFlaws': attractiveFlaws,
       'contradictions': contradictions,
-      'greeting': greeting,
       'initialUserMessage': initialUserMessage,
       'communicationPrompt': communicationPrompt,
-      'uuid': uuid,
-      'realtimeSettings': realtimeSettings,
       'userInput': userInput,
       'coreTraits': coreTraits,
       'personalityDescription': personalityDescription,
@@ -154,6 +164,7 @@ class PersonalityProfile {
       initialUserMessage: map['initialUserMessage'] as String?,
       communicationPrompt: map['communicationPrompt'] as String? ?? '',
       photoPath: map['photoPath'] as String?,
+      photoBase64: map['photoBase64'] as String?,
       uuid: map['uuid'] as String?,
       realtimeSettings: map['realtimeSettings'] as Map<String, dynamic>?,
       userInput: map['userInput'] as Map<String, dynamic>?,

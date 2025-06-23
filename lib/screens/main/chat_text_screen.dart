@@ -9,6 +9,7 @@ import 'dart:math';
 import 'dart:io';
 import 'package:nompangs/widgets/masked_image.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'dart:convert';
 
 class ChatTextScreen extends StatelessWidget {
   final bool showHomeInsteadOfBack;
@@ -66,12 +67,24 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   }
 
   void _initializeImages() {
+    final photoBase64 = widget.provider.photoBase64;
     final userPhotoPath = widget.provider.userPhotoPath;
     final imageUrl = widget.provider.imageUrl;
     bool imageFound = false;
 
-    // 1. 사용자가 직접 찍은 사진을 최우선으로 확인
-    if (userPhotoPath != null && userPhotoPath.isNotEmpty) {
+    // 1. Base64 이미지를 최우선으로 확인
+    if (photoBase64 != null && photoBase64.isNotEmpty) {
+      try {
+        final imageBytes = base64Decode(photoBase64);
+        _displayImageProvider = MemoryImage(imageBytes);
+        imageFound = true;
+      } catch (e) {
+        debugPrint("Base64 디코딩 실패: $e");
+      }
+    }
+
+    // 2. 사용자가 직접 찍은 사진 (임시 경로) 확인 - fallback
+    if (!imageFound && userPhotoPath != null && userPhotoPath.isNotEmpty) {
       final file = File(userPhotoPath);
       if (file.existsSync()) {
         _displayImageProvider = FileImage(file);
@@ -79,7 +92,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
       }
     }
 
-    // 2. 사용자 사진이 없으면, 서버에서 받은 URL 확인
+    // 3. 서버에서 받은 URL 확인 - fallback
     if (!imageFound && imageUrl != null && imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http')) {
         _displayImageProvider = NetworkImage(imageUrl);
@@ -94,7 +107,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
       }
     }
 
-    // 3. 이미지를 찾지 못했으면 플레이스홀더 사용
+    // 4. 이미지를 찾지 못했으면 플레이스홀더 사용
     if (!imageFound) {
       final placeholderIndex = Random().nextInt(19) + 1;
       _displayImageProvider = AssetImage(

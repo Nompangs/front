@@ -43,14 +43,15 @@ class ChatProvider with ChangeNotifier {
   String? get realtimeError => _realtimeError;
 
   // --- 페르소나 정보 ---
-  late final String uuid;
-  late final String characterName;
-  late final String characterHandle;
-  late final List<String> personalityTags;
+  final String? uuid;
+  final String characterName;
+  final String characterHandle;
+  final List<String> personalityTags;
   final String? greeting;
   late final String userDisplayName;
-  final String? imageUrl; // 사물 이미지 URL
-  final String? userPhotoPath; // 사용자가 찍은 사진 경로
+  String? userPhotoPath; // 사용자 사진 경로
+  String? imageUrl; // 기존 이미지 URL
+  String? photoBase64; // Base64 인코딩된 사진 데이터
 
   // 스트림 구독 관리
   StreamSubscription? _messageSubscription;
@@ -59,22 +60,20 @@ class ChatProvider with ChangeNotifier {
 
   // --- 생성자 ---
   ChatProvider({required Map<String, dynamic> characterProfile})
-    : greeting = characterProfile['greeting'] as String?,
+    : uuid = characterProfile['uuid'] as String?,
+      characterName =
+          (characterProfile['aiPersonalityProfile']?['name'] ?? '페르소나') as String,
+      characterHandle =
+          '@${(characterProfile['userDisplayName'] ?? 'guest').toLowerCase().replaceAll(' ', '')}',
+      personalityTags = (characterProfile['personalityTags'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          ['친구'],
+      greeting = characterProfile['greeting'] as String?,
       imageUrl = characterProfile['imageUrl'] as String?,
-      userPhotoPath = characterProfile['userPhotoPath'] as String? {
+      userPhotoPath = characterProfile['photoPath'] as String?,
+      photoBase64 = characterProfile['photoBase64'] as String? {
     // 페르소나 정보 초기화
-    uuid =
-        characterProfile['uuid'] ??
-        'temp_uuid_${DateTime.now().millisecondsSinceEpoch}';
-    characterName =
-        characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음';
-    characterHandle =
-        '@${(characterProfile['userDisplayName'] ?? 'guest').toLowerCase().replaceAll(' ', '')}';
-    personalityTags =
-        (characterProfile['personalityTags'] as List<dynamic>?)
-            ?.map((tag) => tag.toString())
-            .toList() ??
-        [];
     userDisplayName = characterProfile['userDisplayName'] ?? 'guest';
 
     // 실시간 서비스 초기화
