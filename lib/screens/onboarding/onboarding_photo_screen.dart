@@ -6,6 +6,9 @@ import 'package:nompangs/providers/onboarding_provider.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 /// 온보딩 사물 사진 촬영 화면
 /// onboarding_purpose_screen.dart의 디자인 패턴을 따라 재구현
@@ -200,24 +203,37 @@ class _OnboardingPhotoScreenState extends State<OnboardingPhotoScreen> {
     );
   }
 
-  void _proceedToNext() {
+  Future<void> _proceedToNext() async {
     if (_capturedImagePath != null) {
-      final provider = Provider.of<OnboardingProvider>(context, listen: false);
+      try {
+        // 1. 영구 저장소 경로를 얻습니다.
+        final directory = await getApplicationDocumentsDirectory();
+        final fileName = p.basename(_capturedImagePath!);
+        final permanentPath = p.join(directory.path, fileName);
 
-      // 디버그 정보 출력
-      print('📸 Photo Screen Debug - Before setting photo:');
-      print('  - Nickname: ${provider.state.nickname}');
-      print('  - Purpose: ${provider.state.purpose}');
-      print('  - HumorStyle: ${provider.state.humorStyle}');
-      print('  - CapturedImagePath: $_capturedImagePath');
+        // 2. 임시 파일을 영구 경로로 복사합니다.
+        final originalFile = File(_capturedImagePath!);
+        final newFile = await originalFile.copy(permanentPath);
 
-      provider.setPhotoPath(_capturedImagePath!);
+        final provider = Provider.of<OnboardingProvider>(
+          context,
+          listen: false,
+        );
 
-      print('📸 Photo Screen Debug - After setting photo:');
-      print('  - PhotoPath: ${provider.state.photoPath}');
-      print('  - Navigating to generation screen...');
+        // 3. 영구 경로를 Provider에 저장합니다.
+        provider.setPhotoPath(newFile.path);
 
-      Navigator.pushNamed(context, '/onboarding/generation');
+        print('📸 Photo Screen Debug - After setting photo:');
+        print('  - PhotoPath: ${provider.state.photoPath}');
+        print('  - Navigating to generation screen...');
+
+        Navigator.pushNamed(context, '/onboarding/generation');
+      } catch (e) {
+        print('🚨 사진 처리 중 오류 발생: $e');
+        setState(() {
+          _validationError = '사진 처리 중 오류가 발생했습니다.';
+        });
+      }
     } else {
       setState(() {
         _validationError = '사진을 선택해주세요!';

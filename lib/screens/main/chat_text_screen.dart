@@ -74,10 +74,11 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
 
                     final messages = snapshot.data!.docs;
 
-                    final showProfileCard = !messages.any((doc) {
-                      final data = doc.data() as Map<String, dynamic>?;
-                      return data?['sender'] == 'user';
-                    });
+                    final showProfileCard =
+                        !messages.any((doc) {
+                          final data = doc.data() as Map<String, dynamic>?;
+                          return data?['sender'] == 'user';
+                        });
 
                     WidgetsBinding.instance.addPostFrameCallback((_) {
                       if (_scrollController.hasClients) {
@@ -101,21 +102,22 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                           const LinearProgressIndicator(),
                         Expanded(
                           child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 32),
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
                             child: ListView.builder(
                               reverse: true,
                               controller: _scrollController,
                               itemCount: messages.length,
                               itemBuilder: (context, index) {
                                 final message =
-                                    messages[index].data() as Map<String, dynamic>;
+                                    messages[index].data()
+                                        as Map<String, dynamic>;
                                 final messageText = message['text'] ?? '';
                                 final isUser = message['sender'] == 'user';
 
                                 return Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 4.0),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 4.0,
+                                  ),
                                   child: _ChatBubble(
                                     text: messageText,
                                     isUser: isUser,
@@ -135,20 +137,29 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
               controller: _inputController,
               isProcessing: chatProvider.isProcessing,
               onSend: () {
-                context.read<ChatProvider>().sendMessage(
-                      _inputController.text,
-                    );
+                context.read<ChatProvider>().sendMessage(_inputController.text);
                 _inputController.clear();
               },
               onSpeakerModePressed: () {
+                final chatProvider = context.read<ChatProvider>();
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => ChangeNotifierProvider.value(
-                      value: context.read<ChatProvider>(),
-                      child: const ChatSpeakerScreen(),
-                    ),
+                  PageRouteBuilder(
+                    opaque: false,
+                    pageBuilder:
+                        (context, animation, secondaryAnimation) =>
+                            ChangeNotifierProvider.value(
+                              value: chatProvider,
+                              child: const ChatSpeakerScreen(),
+                            ),
+                    transitionsBuilder: (
+                      context,
+                      animation,
+                      secondaryAnimation,
+                      child,
+                    ) {
+                      return FadeTransition(opacity: animation, child: child);
+                    },
                   ),
                 );
               },
@@ -509,9 +520,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   // AI가 응답 중일 때 배경색 변경
-                  color: widget.isProcessing
-                      ? const Color(0xFFE8E8E8)
-                      : const Color(0xFFF0F0F0),
+                  color:
+                      widget.isProcessing
+                          ? const Color(0xFFE8E8E8)
+                          : const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextField(
@@ -521,7 +533,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.only(top: 10),
                     // 힌트 텍스트 수정 및 상태에 따른 변경
-                    hintText: widget.isProcessing ? 'AI가 답변 중입니다...' : '메시지를 입력하세요...',
+                    hintText:
+                        widget.isProcessing
+                            ? 'AI가 답변 중입니다...'
+                            : '메시지를 입력하세요...',
                     hintStyle: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFFAAAAAA),
@@ -552,20 +567,22 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   _hasText ? Icons.send : Icons.call,
                   size: 20,
                   // AI 응답 중일 때 아이콘 색상 변경
-                  color: widget.isProcessing
-                      ? Colors.grey
-                      : (_hasText ? Colors.black : Colors.white),
+                  color:
+                      widget.isProcessing
+                          ? Colors.grey
+                          : (_hasText ? Colors.black : Colors.white),
                 ),
                 // AI 응답 중일 때 버튼 비활성화
-                onPressed: widget.isProcessing
-                    ? null
-                    : () {
-                        if (_hasText) {
-                          widget.onSend();
-                        } else {
-                          widget.onSpeakerModePressed();
-                        }
-                      },
+                onPressed:
+                    widget.isProcessing
+                        ? null
+                        : () {
+                          if (_hasText) {
+                            widget.onSend();
+                          } else {
+                            widget.onSpeakerModePressed();
+                          }
+                        },
               ),
             ),
           ],
