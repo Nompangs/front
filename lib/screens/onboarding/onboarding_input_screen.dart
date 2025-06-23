@@ -202,7 +202,7 @@ class _OnboardingInputScreenState extends State<OnboardingInputScreen> {
                       screenWidth * 0.16,
                       40,
                       screenWidth * 0.05,
-                      32,
+                      14,
                     ),
                     child: const Column(
                       crossAxisAlignment: CrossAxisAlignment.start, // 왼쪽 정렬
