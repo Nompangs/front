@@ -505,7 +505,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                             Expanded(
                               flex: 35, // 30에서 35로 변경
                               child: GestureDetector(
-                                onTap: () => _showQRPopup(character),
+                                onTap: () => _showQRPopup(),
                                 child: Container(
                                   decoration: const BoxDecoration(
                                     color: Color(0xFFDBB7FA), // 연보라색
@@ -1012,7 +1012,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
-  void _showQRPopup(PersonalityProfile character) {
+  // QR 코드 팝업 표시
+  void _showQRPopup() {
+    final qrBytes = _decodeQrImage(_qrImageData);
+    if (qrBytes == null) return;
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.8),
@@ -1041,11 +1045,9 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                       decoration: const BoxDecoration(color: Colors.white),
                       child: Padding(
                         padding: const EdgeInsets.all(16),
-                        child: QrImageView(
-                          data: _generateQRData(character),
-                          version: QrVersions.auto,
-                          size: 100.0,
-                          backgroundColor: Colors.white,
+                        child: Image.memory(
+                          qrBytes,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -1059,16 +1061,128 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
-  String _generateQRData(PersonalityProfile character) {
-    if (character.uuid == null) return '';
-    final data = {
-      'characterId': character.uuid,
-      'name': character.aiPersonalityProfile?.name,
-      'objectType': character.aiPersonalityProfile?.objectType,
-      'greeting': character.greeting,
-    };
+  String _getPersonalityTag1(OnboardingState state) {
+    // 첫 번째 태그: 외향성 기반 (수줍음 ↔ 활발함)
+    final extroversion = state.extroversion ?? 5;
+    if (extroversion <= 3) {
+      return '수줍음';
+    } else if (extroversion >= 7) {
+      return '활발함';
+    } else {
+      return '반쯤활발';
+    }
+  }
 
-    return 'nompangs://character?data=${base64Url.encode(utf8.encode(jsonEncode(data)))}';
+  String _getPersonalityTag2(OnboardingState state) {
+    // 두 번째 태그: 감정표현과 유능함 조합 기반
+    final warmth = state.warmth ?? 5;
+    final competence = state.competence ?? 5;
+
+    if (warmth >= 7 && competence >= 7) {
+      return '든든다정';
+    } else if (warmth >= 7 && competence >= 4) {
+      return '포근러';
+    } else if (warmth >= 7 && competence < 4) {
+      return '다정허당';
+    } else if (warmth >= 4 && competence >= 7) {
+      return '능력자';
+    } else if (warmth >= 4 && competence >= 4) {
+      return '평범러';
+    } else if (warmth >= 4 && competence < 4) {
+      return '허당';
+    } else if (warmth < 4 && competence >= 7) {
+      return '시크유능';
+    } else if (warmth < 4 && competence >= 4) {
+      return '쌀쌀맞은';
+    } else {
+      return '무심엉성';
+    }
+  }
+
+  // 백엔드 스타일의 성격 데이터 생성 (실제로는 API에서 받아올 데이터)
+  Map<String, dynamic> _generatePersonalityData(OnboardingState state) {
+    // 사용자가 설정한 값을 기반으로 백엔드 스타일 성격특성 생성
+    final warmth = (state.warmth ?? 5).toDouble();
+    final competence = (state.competence ?? 5).toDouble();
+    final extroversion = (state.extroversion ?? 5).toDouble();
+
+    return {
+      "성격특성": {
+        "온기": warmth * 10,
+        "능력": competence * 10,
+        "외향성": (11 - extroversion) * 10,
+        "유머감각": 75.0,
+        "창의성": 60 + (warmth * 4),
+        "신뢰성": 50 + (competence * 5),
+      },
+      "유머스타일": state.humorStyle.isNotEmpty ? state.humorStyle : "따뜻한 유머러스",
+      "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안해함", "친구들과 함께 있을 때 더 빛남"],
+    };
+  }
+
+  // AI 생성 지표 계산 함수들
+  double _calculateCreativity(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final imagination =
+        character!.aiPersonalityProfile!.npsScores['O01_상상력'] ?? 50;
+    final creativity =
+        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
+    final curiosity =
+        character.aiPersonalityProfile!.npsScores['O02_호기심'] ?? 50;
+
+    return (imagination * 0.4 + creativity * 0.4 + curiosity * 0.2).clamp(
+      0.0,
+      100.0,
+    );
+  }
+
+  double _calculateStability(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final anxiety = character!.aiPersonalityProfile!.npsScores['N01_불안성'] ?? 50;
+    return (100 - anxiety).toDouble().clamp(0.0, 100.0);
+  }
+
+  double _calculateConscientiousness(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final responsibility =
+        character!.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
+    final orderliness =
+        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
+
+    return (responsibility * 0.6 + orderliness * 0.4).clamp(0.0, 100.0);
+  }
+
+  double _calculateHumour(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 75.0;
+
+    final playfulness =
+        character!.aiPersonalityProfile!.npsScores['E06_유쾌함'] ?? 75;
+    final creativity =
+        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
+    final sociability =
+        character.aiPersonalityProfile!.npsScores['E01_사교성'] ?? 50;
+
+    return (playfulness * 0.5 + creativity * 0.3 + sociability * 0.2).clamp(
+      0.0,
+      100.0,
+    );
+  }
+
+  double _calculateReliability(PersonalityProfile? character) {
+    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
+
+    final trustworthiness =
+        character!.aiPersonalityProfile!.npsScores['A01_신뢰성'] ?? 50;
+    final responsibility =
+        character.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
+    final consistency =
+        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
+
+    return (trustworthiness * 0.4 + responsibility * 0.4 + consistency * 0.2)
+        .clamp(0.0, 100.0);
   }
 
   Future<void> _saveQRCode() async {
@@ -1230,129 +1344,5 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         );
       }
     }
-  }
-
-  String _getPersonalityTag1(OnboardingState state) {
-    // 첫 번째 태그: 외향성 기반 (수줍음 ↔ 활발함)
-    final extroversion = state.extroversion ?? 5;
-    if (extroversion <= 3) {
-      return '수줍음';
-    } else if (extroversion >= 7) {
-      return '활발함';
-    } else {
-      return '반쯤활발';
-    }
-  }
-
-  String _getPersonalityTag2(OnboardingState state) {
-    // 두 번째 태그: 감정표현과 유능함 조합 기반
-    final warmth = state.warmth ?? 5;
-    final competence = state.competence ?? 5;
-
-    if (warmth >= 7 && competence >= 7) {
-      return '든든다정';
-    } else if (warmth >= 7 && competence >= 4) {
-      return '포근러';
-    } else if (warmth >= 7 && competence < 4) {
-      return '다정허당';
-    } else if (warmth >= 4 && competence >= 7) {
-      return '능력자';
-    } else if (warmth >= 4 && competence >= 4) {
-      return '평범러';
-    } else if (warmth >= 4 && competence < 4) {
-      return '허당';
-    } else if (warmth < 4 && competence >= 7) {
-      return '시크유능';
-    } else if (warmth < 4 && competence >= 4) {
-      return '쌀쌀맞은';
-    } else {
-      return '무심엉성';
-    }
-  }
-
-  // 백엔드 스타일의 성격 데이터 생성 (실제로는 API에서 받아올 데이터)
-  Map<String, dynamic> _generatePersonalityData(OnboardingState state) {
-    // 사용자가 설정한 값을 기반으로 백엔드 스타일 성격특성 생성
-    final warmth = (state.warmth ?? 5).toDouble();
-    final competence = (state.competence ?? 5).toDouble();
-    final extroversion = (state.extroversion ?? 5).toDouble();
-
-    return {
-      "성격특성": {
-        "온기": warmth * 10,
-        "능력": competence * 10,
-        "외향성": (11 - extroversion) * 10,
-        "유머감각": 75.0,
-        "창의성": 60 + (warmth * 4),
-        "신뢰성": 50 + (competence * 5),
-      },
-      "유머스타일": state.humorStyle.isNotEmpty ? state.humorStyle : "따뜻한 유머러스",
-      "매력적결함": ["가끔 털이 엉킬까봐 걱정돼 :(", "완벽하게 정리되지 않으면 불안해함", "친구들과 함께 있을 때 더 빛남"],
-    };
-  }
-
-  // AI 생성 지표 계산 함수들
-  double _calculateCreativity(PersonalityProfile? character) {
-    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
-
-    final imagination =
-        character!.aiPersonalityProfile!.npsScores['O01_상상력'] ?? 50;
-    final creativity =
-        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
-    final curiosity =
-        character.aiPersonalityProfile!.npsScores['O02_호기심'] ?? 50;
-
-    return (imagination * 0.4 + creativity * 0.4 + curiosity * 0.2).clamp(
-      0.0,
-      100.0,
-    );
-  }
-
-  double _calculateStability(PersonalityProfile? character) {
-    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
-
-    final anxiety = character!.aiPersonalityProfile!.npsScores['N01_불안성'] ?? 50;
-    return (100 - anxiety).toDouble().clamp(0.0, 100.0);
-  }
-
-  double _calculateConscientiousness(PersonalityProfile? character) {
-    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
-
-    final responsibility =
-        character!.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
-    final orderliness =
-        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
-
-    return (responsibility * 0.6 + orderliness * 0.4).clamp(0.0, 100.0);
-  }
-
-  double _calculateHumour(PersonalityProfile? character) {
-    if (character?.aiPersonalityProfile?.npsScores == null) return 75.0;
-
-    final playfulness =
-        character!.aiPersonalityProfile!.npsScores['E06_유쾌함'] ?? 75;
-    final creativity =
-        character.aiPersonalityProfile!.npsScores['C03_창의성'] ?? 50;
-    final sociability =
-        character.aiPersonalityProfile!.npsScores['E01_사교성'] ?? 50;
-
-    return (playfulness * 0.5 + creativity * 0.3 + sociability * 0.2).clamp(
-      0.0,
-      100.0,
-    );
-  }
-
-  double _calculateReliability(PersonalityProfile? character) {
-    if (character?.aiPersonalityProfile?.npsScores == null) return 50.0;
-
-    final trustworthiness =
-        character!.aiPersonalityProfile!.npsScores['A01_신뢰성'] ?? 50;
-    final responsibility =
-        character.aiPersonalityProfile!.npsScores['CS01_책임감'] ?? 50;
-    final consistency =
-        character.aiPersonalityProfile!.npsScores['CS02_질서성'] ?? 50;
-
-    return (trustworthiness * 0.4 + responsibility * 0.4 + consistency * 0.2)
-        .clamp(0.0, 100.0);
   }
 }
