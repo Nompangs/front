@@ -216,7 +216,7 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
                                       'QR을 붙이면\n언제 어디서든 대화할 수 있어요!',
                                       style: TextStyle(
                                         fontFamily: 'Pretendard',
-                                        fontSize: 18,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.black,
                                       ),
