@@ -185,56 +185,79 @@ class PersonalityProfile {
 class AiPersonalityProfile {
   final String name;
   final String objectType;
-  final int emotionalRange;
   final List<String> coreValues;
+  final Map<String, int> npsScores;
+  final int emotionalRange;
   final String relationshipStyle;
   final String summary;
-  final Map<String, int> npsScores; // NpsScores 타입을 Map<String, int>으로 변경
 
-  AiPersonalityProfile({
+  const AiPersonalityProfile({
     required this.name,
     required this.objectType,
-    required this.emotionalRange,
     required this.coreValues,
+    required this.npsScores,
+    required this.emotionalRange,
     required this.relationshipStyle,
     required this.summary,
-    this.npsScores = const {}, // 생성자 수정
   });
 
-  factory AiPersonalityProfile.empty() => AiPersonalityProfile(
-    name: '',
-    objectType: '',
-    emotionalRange: 5,
-    coreValues: [],
-    relationshipStyle: '',
-    summary: '',
-    npsScores: {}, // NpsScores.empty() 대신 빈 Map 사용
-  );
+  AiPersonalityProfile copyWith({
+    String? name,
+    String? objectType,
+    List<String>? coreValues,
+    Map<String, int>? npsScores,
+    int? emotionalRange,
+    String? relationshipStyle,
+    String? summary,
+  }) {
+    return AiPersonalityProfile(
+      name: name ?? this.name,
+      objectType: objectType ?? this.objectType,
+      coreValues: coreValues ?? this.coreValues,
+      npsScores: npsScores ?? this.npsScores,
+      emotionalRange: emotionalRange ?? this.emotionalRange,
+      relationshipStyle: relationshipStyle ?? this.relationshipStyle,
+      summary: summary ?? this.summary,
+    );
+  }
 
-  Map<String, dynamic> toMap() => {
-    'name': name,
-    'objectType': objectType,
-    'emotionalRange': emotionalRange,
-    'coreValues': coreValues,
-    'relationshipStyle': relationshipStyle,
-    'summary': summary,
-    'npsScores': npsScores, // toMap() 대신 직접 전달
-  };
+  factory AiPersonalityProfile.empty() {
+    return const AiPersonalityProfile(
+      name: '',
+      objectType: '',
+      coreValues: [],
+      npsScores: {},
+      emotionalRange: 5,
+      relationshipStyle: '',
+      summary: '',
+    );
+  }
 
   factory AiPersonalityProfile.fromMap(Map<String, dynamic> map) {
     return AiPersonalityProfile(
-      name: map['name'] as String? ?? '',
-      objectType: map['objectType'] as String? ?? '',
-      emotionalRange: map['emotionalRange'] as int? ?? 5,
-      coreValues: List<String>.from(
-        (map['coreValues'] as List<dynamic>? ?? []).map((e) => e.toString()),
-      ),
-      relationshipStyle: map['relationshipStyle'] as String? ?? '',
-      summary: map['summary'] as String? ?? '',
-      npsScores: Map<String, int>.from(
-        map['npsScores'] ?? {},
-      ), // NpsScores 파싱 로직 대신 Map 파싱
+      name: map['name'] ?? '',
+      objectType: map['objectType'] ?? '',
+      coreValues: (map['coreValues'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
+      npsScores: Map<String, int>.from(map['npsScores'] ?? {}),
+      emotionalRange: map['emotionalRange'] ?? 5,
+      relationshipStyle: map['relationshipStyle'] ?? '',
+      summary: map['summary'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'objectType': objectType,
+      'coreValues': coreValues,
+      'npsScores': npsScores,
+      'emotionalRange': emotionalRange,
+      'relationshipStyle': relationshipStyle,
+      'summary': summary,
+    };
   }
 }
 

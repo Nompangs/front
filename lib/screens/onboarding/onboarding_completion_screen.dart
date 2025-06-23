@@ -160,7 +160,15 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         finalState: provider.state,
       );
 
-      // --- [수정 시작] Base64 인코딩 로직 복원 ---
+      // [수정] UI 기반 태그를 생성하여 coreValues에 주입
+      final tag1 = _getPersonalityTag1(provider.state);
+      final tag2 = _getPersonalityTag2(provider.state);
+      final updatedAiProfile =
+          finalProfile.aiPersonalityProfile?.copyWith(coreValues: [tag1, tag2]);
+      final profileWithTags =
+          finalProfile.copyWith(aiPersonalityProfile: updatedAiProfile);
+
+      // --- Base64 인코딩 로직 ---
       String? photoBase64;
       if (provider.state.photoPath != null &&
           provider.state.photoPath!.isNotEmpty) {
@@ -172,7 +180,7 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
       }
 
       // photoBase64와 photoPath를 포함하여 프로필 객체 업데이트
-      final profileWithPhoto = finalProfile.copyWith(
+      final profileWithPhoto = profileWithTags.copyWith(
         photoBase64: photoBase64,
         photoPath: provider.state.photoPath, // photoPath도 유지
       );
@@ -905,19 +913,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                               } else {
                                 characterProfile['userDisplayName'] = '게스트';
                               }
-
-                              characterProfile['personalityTags'] =
-                                  provider
-                                              .personalityProfile
-                                              .aiPersonalityProfile
-                                              ?.coreValues
-                                              .isNotEmpty ==
-                                          true
-                                      ? provider
-                                          .personalityProfile
-                                          .aiPersonalityProfile!
-                                          .coreValues
-                                      : ['친구'];
 
                               debugPrint(
                                 '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',

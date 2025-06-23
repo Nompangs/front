@@ -65,10 +65,11 @@ class ChatProvider with ChangeNotifier {
           (characterProfile['aiPersonalityProfile']?['name'] ?? '페르소나') as String,
       characterHandle =
           '@${(characterProfile['userDisplayName'] ?? 'guest').toLowerCase().replaceAll(' ', '')}',
-      personalityTags = (characterProfile['personalityTags'] as List?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          ['친구'],
+      personalityTags =
+          (characterProfile['aiPersonalityProfile']?['coreValues'] as List?)
+                  ?.map((e) => e.toString())
+                  .toList() ??
+              ['친구'],
       greeting = characterProfile['greeting'] as String?,
       imageUrl = characterProfile['imageUrl'] as String?,
       userPhotoPath = characterProfile['photoPath'] as String?,
