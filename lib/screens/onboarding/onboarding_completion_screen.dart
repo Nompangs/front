@@ -1012,10 +1012,57 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
     );
   }
 
+  void _showQRPopup(PersonalityProfile character) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.8),
+      builder: (BuildContext context) {
+        return GestureDetector(
+          onTap: () => Navigator.of(context).pop(), // 밖 부분 누르면 사라짐
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            child: Center(
+              child: GestureDetector(
+                onTap: () {}, // QR 영역 클릭 시 팝업이 닫히지 않도록
+                onLongPress: () {
+                  Navigator.of(context).pop();
+                  _saveQRCode(); // 길게 누르면 저장
+                },
+                child: Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFC8A6FF), // 연보라색
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 200,
+                      height: 200,
+                      decoration: const BoxDecoration(color: Colors.white),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: QrImageView(
+                          data: _generateQRData(character),
+                          version: QrVersions.auto,
+                          size: 100.0,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String _generateQRData(PersonalityProfile character) {
-    if (_qrImageData == null) return '';
+    if (character.uuid == null) return '';
     final data = {
-      'characterId': _qrImageData,
+      'characterId': character.uuid,
       'name': character.aiPersonalityProfile?.name,
       'objectType': character.aiPersonalityProfile?.objectType,
       'greeting': character.greeting,
@@ -1183,57 +1230,6 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
         );
       }
     }
-  }
-
-  // QR 코드 팝업 표시
-  void _showQRPopup(PersonalityProfile character) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.8),
-      builder: (BuildContext context) {
-        return GestureDetector(
-          onTap: () => Navigator.of(context).pop(), // 밖 부분 누르면 사라짐
-          child: Dialog(
-            backgroundColor: Colors.transparent,
-            child: Center(
-              child: GestureDetector(
-                onTap: () {}, // QR 영역 클릭 시 팝업이 닫히지 않도록
-                onLongPress: () {
-                  Navigator.of(context).pop();
-                  _saveQRCode(); // 길게 누르면 저장
-                },
-                child: Container(
-                  width: 250,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC8A6FF), // 연보라색
-                  ),
-                  child: Center(
-                    child: Container(
-                      width: 200,
-                      height: 200,
-                      decoration: const BoxDecoration(color: Colors.white),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: QrImageView(
-                          data:
-                              _qrImageData != null
-                                  ? 'https://invitepage.netlify.app/?roomId=${_qrImageData!}'
-                                  : '',
-                          version: QrVersions.auto,
-                          size: 100.0,
-                          backgroundColor: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   String _getPersonalityTag1(OnboardingState state) {
