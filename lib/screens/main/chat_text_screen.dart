@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:math';
 import 'dart:io';
 import 'package:nompangs/widgets/masked_image.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ChatTextScreen extends StatelessWidget {
   final bool showHomeInsteadOfBack;
@@ -48,6 +49,20 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   void initState() {
     super.initState();
     _initializeImages();
+    _requestMicrophonePermission();
+  }
+
+  Future<void> _requestMicrophonePermission() async {
+    final status = await Permission.microphone.request();
+    if (status.isDenied || status.isPermanentlyDenied) {
+      // 권한이 거부되었을 때 사용자에게 알림
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('마이크 권한이 필요합니다. 음성 채팅을 사용하려면 설정에서 권한을 허용해주세요.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   void _initializeImages() {

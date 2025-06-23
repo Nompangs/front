@@ -50,11 +50,11 @@
 		<string>_dartobservatory._tcp</string>
 	</array>
 	<key>NSCameraUsageDescription</key>
-	<string>Used to scan QR codes</string>
+	<string>QR 코드 스캔을 위해 카메라를 사용합니다.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Flutter 개발을 위해 로컬 네트워크 접근이 필요합니다.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Used for real-time voice chat with characters</string>
+	<string>캐릭터와 실시간 음성 대화를 위해 마이크를 사용합니다.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>QR 코드 이미지를 사진 라이브러리에 저장하기 위해 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -65,7 +65,7 @@
 		<string>microphone</string>
 	</array>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>We need access to speech recognition for voice commands.</string>
+	<string>음성 명령을 위해 음성 인식 기능에 접근해야 합니다.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
