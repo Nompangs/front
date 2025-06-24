@@ -25,7 +25,53 @@
 | **기억** | 없음 (매번 리셋)                                 | **과거 대화 기억**을 통한 개인화된 경험               |
 | **문제 해결** | 오류 메시지 표시                                 | **상황을 이해하며 도움**         |
 
-<br>
+---
+<h2 class="code-line" data-line-start=0 data-line-end=1 ><a id="__0"></a>팀원 소개</h2>
+<p class="has-line-data" data-line-start="1" data-line-end="2">✨ 혜승</p>
+<a href="https://github.com/blueberrycrumble"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
+<ul>
+<li class="has-line-data" data-line-start="2" data-line-end="3">주요 역할: 프로젝트 총괄 (PM), UX/UI 기획 및 디자인, 프론트엔드(Flutter) 개발</li>
+<li class="has-line-data" data-line-start="3" data-line-end="10">담당 업무:<br>
+– 프로젝트 목표 및 전체 로드맵 설정<br>
+– 개발 우선순위 결정 및 백로그 관리<br>
+– 팀원 간의 원활한 커뮤니케이션 조율<br>
+– 온보딩, 대화 등 앱의 전체적인 사용자 플로우 설계<br>
+– 와이어프레임, 프로토타입 제작 및 UI 디자인 시스템 구축</li>
+</ul>
+<p class="has-line-data" data-line-start="10" data-line-end="11">✨ 지수</p>
+<a href="https://github.com/Jsgithubchannel"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
+<ul>
+<li class="has-line-data" data-line-start="11" data-line-end="12">주요 역할: 프론트엔드(Flutter) 개발, AI 모델 연동 및 R&amp;D, 백엔드 개발</li>
+<li class="has-line-data" data-line-start="12" data-line-end="21">담당 업무:<br>
+– WebSocket 기반 실시간 통신 클라이언트(RealtimeChatService) 개발<br>
+– QR 스캐너(카메라), 음성 입력(마이크) 등 디바이스 기능 구현<br>
+– UI/UX 구현: 디자인된 화면과 인터랙션을 코드로 변환<br>
+– 상태 관리: Provider 등을 사용하여 앱의 전체 상태를 효율적으로 관리<br>
+– 백엔드 API와 클라이언트 연동<br>
+– OpenAI 등 외부 AI API(GPT-4V, Realtime API) 연동<br>
+– 사용자 인증(회원가입, 로그인 등) API 개발</li>
+</ul>
+<p class="has-line-data" data-line-start="21" data-line-end="22">✨ 해원</p>
+<a href="https://github.com/HWKKK"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
+<ul>
+<li class="has-line-data" data-line-start="22" data-line-end="23">주요 역할: 프론트엔드(Flutter) 개발, 백엔드 및 클라우드 개발</li>
+<li class="has-line-data" data-line-start="23" data-line-end="29">담당 업무:<br>
+– 페르소나, 대화, QR 코드 관련 API 개발 및 관리<br>
+– Firebase(Firestore, Storage, Authentication) 기반 클라우드 인프라 설계<br>
+– 데이터베이스 스키마(컬렉션 구조) 설계<br>
+– Node.js, Cloud Functions를 활용한 서버 로직 배포 및 관리</li>
+</ul>
+<p class="has-line-data" data-line-start="29" data-line-end="30">✨ 승아</p>
+<a href="https://github.com/haepada"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
+<ul>
+<li class="has-line-data" data-line-start="30" data-line-end="31">주요 역할: 프론트엔드(Flutter) 개발, AI 페르소나 설계 및 개발, 프롬프트 엔지니어링</li>
+<li class="has-line-data" data-line-start="31" data-line-end="35">담당 업무:<br>
+– 80개의 NPS(Nompangs Personality System) 변수 항목 및 구조 정의<br>
+– 사용자 입력(텍스트, 사진)을 성격 변수로 변환하는 생성 알고리즘 개발<br>
+– LLM이 페르소나의 정체성을 유지하도록 시스템 프롬프트 설계 및 튜닝</li>
+</ul>
+
+---
 
 ### 1. **AI 페르소나 생성: 세상에 단 하나뿐인 나만의 친구 만들기**
 - **7단계 온보딩 플로우:** 사용자와의 상호작용(이름, 사진, 사용 기간, 목적 등)을 통해 사물의 기본 정보를 입력받습니다.
