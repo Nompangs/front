@@ -25,6 +25,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'package:nompangs/services/conversation_service.dart';
 
 class OnboardingCompletionScreen extends StatefulWidget {
   const OnboardingCompletionScreen({super.key});
@@ -918,21 +919,32 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                                 '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',
                               );
 
+                              if (user == null || provider.personalityProfile.uuid == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('채팅을 시작하려면 로그인이 필요하거나, 캐릭터 정보가 올바르지 않습니다.'),
+                                    ),
+                                  );
+                                return;
+                              }
+
+                              final conversationId = await ConversationService.getConversationId(
+                                user.uid,
+                                provider.personalityProfile.uuid!,
+                              );
+
                               if (!mounted) return;
                               Navigator.pushAndRemoveUntil(
                                 context,
                                 MaterialPageRoute(
-                                  builder:
-                                      (_) => ChangeNotifierProvider(
-                                        create:
-                                            (_) => ChatProvider(
-                                              characterProfile:
-                                                  characterProfile,
-                                            ),
-                                        child: const ChatTextScreen(
-                                          showHomeInsteadOfBack: true,
-                                        ),
-                                      ),
+                                  builder: (_) => ChangeNotifierProvider(
+                                    create: (_) => ChatProvider(),
+                                    child: ChatTextScreen(
+                                      conversationId: conversationId,
+                                      characterProfile: characterProfile,
+                                      showHomeInsteadOfBack: true,
+                                    ),
+                                  ),
                                 ),
                                 (route) => false,
                               );

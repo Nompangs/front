@@ -1,293 +1,198 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:nompangs/services/audio_stream_service.dart';
-import 'package:nompangs/services/openai_tts_service.dart';
-import 'package:nompangs/services/realtime_chat_service.dart';
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:nompangs/models/message.dart';
+import 'package:nompangs/services/conversation_service.dart';
+import 'package:nompangs/usecases/chat_usecase.dart';
 import 'package:nompangs/services/stt_service.dart';
-
-// 챗 메시지를 위한 간단한 데이터 클래스
-class ChatMessage {
-  final String id;
-  final String text;
-  final String sender;
-  final DateTime timestamp;
-
-  ChatMessage({
-    required this.id,
-    required this.text,
-    required this.sender,
-    required this.timestamp,
-  });
-}
+import 'package:nompangs/services/openai_tts_service.dart';
+import 'package:nompangs/services/audio_stream_service.dart';
 
 class ChatProvider with ChangeNotifier {
-  // --- 서비스 ---
-  final RealtimeChatService _realtimeChatService = RealtimeChatService();
-  final OpenAiTtsService _ttsService = OpenAiTtsService();
-  final AudioStreamService _audioStreamService = AudioStreamService();
-  final SttService _sttService = SttService();
+  // --- Services & UseCases ---
+  final ChatUseCase _chatUseCase = ChatUseCase();
+  final ConversationService _conversationService = ConversationService();
+  late final SttService _sttService;
+  late final OpenAiTtsService _ttsService;
+  late final AudioStreamService _audioStreamService;
+  final FlutterSoundPlayer _player = FlutterSoundPlayer();
 
-  // --- 상태 변수 ---
-  final List<ChatMessage> _messages = [];
-  bool _isConnecting = true;
-  bool _isProcessing = false; // STT 또는 TTS 처리 중
-  String? _realtimeError;
+  // --- State Variables ---
+  String? _conversationId;
+  bool _isLoading = false;
+  String? _error;
 
-  // --- 외부에서 접근할 Getter ---
-  List<ChatMessage> get messages => _messages;
-  bool get isConnecting => _isConnecting;
+  // --- Voice Chat State ---
+  bool _isListening = false;
+  bool _isProcessing = false; // STT 결과를 처리 중인지 여부
+  bool _isSpeaking = false; // TTS가 재생 중인지 여부
+  String? _sttError;
+  StreamSubscription? _sttSubscription;
+
+  // --- UI-related Data ---
+  // 이 데이터들은 채팅 화면에 진입할 때 외부에서 설정되어야 합니다.
+  String characterName = '캐릭터';
+  String userDisplayName = '사용자';
+  List<String> personalityTags = ['태그1', '태그2'];
+  String? photoBase64;
+  String? userPhotoPath;
+  String? imageUrl;
+  String? greeting;
+
+  // --- Getters for UI ---
+  bool get isLoading => _isLoading;
+  String? get error => _error;
+  String? get conversationId => _conversationId;
+  
+  // --- Voice Chat Getters ---
+  bool get isListening => _isListening;
   bool get isProcessing => _isProcessing;
-  String? get realtimeError => _realtimeError;
+  bool get isSpeaking => _isSpeaking;
+  String? get sttError => _sttError;
 
-  // --- 페르소나 정보 ---
-  final String? uuid;
-  final String characterName;
-  final String characterHandle;
-  final List<String> personalityTags;
-  final String? greeting;
-  late final String userDisplayName;
-  String? userPhotoPath; // 사용자 사진 경로
-  String? imageUrl; // 기존 이미지 URL
-  String? photoBase64; // Base64 인코딩된 사진 데이터
-
-  // 스트림 구독 관리
-  StreamSubscription? _messageSubscription;
-  StreamSubscription? _completionSubscription;
-  StreamSubscription? _audioSubscription;
-
-  // --- 생성자 ---
-  ChatProvider({required Map<String, dynamic> characterProfile})
-    : uuid = characterProfile['uuid'] as String?,
-      characterName =
-          (characterProfile['aiPersonalityProfile']?['name'] ?? '페르소나') as String,
-      characterHandle =
-          '@${(characterProfile['userDisplayName'] ?? 'guest').toLowerCase().replaceAll(' ', '')}',
-      personalityTags =
-          (characterProfile['aiPersonalityProfile']?['coreValues'] as List?)
-                  ?.map((e) => e.toString())
-                  .toList() ??
-              ['친구'],
-      greeting = characterProfile['greeting'] as String?,
-      imageUrl = characterProfile['imageUrl'] as String?,
-      userPhotoPath = characterProfile['photoPath'] as String?,
-      photoBase64 = characterProfile['photoBase64'] as String? {
-    // 페르소나 정보 초기화
-    userDisplayName = characterProfile['userDisplayName'] ?? 'guest';
-
-    // 실시간 서비스 초기화
-    _initializeServices(characterProfile);
+  // 메시지 목록을 위한 스트림
+  Stream<List<Message>>? get messagesStream {
+    if (_conversationId == null) return null;
+    return _conversationService.getMessagesStream(_conversationId!);
   }
 
-  // --- 초기화 로직 ---
-  Future<void> _initializeServices(
-    Map<String, dynamic> characterProfile,
-  ) async {
-    try {
-      // 1. TTS 서비스에 캐릭터 프로필 전달
-      _ttsService.setCharacterVoiceSettings(characterProfile);
-
-      // 2. 오디오 서비스 초기화 (마이크 권한 요청 등)
-      await _audioStreamService.initialize();
-
-      // 3. 실시간 채팅 서비스 연결
-      await _realtimeChatService.connect(characterProfile);
-      _isConnecting = false;
-      _realtimeError = null;
-
-      // 4. 실시간 응답 스트림 구독 (UI 업데이트용)
-      _messageSubscription?.cancel();
-      _messageSubscription = _realtimeChatService.responseStream.listen(
-        _onResponseReceived,
-        onError: _onErrorReceived,
-      );
-
-      // 5. 완성된 문장 스트림 구독 (TTS 재생용)
-      _completionSubscription?.cancel();
-      _completionSubscription = _realtimeChatService.completionStream.listen(
-        _onCompletionReceived,
-      );
-
-      // 6. 초기 인사말 처리
-      _sendInitialGreetingIfNeeded();
-    } catch (e) {
-      _isConnecting = false;
-      _realtimeError = "서비스 초기화에 실패했습니다: $e";
-      debugPrint(_realtimeError);
-    } finally {
-      notifyListeners();
-    }
-  }
-
-  // --- 메시지 처리 헬퍼 ---
-  void addMessage(String text, String sender) {
-    // UI 업데이트를 위해 메시지 추가
-    final message = ChatMessage(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      text: text,
-      sender: sender,
-      timestamp: DateTime.now(),
+  // 생성자에서 서비스를 초기화합니다.
+  ChatProvider() {
+    _sttService = SttService(
+      onResult: _handleSttResult,
+      onError: _handleSttError,
     );
-    _messages.insert(0, message); // 최신 메시지를 맨 앞에 추가
+    _ttsService = new OpenAiTtsService();
+    _audioStreamService = AudioStreamService();
+
+    _sttService.initialize();
+    _player.openPlayer();
+  }
+
+  // 채팅방에 처음 진입할 때 호출됩니다.
+  void initializeChat(String convId, Map<String, dynamic> characterProfile) {
+    _conversationId = convId;
+    
+    // 캐릭터 프로필에서 UI에 필요한 정보를 설정합니다.
+    characterName = characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음';
+    userDisplayName = characterProfile['userInput']?['userDisplayName'] ?? '친구';
+    greeting = characterProfile['greeting'] ?? '안녕!';
+    photoBase64 = characterProfile['photoBase64'];
+    userPhotoPath = characterProfile['userPhotoPath'];
+    imageUrl = characterProfile['imageUrl'];
+
+    // TTS 서비스에 캐릭터의 음성 설정을 전달합니다.
+    _ttsService.setCharacterVoiceSettings(characterProfile);
+
+    // 필요하다면 초기 인사말을 스트림에 추가하는 로직을 여기에 구현할 수 있습니다.
+    // (현재는 UseCase가 처리하므로 UI단에서는 생략)
     notifyListeners();
   }
 
-  // --- 스트림 리스너 ---
-  void _onResponseReceived(String textChunk) {
-    // AI 응답이 시작되면, 기존에 있던 (아마도 비어있는) AI 메시지를 찾아서 업데이트
-    final lastMessage = _messages.isNotEmpty ? _messages.first : null;
-    if (lastMessage != null && lastMessage.sender == 'bot') {
-      final updatedMessage = ChatMessage(
-        id: lastMessage.id,
-        text: lastMessage.text + textChunk,
-        sender: 'bot',
-        timestamp: lastMessage.timestamp,
-      );
-      _messages[0] = updatedMessage;
-    } else {
-      // 새로운 AI 메시지 시작
-      addMessage(textChunk, 'bot');
-    }
-    notifyListeners();
-  }
-
-  void _onCompletionReceived(String completedSentence) {
-    debugPrint("✅ [ChatProvider] 완성된 문장 수신: '$completedSentence'");
-    debugPrint("  - 현재 isProcessing 상태: $_isProcessing");
-    // STT->TTS 루프 방지를 위해, isProcessing(음성입력중)일 때는 자동재생 안함
-    if (!_isProcessing) {
-      debugPrint("  - 🗣️ TTS 재생을 시도합니다...");
-      _ttsService.speak(completedSentence);
-    } else {
-      debugPrint("  - 🎤 음성 입력 중이므로 TTS 재생을 건너뜁니다.");
-    }
-  }
-
-  void _onErrorReceived(Object error) {
-    _realtimeError = "실시간 응답 중 오류 발생: $error";
-    addMessage("오류가 발생했습니다. 잠시 후 다시 시도해주세요.", 'bot');
-    notifyListeners();
-  }
-
-  // --- 초기 인사말 ---
-  void _sendInitialGreetingIfNeeded() {
-    if (_messages.isEmpty && greeting != null && greeting!.isNotEmpty) {
-      addMessage(greeting!, 'bot');
-      _ttsService.speak(greeting!);
-    }
-  }
-
-  // --- 공개 메서드 (텍스트) ---
+  // 메시지 전송 로직을 UseCase에 위임
   Future<void> sendMessage(String text) async {
-    if (text.trim().isEmpty || _isConnecting || _isProcessing) return;
+    if (_conversationId == null) {
+      _error = "오류: 대화 ID가 설정되지 않았습니다.";
+      notifyListeners();
+      return;
+    }
+    if (text.trim().isEmpty) return;
 
-    _isProcessing = true;
-    notifyListeners();
-
+    _error = null;
+    
     try {
-      addMessage(text, 'user');
-      await _realtimeChatService.sendMessage(text);
+      // UseCase는 UI를 기다리지 않고 백그라운드에서 실행됩니다.
+      final aiResponseText = await _chatUseCase.sendMessage(
+        conversationId: _conversationId!,
+        text: text,
+      );
+
+      if (aiResponseText != null && aiResponseText.isNotEmpty) {
+        await _playTts(aiResponseText);
+      }
     } catch (e) {
-      debugPrint("메시지 전송/처리 중 에러 발생: $e");
-      _onErrorReceived(e);
-    } finally {
-      _isProcessing = false;
+      _error = "메시지 전송에 실패했습니다: $e";
       notifyListeners();
     }
   }
 
-  // --- 스트리밍 제어 ---
+  // --- Voice Chat Control Methods ---
   Future<void> startAudioStreaming() async {
-    if (_isConnecting || _isProcessing) return;
-    _isProcessing = true;
+    if (_isListening) return;
+    await stopTts(); // 혹시 TTS가 재생중이면 중지
+    _isListening = true;
+    _sttError = null;
     notifyListeners();
-
-    try {
-      // 이전 TTS 중지
-      await stopTts();
-      // UI에 즉시 피드백을 주기 위해 빈 사용자 메시지 추가
-      addMessage('', 'user');
-
-      // [수정] 오디오 스트림을 실시간 서비스로 보내는 부분은 계속 유지
-      _audioSubscription = _audioStreamService.audioStream.listen(
-        (chunk) {
-          _realtimeChatService.sendAudioChunk(chunk);
-        },
-        onError: (e) {
-          debugPrint("❌ ChatProvider 오디오 스트림 에러: $e");
-          _onErrorReceived("오디오 입력 중 오류가 발생했습니다.");
-          stopAudioStreaming();
-        },
-      );
-
-      await _audioStreamService.startStreaming();
-    } catch (e) {
-      debugPrint("❌ 오디오 스트리밍 시작 중 에러: $e");
-      // 에러 발생 시 처리 상태 복원
-      _isProcessing = false;
-      // [제거] 스트림 구독 상태 원상 복구 불필요
-      // _userTranscriptSubscription?.pause();
-      // _messageSubscription?.resume();
-      await _audioSubscription?.cancel();
-      notifyListeners();
-    }
+    await _sttService.startListening();
   }
 
   Future<void> stopAudioStreaming() async {
-    if (!_audioStreamService.isStreaming) return;
-
-    // [제거] 더 이상 실시간 STT를 사용하지 않으므로 상태 제어/구독 전환 불필요
-    // _realtimeChatService.setUserSpeakingStatus(false);
-    // _userTranscriptSubscription?.pause();
-    // _messageSubscription?.resume();
-
-    await _audioSubscription?.cancel();
-    _audioSubscription = null;
-
-    // [수정] AudioService에서 파일 경로를 받아 STT 처리 후 AI에게 전송
-    final String? audioFilePath = await _audioStreamService.stopStreaming();
-
-    if (audioFilePath != null) {
-      final String transcript = await _sttService.transcribeAudio(
-        audioFilePath,
-      );
-
-      // [수정] STT 결과를 기존 메시지에 업데이트하고 AI에게 전송
-      if (transcript.isNotEmpty) {
-        final lastMessage = _messages.isNotEmpty ? _messages.first : null;
-        if (lastMessage != null && lastMessage.sender == 'user') {
-          final updatedMessage = ChatMessage(
-            id: lastMessage.id,
-            text: transcript,
-            sender: 'user',
-            timestamp: lastMessage.timestamp,
-          );
-          _messages[0] = updatedMessage;
-        } else {
-          addMessage(transcript, 'user');
-        }
-        // AI에게 전송
-        await _realtimeChatService.sendMessage(transcript);
-      }
-    }
-    _isProcessing = false;
+    if (!_isListening) return;
+    await _sttService.stopListening();
+    _isListening = false;
     notifyListeners();
   }
 
   Future<void> stopTts() async {
-    await _ttsService.stop();
+    if (_isSpeaking) {
+      await _player.stopPlayer();
+      _isSpeaking = false;
+      notifyListeners();
+    }
   }
 
+  Future<void> _playTts(String text) async {
+    try {
+      await stopTts(); // 현재 재생 중인 TTS 중지
+
+      _isSpeaking = true;
+      notifyListeners();
+
+      // OpenAiTtsService가 내부적으로 오디오 재생을 처리합니다.
+      await _ttsService.speak(text);
+
+      // speak 메서드가 완료되면 재생이 끝난 것으로 간주합니다.
+      // (더 정교한 상태 관리를 위해서는 tts service에 콜백 추가 필요)
+      _isSpeaking = false;
+      notifyListeners();
+      
+    } catch (e) {
+      _error = "TTS 재생에 실패했습니다: $e";
+      _isSpeaking = false;
+      notifyListeners();
+    }
+  }
+
+  // --- STT Helper Methods ---
+  void _handleSttResult(String text, bool isFinal) {
+    if (isFinal && text.isNotEmpty) {
+      _isListening = false;
+      _isProcessing = true;
+      notifyListeners();
+      
+      // STT 최종 결과를 메시지로 전송
+      sendMessage(text);
+      
+      // 처리가 완료되면 isProcessing을 false로 설정
+      _isProcessing = false;
+      notifyListeners();
+    }
+  }
+
+  void _handleSttError(String error) {
+    _sttError = error;
+    _isListening = false;
+    _isProcessing = false;
+    notifyListeners();
+  }
+
+  // Provider가 소멸될 때 호출됩니다.
   @override
   void dispose() {
-    _messageSubscription?.cancel();
-    _completionSubscription?.cancel();
-    _audioSubscription?.cancel();
-    _realtimeChatService.dispose();
+    _sttService.dispose();
     _audioStreamService.dispose();
-    _ttsService.dispose();
+    _player.closePlayer();
+    _sttSubscription?.cancel();
     super.dispose();
   }
 }

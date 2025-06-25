@@ -21,7 +21,9 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   void initState() {
     super.initState();
     // 화면이 시작될 때 TTS가 재생 중일 수 있으므로 중지합니다.
-    context.read<ChatProvider>().stopTts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatProvider>().stopTts();
+    });
   }
 
   // --- 비즈니스 로직은 모두 Provider로 이동 ---
@@ -91,7 +93,7 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
                   WhiteEqualizerBars(soundLevel: _soundLevelForUi),
                   const SizedBox(height: 32),
                   Text(
-                    _determineStatusText(chatProvider),
+                    _determineStatusText(chatProvider), // 상태 텍스트
                     style: const TextStyle(color: Colors.white70, fontSize: 16),
                   ),
                   const SizedBox(height: 40),
@@ -108,32 +110,36 @@ class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
   }
 
   String _determineStatusText(ChatProvider provider) {
-    if (provider.isConnecting) return "연결 중이에요...";
-    if (provider.realtimeError != null) return "오류가 발생했어요.";
-    if (provider.isProcessing) return "귀 기울여 듣고 있어요...";
-    return "버튼을 누르고 말하기";
+    if (provider.isProcessing) return "생각 중이에요...";
+    if (provider.sttError != null) return "오류가 발생했어요. 다시 시도해주세요.";
+    if (provider.isListening) return "듣고 있어요...";
+    if (provider.isSpeaking) return "말하는 중...";
+    return "버튼을 길게 누르고 말하기";
   }
 
   Widget _buildMicButton(ChatProvider provider) {
     // GestureDetector를 사용하여 길게 누르는 동작을 감지
     return GestureDetector(
       onLongPressStart: (_) {
-        debugPrint("🎤 길게 누르기 시작 -> 오디오 스트리밍 시작");
         provider.startAudioStreaming();
       },
       onLongPressEnd: (_) {
-        debugPrint("🛑 길게 누르기 종료 -> 오디오 스트리밍 중지");
         provider.stopAudioStreaming();
       },
       child: Container(
         width: 100,
         height: 100,
         decoration: BoxDecoration(
-          color: provider.isProcessing ? Colors.green : Colors.red,
+          color: provider.isListening ? Colors.redAccent : Colors.blue,
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 4),
         ),
-        child: const Icon(Icons.mic, color: Colors.white, size: 50),
+        child: Icon(
+            provider.isListening
+                ? Icons.mic
+                : (provider.isSpeaking ? Icons.volume_up : Icons.mic_off),
+            color: Colors.white,
+            size: 50),
       ),
     );
   }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
+import 'package:nompangs/models/message.dart';
 import 'chat_speaker_screen.dart';
 import 'chat_setting.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,9 +12,31 @@ import 'package:nompangs/widgets/masked_image.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:convert';
 
-class ChatTextScreen extends StatelessWidget {
+class ChatTextScreen extends StatefulWidget {
+  final String conversationId;
+  final Map<String, dynamic> characterProfile;
   final bool showHomeInsteadOfBack;
-  const ChatTextScreen({super.key, this.showHomeInsteadOfBack = false});
+
+  const ChatTextScreen({
+    super.key,
+    required this.conversationId,
+    required this.characterProfile,
+    this.showHomeInsteadOfBack = false,
+  });
+
+  @override
+  State<ChatTextScreen> createState() => _ChatTextScreenState();
+}
+
+class _ChatTextScreenState extends State<ChatTextScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<ChatProvider>(context, listen: false)
+          .initializeChat(widget.conversationId, widget.characterProfile);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +44,7 @@ class ChatTextScreen extends StatelessWidget {
       builder: (context, provider, child) {
         return _ChatTextScreenContent(
           provider: provider,
-          showHomeInsteadOfBack: showHomeInsteadOfBack,
+          showHomeInsteadOfBack: widget.showHomeInsteadOfBack,
         );
       },
     );
@@ -50,19 +73,15 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   void initState() {
     super.initState();
     _initializeImages();
-    _requestMicrophonePermission();
   }
-
-  Future<void> _requestMicrophonePermission() async {
-    final status = await Permission.microphone.request();
-    if (status.isDenied || status.isPermanentlyDenied) {
-      // 권한이 거부되었을 때 사용자에게 알림
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('마이크 권한이 필요합니다. 음성 채팅을 사용하려면 설정에서 권한을 허용해주세요.'),
-          backgroundColor: Colors.red,
-        ),
-      );
+  
+  @override
+  void didUpdateWidget(covariant _ChatTextScreenContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.provider.photoBase64 != oldWidget.provider.photoBase64 ||
+        widget.provider.userPhotoPath != oldWidget.provider.userPhotoPath ||
+        widget.provider.imageUrl != oldWidget.provider.imageUrl) {
+      _initializeImages();
     }
   }
 
@@ -72,7 +91,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
     final imageUrl = widget.provider.imageUrl;
     bool imageFound = false;
 
-    // 1. Base64 이미지를 최우선으로 확인
     if (photoBase64 != null && photoBase64.isNotEmpty) {
       try {
         final imageBytes = base64Decode(photoBase64);
@@ -83,7 +101,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
       }
     }
 
-    // 2. 사용자가 직접 찍은 사진 (임시 경로) 확인 - fallback
     if (!imageFound && userPhotoPath != null && userPhotoPath.isNotEmpty) {
       final file = File(userPhotoPath);
       if (file.existsSync()) {
@@ -91,23 +108,14 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
         imageFound = true;
       }
     }
-
-    // 3. 서버에서 받은 URL 확인 - fallback
+    
     if (!imageFound && imageUrl != null && imageUrl.isNotEmpty) {
       if (imageUrl.startsWith('http')) {
         _displayImageProvider = NetworkImage(imageUrl);
         imageFound = true;
-      } else {
-        // http로 시작하지 않는 로컬 경로일 경우도 처리
-        final file = File(imageUrl);
-        if (file.existsSync()) {
-          _displayImageProvider = FileImage(file);
-          imageFound = true;
-        }
       }
     }
 
-    // 4. 이미지를 찾지 못했으면 플레이스홀더 사용
     if (!imageFound) {
       final placeholderIndex = Random().nextInt(19) + 1;
       _displayImageProvider = AssetImage(
@@ -132,17 +140,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
   Widget build(BuildContext context) {
     final chatProvider = widget.provider;
 
-    // ListView를 항상 아래로 스크롤하는 콜백
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -160,55 +157,55 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                 color: const Color(0xFFF2F2F2),
                 child: Column(
                   children: [
-                    // --- 실시간 상태 표시 UI ---
-                    if (chatProvider.isConnecting)
+                    if (chatProvider.isLoading)
                       const LinearProgressIndicator(),
-                    if (chatProvider.realtimeError != null)
+                    if (chatProvider.error != null)
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Text(
-                          chatProvider.realtimeError!,
+                          chatProvider.error!,
                           style: const TextStyle(color: Colors.red),
-                        ),
-                      ),
-                    // --- [수정] 프로필 카드와 메시지 목록을 분리하여 위치 복원 ---
-                    if (!chatProvider.messages.any((m) => m.sender == 'user'))
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          32,
-                          16,
-                          32,
-                          0,
-                        ), // 상단 여백 추가
-                        child: _ProfileCard(
-                          characterName: chatProvider.characterName,
-                          characterHandle: chatProvider.userDisplayName,
-                          personalityTags: chatProvider.personalityTags,
-                          imageProvider: _displayImageProvider,
-                          placeholderColor: _placeholderColor,
                         ),
                       ),
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 32,
-                        ), // 메시지 좌우 여백 32로 복원
-                        child: ListView.builder(
-                          reverse: true,
-                          controller: _scrollController,
-                          itemCount:
-                              chatProvider.messages.length, // itemCount 원상 복구
-                          itemBuilder: (context, index) {
-                            final message = chatProvider.messages[index];
-                            final isUser = message.sender == 'user';
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 4.0,
-                              ),
-                              child: _ChatBubble(
-                                text: message.text,
-                                isUser: isUser,
-                              ),
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: StreamBuilder<List<Message>>(
+                          stream: chatProvider.messagesStream,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasError) {
+                              return Center(child: Text('오류: ${snapshot.error}'));
+                            }
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return Center(child: Text(chatProvider.greeting ?? '대화를 시작해보세요!'));
+                            }
+
+                            final messages = snapshot.data!;
+                            
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (_scrollController.hasClients) {
+                                _scrollController.jumpTo(0.0);
+                              }
+                            });
+
+                            return ListView.builder(
+                              reverse: true,
+                              controller: _scrollController,
+                              itemCount: messages.length,
+                              itemBuilder: (context, index) {
+                                final message = messages[index];
+                                final isUser = message.sender == 'user';
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                                  child: _ChatBubble(
+                                    text: message.text,
+                                    isUser: isUser,
+                                  ),
+                                );
+                              },
                             );
                           },
                         ),
@@ -220,7 +217,6 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
             ),
             _ChatInputBar(
               controller: _inputController,
-              isProcessing: chatProvider.isProcessing,
               onSend: () {
                 if (_inputController.text.isNotEmpty) {
                   chatProvider.sendMessage(_inputController.text);
@@ -228,26 +224,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                 }
               },
               onSpeakerModePressed: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    opaque: false, // 배경을 투명하게 만듭니다.
-                    pageBuilder:
-                        (context, animation, secondaryAnimation) =>
-                            ChangeNotifierProvider.value(
-                              value: chatProvider,
-                              child: const ChatSpeakerScreen(),
-                            ),
-                    transitionsBuilder: (
-                      context,
-                      animation,
-                      secondaryAnimation,
-                      child,
-                    ) {
-                      return FadeTransition(opacity: animation, child: child);
-                    },
-                  ),
-                );
+                // 음성 채팅 화면 전환 로직 (현재 비활성화 또는 수정 필요)
               },
             ),
           ],
@@ -269,7 +246,7 @@ class _TopNavigationBar extends StatelessWidget {
     required this.characterHandle,
     required this.imageProvider,
     this.placeholderColor,
-    this.showHomeInsteadOfBack = false,
+    required this.showHomeInsteadOfBack,
   });
 
   @override
@@ -545,13 +522,11 @@ class _ChatInputBar extends StatefulWidget {
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback onSpeakerModePressed;
-  final bool isProcessing;
 
   const _ChatInputBar({
     required this.controller,
     required this.onSend,
     required this.onSpeakerModePressed,
-    this.isProcessing = false,
   });
 
   @override
@@ -603,24 +578,14 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 height: 40,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  // AI가 응답 중일 때 배경색 변경
-                  color:
-                      widget.isProcessing
-                          ? const Color(0xFFE8E8E8)
-                          : const Color(0xFFF0F0F0),
+                  color: const Color(0xFFF0F0F0),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: TextField(
                   controller: widget.controller,
-                  // AI 응답 중일 때 입력 비활성화
-                  enabled: !widget.isProcessing,
                   decoration: InputDecoration(
                     contentPadding: const EdgeInsets.only(top: 10),
-                    // 힌트 텍스트 수정 및 상태에 따른 변경
-                    hintText:
-                        widget.isProcessing
-                            ? 'AI가 답변 중입니다...'
-                            : '메시지를 입력하세요...',
+                    hintText: '메시지를 입력하세요...',
                     hintStyle: const TextStyle(
                       fontSize: 14,
                       color: Color(0xFFAAAAAA),
@@ -650,23 +615,9 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                 icon: Icon(
                   _hasText ? Icons.send : Icons.call,
                   size: 20,
-                  // AI 응답 중일 때 아이콘 색상 변경
-                  color:
-                      widget.isProcessing
-                          ? Colors.grey
-                          : (_hasText ? Colors.black : Colors.white),
+                  color: _hasText ? Colors.black : Colors.white,
                 ),
-                // AI 응답 중일 때 버튼 비활성화
-                onPressed:
-                    widget.isProcessing
-                        ? null
-                        : () {
-                          if (_hasText) {
-                            widget.onSend();
-                          } else {
-                            widget.onSpeakerModePressed();
-                          }
-                        },
+                onPressed: _hasText ? widget.onSend : widget.onSpeakerModePressed,
               ),
             ),
           ],

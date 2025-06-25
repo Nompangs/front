@@ -27,6 +27,7 @@ import 'package:nompangs/models/personality_profile.dart';
 import 'package:nompangs/services/api_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nompangs/services/conversation_service.dart';
 
 String? pendingRoomId;
 
@@ -127,23 +128,29 @@ class _NompangsAppState extends State<NompangsApp> {
                   .get();
           characterProfileMap['userDisplayName'] =
               doc.data()?['displayName'] ?? '게스트';
-        } else {
-          characterProfileMap['userDisplayName'] = '게스트';
-        }
+          
+          final conversationId = ConversationService.getConversationId(user.uid, uuid);
 
-        debugPrint('✅ [딥링크 진입] ChatProvider로 전달되는 프로필: $characterProfileMap');
-
-        _navigatorKey.currentState?.push(
-          MaterialPageRoute(
-            builder:
-                (context) => ChangeNotifierProvider(
-                  create:
-                      (_) =>
-                          ChatProvider(characterProfile: characterProfileMap),
-                  child: const ChatTextScreen(showHomeInsteadOfBack: true),
+          _navigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => ChangeNotifierProvider(
+                create: (_) => ChatProvider(),
+                child: ChatTextScreen(
+                  conversationId: conversationId,
+                  characterProfile: characterProfileMap,
+                  showHomeInsteadOfBack: true,
                 ),
-          ),
-        );
+              ),
+            ),
+          );
+        } else {
+          if (_navigatorKey.currentContext != null) {
+            DeepLinkHelper.showError(
+              _navigatorKey.currentContext!,
+              '채팅을 시작하려면 로그인이 필요합니다.',
+            );
+          }
+        }
       } catch (e) {
         print('🚨 딥링크 프로필 로딩 실패: $e');
         if (_navigatorKey.currentContext != null) {

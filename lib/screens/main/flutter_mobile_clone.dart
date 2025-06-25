@@ -15,6 +15,7 @@ import 'dart:math';
 import 'package:nompangs/screens/main/object_detail_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nompangs/screens/onboarding/onboarding_intro_screen.dart';
+import 'package:nompangs/services/conversation_service.dart';
 
 class FlutterMobileClone extends StatefulWidget {
   const FlutterMobileClone({super.key});
@@ -845,7 +846,6 @@ class _FlutterMobileCloneState extends State<FlutterMobileClone>
                           );
                           final characterProfile = profile.toMap();
 
-                          // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
                           final user = FirebaseAuth.instance.currentUser;
                           if (user != null) {
                             final doc =
@@ -855,28 +855,33 @@ class _FlutterMobileCloneState extends State<FlutterMobileClone>
                                     .get();
                             characterProfile['userDisplayName'] =
                                 doc.data()?['displayName'] ?? '게스트';
+                            
+                            final conversationId = ConversationService.getConversationId(user.uid, lastObject.uuid);
+
+                            if (!mounted) return;
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ChangeNotifierProvider(
+                                      create: (_) => ChatProvider(),
+                                      child: ChatTextScreen(
+                                        conversationId: conversationId,
+                                        characterProfile: characterProfile,
+                                      ),
+                                    ),
+                              ),
+                            );
                           } else {
-                            characterProfile['userDisplayName'] = '게스트';
+                             if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('채팅을 시작하려면 로그인이 필요합니다.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
-
-                          debugPrint(
-                            '✅ [홈 화면 진입] ChatProvider로 전달되는 프로필: $characterProfile',
-                          );
-
-                          if (!mounted) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (context) => ChangeNotifierProvider(
-                                    create:
-                                        (_) => ChatProvider(
-                                          characterProfile: characterProfile,
-                                        ),
-                                    child: const ChatTextScreen(),
-                                  ),
-                            ),
-                          );
                         } catch (e) {
                           print('🚨 홈에서 프로필 로딩 실패: $e');
                           if (mounted) {

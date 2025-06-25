@@ -143,7 +143,7 @@ class RealtimeChatService {
       final temperature = _getOptimalTemperature(characterProfile);
 
       await _client.updateSession(
-        instructions: await _buildEnhancedSystemPrompt(
+        instructions: await buildEnhancedSystemPrompt(
           characterProfile,
           realtimeSettings,
         ),
@@ -204,7 +204,7 @@ class RealtimeChatService {
   }
 
   // 🆕 realtimeSettings를 반영한 고급 시스템 프롬프트
-  Future<String> _buildEnhancedSystemPrompt(
+  Future<String> buildEnhancedSystemPrompt(
     Map<String, dynamic> characterProfile,
     Map<String, dynamic> realtimeSettings,
   ) async {
@@ -1004,7 +1004,7 @@ ${_getHumorStyleGuidance(humorStyle)}
   ) async {
     final realtimeSettings =
         _safeMapCast(characterProfile['realtimeSettings']) ?? {};
-    return await _buildEnhancedSystemPrompt(characterProfile, realtimeSettings);
+    return await buildEnhancedSystemPrompt(characterProfile, realtimeSettings);
   }
 
   /// String 값을 Voice enum으로 변환

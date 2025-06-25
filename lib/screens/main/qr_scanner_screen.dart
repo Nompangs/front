@@ -8,6 +8,7 @@ import 'package:nompangs/screens/main/chat_text_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:nompangs/services/conversation_service.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -94,19 +95,32 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
         //         : ['친구'];
 
         debugPrint('✅ [QR 스캔 진입] ChatProvider로 전달되는 프로필: $characterProfile');
+        
+        if (user == null) {
+          _showError('채팅을 시작하려면 로그인이 필요합니다.');
+          setState(() { _isProcessing = false; });
+          return;
+        }
+
+        final conversationId = await ConversationService.getConversationId(
+          user.uid,
+          profile.uuid!,
+        );
+
+        if (!mounted) return;
 
         // 5. 완성된 Map으로 ChatProvider를 생성하고 채팅 화면으로 이동합니다.
         await Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder:
-                (context) => ChangeNotifierProvider(
-                  create:
-                      (_) => ChatProvider(characterProfile: characterProfile),
-                  child: const ChatTextScreen(
-                    showHomeInsteadOfBack: true,
-                  ), // 홈 버튼 표시
-                ),
+            builder: (context) => ChangeNotifierProvider(
+              create: (_) => ChatProvider(),
+              child: ChatTextScreen(
+                conversationId: conversationId,
+                characterProfile: characterProfile,
+                showHomeInsteadOfBack: true,
+              ),
+            ),
           ),
         );
       }

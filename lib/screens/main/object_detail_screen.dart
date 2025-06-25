@@ -20,6 +20,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:nompangs/services/conversation_service.dart';
 
 class ObjectDetailScreen extends StatefulWidget {
   final String objectId;
@@ -674,20 +675,32 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
                   '✅ [상세페이지 진입] ChatProvider로 전달되는 프로필: $characterProfile',
                 );
 
+                if (user == null || _profile?.uuid == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('채팅을 시작하려면 로그인이 필요하거나, 캐릭터 정보가 올바르지 않습니다.'),
+                    ),
+                  );
+                  return;
+                }
+
+                final conversationId = await ConversationService.getConversationId(
+                  user.uid,
+                  _profile!.uuid!,
+                );
+
                 if (!mounted) return;
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(
-                    builder:
-                        (_) => ChangeNotifierProvider(
-                          create:
-                              (_) => ChatProvider(
-                                characterProfile: characterProfile,
-                              ),
-                          child: const ChatTextScreen(
-                            showHomeInsteadOfBack: true,
-                          ),
-                        ),
+                    builder: (_) => ChangeNotifierProvider(
+                      create: (_) => ChatProvider(),
+                      child: ChatTextScreen(
+                        conversationId: conversationId,
+                        characterProfile: characterProfile,
+                        showHomeInsteadOfBack: true,
+                      ),
+                    ),
                   ),
                   (route) => false,
                 );
