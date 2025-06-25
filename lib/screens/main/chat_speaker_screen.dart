@@ -80,15 +80,15 @@ class _ChatSpeakerScreenContent extends StatelessWidget {
         'assets/ui_assets/object_png/obj ($placeholderIndex).png',
       );
     }
-    
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Stack(
           children: [
             Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
                 _TopBar(
                   characterName: characterName,
                   onTextModePressed: () {
@@ -120,24 +120,24 @@ class _ChatSpeakerScreenContent extends StatelessWidget {
                     } else {
                       provider.startAudioStreaming();
                     }
-                  },
-                ),
+                    },
+                  ),
               ],
             ),
             if (provider.isProcessing)
               Container(
                 color: Colors.black.withOpacity(0.5),
                 child: const Center(
-                  child: Column(
+              child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: [
+                children: [
                       CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
                       SizedBox(height: 16),
                       Text("음성을 처리하는 중...", style: TextStyle(color: Colors.white, fontSize: 16)),
                     ],
                   ),
-                ),
               ),
+            ),
           ],
         ),
       ),

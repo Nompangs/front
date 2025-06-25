@@ -76,6 +76,7 @@ class OpenAiTtsService {
       'onyx',
       'sage',
       'shimmer',
+      'ballad',
     ];
     if (!supportedVoices.contains(voiceToUse)) {
       debugPrint(
