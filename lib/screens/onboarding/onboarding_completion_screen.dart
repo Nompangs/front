@@ -244,6 +244,11 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
 
       // 5. 서버에서 받은 uuid를 profile에 주입하고 Provider 상태 업데이트
       final serverUuid = result['uuid'] as String?;
+
+      if (serverUuid == null || serverUuid.isEmpty) {
+        throw Exception("서버로부터 유효한 캐릭터 ID(uuid)를 받지 못했습니다.");
+      }
+      
       final profileWithUuid = profileWithPhoto.copyWith(uuid: serverUuid);
       provider.setPersonalityProfile(profileWithUuid);
 
@@ -898,23 +903,35 @@ class _OnboardingCompletionScreenState extends State<OnboardingCompletionScreen>
                             ? () async {
                               final provider =
                                   context.read<OnboardingProvider>();
-                              final characterProfile =
-                                  provider.personalityProfile.toMap();
+                              
+                              // --- 🚨 최종 수정 제안 ---
+                              // PersonalityProfile 객체를 toMap()으로 변환하여 모든 정보를 포함시킵니다.
+                              final profileMap = provider.personalityProfile.toMap();
 
-                              // 🚨 [수정] Firestore에서 현재 유저의 displayName을 가져와 주입합니다.
+                              // ChatProvider가 사용할 최종 맵을 구성합니다.
+                              final characterProfile = {
+                                // 최상위 데이터 (uuid, photo 등)
+                                ...profileMap,
+                                
+                                // userInput 맵을 명시적으로 추가/덮어쓰기 합니다.
+                                // toMap()에 이미 포함되어 있을 수 있지만, 최신성을 보장하기 위함입니다.
+                                'userInput': provider.getUserInputAsMap(),
+                              };
+
+                              // Firestore에서 받은 displayName을 userInput 맵에 추가합니다.
                               final user = FirebaseAuth.instance.currentUser;
                               if (user != null) {
-                                final doc =
-                                    await FirebaseFirestore.instance
-                                        .collection('users')
-                                        .doc(user.uid)
-                                        .get();
-                                characterProfile['userDisplayName'] =
+                                final doc = await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(user.uid)
+                                    .get();
+                                // userInput 맵에 접근하여 값을 설정합니다.
+                                (characterProfile['userInput'] as Map<String, dynamic>)['userDisplayName'] =
                                     doc.data()?['displayName'] ?? '게스트';
-                              } else {
-                                characterProfile['userDisplayName'] = '게스트';
                               }
+                              // --- 최종 수정 끝 ---
 
+                              // userInput을 포함하여 로깅
                               debugPrint(
                                 '✅ [온보딩 진입] ChatProvider로 전달되는 프로필: $characterProfile',
                               );

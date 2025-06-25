@@ -19,6 +19,8 @@ class ChatProvider with ChangeNotifier {
 
   // --- State Variables ---
   String? _conversationId;
+  String? _characterId;
+  Map<String, dynamic>? _characterProfile;
   bool _isLoading = false;
   String? _error;
 
@@ -37,12 +39,13 @@ class ChatProvider with ChangeNotifier {
   String? photoBase64;
   String? userPhotoPath;
   String? imageUrl;
-  String? greeting;
+  String? greetings;
 
   // --- Getters for UI ---
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get conversationId => _conversationId;
+  Map<String, dynamic>? get characterProfile => _characterProfile;
   
   // --- Voice Chat Getters ---
   bool get isListening => _isListening;
@@ -70,29 +73,60 @@ class ChatProvider with ChangeNotifier {
   }
 
   // 채팅방에 처음 진입할 때 호출됩니다.
-  void initializeChat(String convId, Map<String, dynamic> characterProfile) {
+  Future<void> initializeChat(String convId, Map<String, dynamic> characterProfile) async {
     _conversationId = convId;
+    _characterId = characterProfile['uuid'] as String?;
+    _characterProfile = characterProfile;
     
-    // 캐릭터 프로필에서 UI에 필요한 정보를 설정합니다.
+    final userInput = characterProfile['userInput'] as Map<String, dynamic>? ?? {};
+
     characterName = characterProfile['aiPersonalityProfile']?['name'] ?? '이름 없음';
-    userDisplayName = characterProfile['userInput']?['userDisplayName'] ?? '친구';
-    greeting = characterProfile['greeting'] ?? '안녕!';
-    photoBase64 = characterProfile['photoBase64'];
-    userPhotoPath = characterProfile['userPhotoPath'];
-    imageUrl = characterProfile['imageUrl'];
+    userDisplayName = userInput['userDisplayName'] ?? characterProfile['userDisplayName'] ?? '친구';
+
+    // 인사말 찾기 (모든 가능성 확인)
+    // 1. 최상위 'greetings' (Firebase에서 올 때)
+    // 2. 최상위 'greeting'
+    // 3. userInput 맵 안의 'greeting'
+    greetings = characterProfile['greetings'] as String? ??
+                characterProfile['greeting'] as String? ??
+                userInput['greeting'] as String? ??
+                '안녕!';
+
+    // 사진 정보 찾기 (모든 가능성 확인)
+    photoBase64 = characterProfile['photoBase64'] as String?;
+    
+    // 1. 최상위 'userPhotoPath' (기존 로직)
+    // 2. 최상위 'photoPath' (로그에서 확인된 키)
+    // 3. userInput 맵 안의 'photoPath'
+    userPhotoPath = characterProfile['userPhotoPath'] as String? ??
+                  characterProfile['photoPath'] as String? ??
+                  userInput['photoPath'] as String?;
+                  
+    imageUrl = characterProfile['imageUrl'] as String?;
 
     // TTS 서비스에 캐릭터의 음성 설정을 전달합니다.
     _ttsService.setCharacterVoiceSettings(characterProfile);
 
-    // 필요하다면 초기 인사말을 스트림에 추가하는 로직을 여기에 구현할 수 있습니다.
-    // (현재는 UseCase가 처리하므로 UI단에서는 생략)
+    // 대화 기록이 없는 경우에만 초기 인사말을 추가합니다.
+    if (_conversationId != null && _characterId != null) {
+      final messageCount = await _conversationService.getMessageCount(_conversationId!);
+      if (messageCount == 0) {
+        await _conversationService.addMessage(
+          conversationId: _conversationId!,
+          characterId: _characterId!,
+          sender: 'ai',
+          text: greetings!,
+        );
+      }
+    }
+
     notifyListeners();
   }
 
   // 메시지 전송 로직을 UseCase에 위임
   Future<void> sendMessage(String text) async {
-    if (_conversationId == null) {
-      _error = "오류: 대화 ID가 설정되지 않았습니다.";
+    if (_conversationId == null || _characterId == null) {
+      _error = "오류: 대화 또는 캐릭터 ID가 설정되지 않았습니다.";
       notifyListeners();
       return;
     }
@@ -104,6 +138,7 @@ class ChatProvider with ChangeNotifier {
       // UseCase는 UI를 기다리지 않고 백그라운드에서 실행됩니다.
       final aiResponseText = await _chatUseCase.sendMessage(
         conversationId: _conversationId!,
+        characterId: _characterId!,
         text: text,
       );
 

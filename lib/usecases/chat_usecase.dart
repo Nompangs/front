@@ -12,12 +12,14 @@ class ChatUseCase {
 
   Future<String?> sendMessage({
     required String conversationId,
+    required String characterId,
     required String text,
   }) async {
     try {
       // 1. 사용자 메시지를 Firestore에 추가
       await _conversationService.addMessage(
         conversationId: conversationId,
+        characterId: characterId,
         sender: 'user',
         text: text,
       );
@@ -52,6 +54,7 @@ class ChatUseCase {
         // 5. AI 응답을 Firestore에 추가
         await _conversationService.addMessage(
           conversationId: conversationId,
+          characterId: characterId,
           sender: 'ai',
           text: aiResponseText,
         );
@@ -75,7 +78,7 @@ class ChatUseCase {
       final messageCount = await _conversationService.getMessageCount(conversationId);
 
       // 메시지 수가 10의 배수이고 0이 아닐 때 요약 실행
-      if (messageCount > 0 && messageCount % 10 == 0) {
+      if (messageCount > 0 && messageCount % 10 == 1) {
         final allMessages = await _conversationService.getAllMessages(conversationId);
 
         if (allMessages.isNotEmpty) {

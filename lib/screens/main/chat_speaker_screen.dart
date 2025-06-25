@@ -1,145 +1,233 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nompangs/providers/chat_provider.dart';
+import 'chat_text_screen.dart'; // ChatTextScreen으로 돌아가기 위해 임포트
+import 'package:lottie/lottie.dart';
+import 'dart:math';
+import 'dart:convert';
+import 'dart:io';
 
 class ChatSpeakerScreen extends StatefulWidget {
-  const ChatSpeakerScreen({super.key});
+  final String conversationId;
+  final Map<String, dynamic> characterProfile;
+
+  const ChatSpeakerScreen({
+    super.key,
+    required this.conversationId,
+    required this.characterProfile,
+  });
 
   @override
   State<ChatSpeakerScreen> createState() => _ChatSpeakerScreenState();
 }
 
 class _ChatSpeakerScreenState extends State<ChatSpeakerScreen> {
-  // --- UI 상태 ---
-  // 이 화면의 모든 상태는 이제 ChatProvider가 관리합니다.
-  // 따라서 이 클래스 내의 상태 변수는 대부분 필요 없습니다.
-
-  // 예시: 간단한 시각적 피드백을 위한 변수
-  double _soundLevelForUi = 0.0;
-
   @override
   void initState() {
     super.initState();
-    // 화면이 시작될 때 TTS가 재생 중일 수 있으므로 중지합니다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().stopTts();
+      Provider.of<ChatProvider>(context, listen: false)
+          .initializeChat(widget.conversationId, widget.characterProfile);
     });
   }
 
-  // --- 비즈니스 로직은 모두 Provider로 이동 ---
-  // _activateMicrophone, _sendFinalResult 등은 모두 제거됩니다.
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ChatProvider>(
+      builder: (context, provider, child) {
+        return _ChatSpeakerScreenContent(
+          provider: provider,
+          characterProfile: widget.characterProfile,
+        );
+      },
+    );
+  }
+}
+
+class _ChatSpeakerScreenContent extends StatelessWidget {
+  final ChatProvider provider;
+  final Map<String, dynamic> characterProfile;
+
+  const _ChatSpeakerScreenContent({
+    required this.provider,
+    required this.characterProfile,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
+    final characterName = provider.characterName;
+    
+    ImageProvider displayImageProvider;
+    final photoBase64 = characterProfile['photoBase64'] as String?;
+    final userPhotoPath = characterProfile['userPhotoPath'] as String?;
+    final imageUrl = characterProfile['imageUrl'] as String?;
 
+    if (photoBase64 != null && photoBase64.isNotEmpty) {
+      try {
+        final imageBytes = base64Decode(photoBase64);
+        displayImageProvider = MemoryImage(imageBytes);
+      } catch (e) {
+        debugPrint("Base64 디코딩 실패, 폴백 이미지 사용: $e");
+        displayImageProvider = const AssetImage('assets/logo.png');
+      }
+    } else if (userPhotoPath != null && userPhotoPath.isNotEmpty && File(userPhotoPath).existsSync()) {
+      displayImageProvider = FileImage(File(userPhotoPath));
+    } else if (imageUrl != null && imageUrl.isNotEmpty && imageUrl.startsWith('http')) {
+      displayImageProvider = NetworkImage(imageUrl);
+    } else {
+      final placeholderIndex = Random().nextInt(19) + 1;
+      displayImageProvider = AssetImage(
+        'assets/ui_assets/object_png/obj ($placeholderIndex).png',
+      );
+    }
+    
     return Scaffold(
-      backgroundColor: const Color.fromARGB(
-        255,
-        130,
-        135,
-        139,
-      ).withOpacity(0.7),
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // --- 상단 네비게이션 ---
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16.0,
-                vertical: 8.0,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 24,
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _TopBar(
+                  characterName: characterName,
+                  onTextModePressed: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ChatTextScreen(
+                          conversationId: provider.conversationId!,
+                          characterProfile: characterProfile,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: _Visualizer(
+                      isListening: provider.isListening,
+                      isSpeaking: provider.isSpeaking,
+                      imageProvider: displayImageProvider,
                     ),
-                    onPressed: () {
-                      // 화면을 닫기 전에 스트리밍을 중단합니다.
-                      chatProvider.stopAudioStreaming();
-                      Navigator.of(context).pop();
-                    },
                   ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.settings,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                    onPressed: () {},
-                  ),
-                ],
-              ),
+                ),
+                _BottomMicButton(
+                  isListening: provider.isListening,
+                  onPressed: () {
+                    if (provider.isListening) {
+                      provider.stopAudioStreaming();
+                    } else {
+                      provider.startAudioStreaming();
+                    }
+                  },
+                ),
+              ],
             ),
-            // --- 메인 콘텐츠 ---
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    chatProvider.characterName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
+            if (provider.isProcessing)
+              Container(
+                color: Colors.black.withOpacity(0.5),
+                child: const Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                      SizedBox(height: 16),
+                      Text("음성을 처리하는 중...", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    ],
                   ),
-                  const SizedBox(height: 40),
-                  // TODO: 실제 오디오 레벨에 따른 시각화 구현 필요
-                  WhiteEqualizerBars(soundLevel: _soundLevelForUi),
-                  const SizedBox(height: 32),
-                  Text(
-                    _determineStatusText(chatProvider), // 상태 텍스트
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                  const SizedBox(height: 40),
-                  // --- 마이크 버튼 ---
-                  _buildMicButton(chatProvider),
-                  const SizedBox(height: 80),
-                ],
+                ),
               ),
-            ),
           ],
         ),
       ),
     );
   }
+}
 
-  String _determineStatusText(ChatProvider provider) {
-    if (provider.isProcessing) return "생각 중이에요...";
-    if (provider.sttError != null) return "오류가 발생했어요. 다시 시도해주세요.";
-    if (provider.isListening) return "듣고 있어요...";
-    if (provider.isSpeaking) return "말하는 중...";
-    return "버튼을 길게 누르고 말하기";
+class _TopBar extends StatelessWidget {
+  final String characterName;
+  final VoidCallback onTextModePressed;
+
+  const _TopBar({required this.characterName, required this.onTextModePressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+          Text(characterName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          IconButton(
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: onTextModePressed,
+          ),
+        ],
+      ),
+    );
   }
+}
 
-  Widget _buildMicButton(ChatProvider provider) {
-    // GestureDetector를 사용하여 길게 누르는 동작을 감지
-    return GestureDetector(
-      onLongPressStart: (_) {
-        provider.startAudioStreaming();
-      },
-      onLongPressEnd: (_) {
-        provider.stopAudioStreaming();
-      },
-      child: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: provider.isListening ? Colors.redAccent : Colors.blue,
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
+class _Visualizer extends StatelessWidget {
+  final bool isListening;
+  final bool isSpeaking;
+  final ImageProvider imageProvider;
+
+  const _Visualizer({
+    required this.isListening,
+    required this.isSpeaking,
+    required this.imageProvider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (isListening || isSpeaking)
+          Lottie.asset(
+            'assets/ui_assets/speaking_animation.json',
+            width: 200,
+            height: 200,
+            fit: BoxFit.contain,
+          )
+        else
+          CircleAvatar(
+            backgroundImage: imageProvider,
+            radius: 100,
+          ),
+        const SizedBox(height: 24),
+        Text(
+          isListening ? "듣고 있어요..." : (isSpeaking ? "말하는 중..." : "마이크를 눌러 대화를 시작하세요"),
+          style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
-        child: Icon(
-            provider.isListening
-                ? Icons.mic
-                : (provider.isSpeaking ? Icons.volume_up : Icons.mic_off),
-            color: Colors.white,
-            size: 50),
+      ],
+    );
+  }
+}
+
+class _BottomMicButton extends StatelessWidget {
+  final bool isListening;
+  final VoidCallback onPressed;
+
+  const _BottomMicButton({required this.isListening, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 40),
+      child: IconButton(
+        icon: Icon(
+          isListening ? Icons.mic_off : Icons.mic,
+          color: isListening ? Colors.red : Colors.blue,
+        ),
+        iconSize: 64,
+        onPressed: onPressed,
       ),
     );
   }

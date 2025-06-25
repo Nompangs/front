@@ -114,6 +114,58 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
     }
   }
 
+  Future<void> _startChat() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('채팅을 시작하려면 로그인이 필요합니다.')),
+      );
+      return;
+    }
+
+    if (_profile?.uuid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('캐릭터 정보가 올바르지 않아 채팅을 시작할 수 없습니다.')),
+      );
+      return;
+    }
+
+    try {
+      // 🚨 [수정] 불필요한 API 호출을 제거하고, 이미 로드된 _profile 데이터를 사용합니다.
+      final fullProfile = _profile!.toMap();
+      
+      // 사용자 핸들(닉네임)을 프로필 맵에 추가합니다.
+      // ChatProvider가 'userInput' 맵 안에서 찾으므로 해당 구조에 맞게 넣어줍니다.
+      if (fullProfile['userInput'] == null) {
+        fullProfile['userInput'] = {};
+      }
+      (fullProfile['userInput'] as Map<String, dynamic>)['userDisplayName'] = _userHandle;
+
+      final conversationId =
+          ConversationService.getConversationId(user.uid, _profile!.uuid!);
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => ChangeNotifierProvider(
+             create: (_) => ChatProvider(),
+             child: ChatTextScreen(
+              conversationId: conversationId,
+              characterProfile: fullProfile, // 전체 프로필 전달
+            ),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('채팅방을 여는 데 실패했습니다: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -639,76 +691,9 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
             bottom: MediaQuery.of(context).padding.bottom + 20,
             left: 20,
             right: 20,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: () async {
-                final characterProfile = _profile!.toMap();
-
-                final user = FirebaseAuth.instance.currentUser;
-                if (user != null) {
-                  final doc =
-                      await FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user.uid)
-                          .get();
-                  characterProfile['userDisplayName'] =
-                      doc.data()?['displayName'] ?? '게스트';
-                } else {
-                  characterProfile['userDisplayName'] = '게스트';
-                }
-
-                characterProfile['personalityTags'] =
-                    _profile!.aiPersonalityProfile?.coreValues.isNotEmpty ==
-                            true
-                        ? _profile!.aiPersonalityProfile!.coreValues
-                        : ['친구'];
-
-                debugPrint(
-                  '✅ [상세페이지 진입] ChatProvider로 전달되는 프로필: $characterProfile',
-                );
-
-                if (user == null || _profile?.uuid == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('채팅을 시작하려면 로그인이 필요하거나, 캐릭터 정보가 올바르지 않습니다.'),
-                    ),
-                  );
-                  return;
-                }
-
-                final conversationId = await ConversationService.getConversationId(
-                  user.uid,
-                  _profile!.uuid!,
-                );
-
-                if (!mounted) return;
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ChangeNotifierProvider(
-                      create: (_) => ChatProvider(),
-                      child: ChatTextScreen(
-                        conversationId: conversationId,
-                        characterProfile: characterProfile,
-                        showHomeInsteadOfBack: true,
-                      ),
-                    ),
-                  ),
-                  (route) => false,
-                );
-              },
-              child: const Text(
-                '대화 시작하기',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+            child: _BottomChatButton(
+              isScrolledToBottom: _isScrolledToBottom,
+              onPressed: _startChat,
             ),
           ),
           Positioned(
@@ -746,6 +731,11 @@ class _ObjectDetailScreenState extends State<ObjectDetailScreen> {
           ),
         ],
       ),
+      floatingActionButton: _BottomChatButton(
+        isScrolledToBottom: _isScrolledToBottom,
+        onPressed: _startChat,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -1280,6 +1270,44 @@ class _ObjectDetailProfileCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BottomChatButton extends StatelessWidget {
+  final bool isScrolledToBottom;
+  final VoidCallback onPressed;
+
+  const _BottomChatButton({
+    required this.isScrolledToBottom,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.black,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+          ),
+          child: const Text(
+            '채팅 시작하기',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
       ),
     );
   }

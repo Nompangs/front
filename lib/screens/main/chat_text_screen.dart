@@ -180,7 +180,7 @@ class __ChatTextScreenContentState extends State<_ChatTextScreenContent> {
                               return Center(child: Text('오류: ${snapshot.error}'));
                             }
                             if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                              return Center(child: Text(chatProvider.greeting ?? '대화를 시작해보세요!'));
+                              return Center(child: Text(chatProvider.greetings ?? '대화를 시작해보세요!'));
                             }
 
                             final messages = snapshot.data!;

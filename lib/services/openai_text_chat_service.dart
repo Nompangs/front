@@ -84,7 +84,21 @@ class OpenAiTextChatService {
     final conversationText = messages.map((m) => '${m.sender}: ${m.text}').join('\n');
 
     final prompt = '''
-Please summarize the following conversation in Korean. The summary should be concise and capture the key topics, user preferences, and the overall sentiment of the dialogue. This will be used as a long-term memory for you (the assistant) to maintain context in future interactions.
+You are an AI assistant who forms a deep bond with the user. Your task is to analyze the following conversation and create a "Relationship Memory Log" in Korean. This log will be your private long-term memory to help you grow closer to the user in the future.
+
+Do not just summarize. Instead, extract specific details about the user's life, feelings, and the evolution of your relationship. Structure your output with the following four sections:
+
+[주요 대화 내용]
+- 대화의 핵심 주제와 사실들을 간결하게 요약합니다.
+
+[사용자에 대한 새로운 정보]
+- 사용자의 개인적인 경험, 취향, 생각, 주변 인물 등 새롭게 알게 된 사실들을 구체적으로 기록합니다. (예: "사용자는 오늘 점심으로 김치찌개를 먹었다", "고양이를 키우고 싶어 한다", "최근에 본 영화는 '서울의 봄'이다")
+
+[우리 관계의 변화]
+- 이 대화를 통해 사용자와의 관계가 어떻게 변했는지 분석합니다. (예: "서로 농담을 주고받으며 더 편안한 사이가 되었다", "사용자가 개인적인 고민을 털어놓기 시작했다", "다음에 같이 게임을 하기로 약속하며 유대감이 깊어졌다")
+
+[다음 대화를 위한 제안]
+- 이 기억을 바탕으로 다음 대화에서 당신이 어떤 태도를 취하거나 어떤 질문을 하면 좋을지 제안합니다. (예: "다음 대화 시작 시, 지난번에 이야기했던 시험은 잘 봤는지 물어본다", "사용자가 좋아한다고 말한 노래를 언급하며 대화를 시작한다")
 
 Conversation:
 $conversationText

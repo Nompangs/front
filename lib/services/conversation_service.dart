@@ -34,6 +34,7 @@ class ConversationService {
   // 사용자 또는 챗봇의 메시지를 Firestore에 추가합니다.
   Future<void> addMessage({
     required String conversationId,
+    required String characterId,
     required String sender,
     required String text,
   }) async {
@@ -55,6 +56,7 @@ class ConversationService {
       if (!conversationSnap.exists) {
         // 새 대화인 경우 초기화
         transaction.set(conversationRef, {
+          'characterId': characterId,
           'messageCount': 1,
           'lastMessageText': text,
           'lastMessageAt': message.timestamp,
