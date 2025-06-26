@@ -1,6 +1,6 @@
-# Momenti(모멘티): 모든 사물이 친구가 되는 공간
-
 <div align="center">
+    
+# Momenti(모멘티)
     
 ## 🎥 [시연 영상](https://youtu.be/1reVGoPDxw4?feature=shared) | 🌐 [홈페이지](https://momenti.netlify.app/)
 
