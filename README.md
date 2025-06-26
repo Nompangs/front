@@ -13,8 +13,8 @@
 ![team_nompangs](https://github.com/user-attachments/assets/fae9e303-419f-4598-ad7f-34a798bccc55)
 
 <a href="https://github.com/blueberrycrumble"><img src="https://img.shields.io/badge/이혜승-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
-<a href="https://github.com/Jsgithubchannel"><img src="https://img.shields.io/badge/홍지수-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 <a href="https://github.com/HWKKK"><img src="https://img.shields.io/badge/김해원-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
+<a href="https://github.com/Jsgithubchannel"><img src="https://img.shields.io/badge/홍지수-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 <a href="https://github.com/haepada"><img src="https://img.shields.io/badge/전승아-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 
 <details>
