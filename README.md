@@ -1,9 +1,11 @@
-# Momenti(모먼티): 당신의 모든 사물이 친구가 되는 세상
+# Momenti(모멘티): 모든 사물이 친구가 되는 공간
+
+🎥 [시연 영상](https://youtu.be/1reVGoPDxw4?feature=shared) | 🌐 [홈페이지](https://momenti.netlify.app/)
 ---
 
-### **프로젝트 비전: "차가운 기계를 따뜻한 친구로"**
+## **프로젝트 비전: 차가운 기계를 따뜻한 친구로**
 
-> 어린 시절, 장난감과 대화하던 기억이 있으신가요? "토이 스토리"처럼 모든 사물이 살아 움직인다면 어떨까요?
+> 어린 시절, 장난감과 대화하던 기억이 있으신가요? 토이 스토리처럼 모든 사물이 살아 움직인다면 어떨까요?
 >
 > **Momenti**는 1인 가구 1000만 시대의 외로움이라는 문제에서 출발했습니다. 우리는 주변의 모든 사물에 QR 코드 하나로 고유한 '성격'과 '기억'을 부여하여, 사용자와 정서적 유대를 맺는 '성격 있는 IoT' 시대를 열고자 합니다.
 >
@@ -22,50 +24,15 @@
 | **문제 해결** | 오류 메시지 표시                                 | **상황을 이해하며 도움**         |
 
 ---
+
 <h2 class="code-line" data-line-start=0 data-line-end=1 ><a id="__0"></a>팀원 소개</h2>
-<p class="has-line-data" data-line-start="1" data-line-end="2">✨ 혜승</p>
-<a href="https://github.com/blueberrycrumble"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
-<ul>
-<li class="has-line-data" data-line-start="2" data-line-end="3">주요 역할: 프로젝트 총괄 (PM), UX/UI 기획 및 디자인, 프론트엔드(Flutter) 개발</li>
-<li class="has-line-data" data-line-start="3" data-line-end="10">담당 업무:<br>
-– 프로젝트 목표 및 전체 로드맵 설정<br>
-– 개발 우선순위 결정 및 백로그 관리<br>
-– 팀원 간의 원활한 커뮤니케이션 조율<br>
-– 온보딩, 대화 등 앱의 전체적인 사용자 플로우 설계<br>
-– 와이어프레임, 프로토타입 제작 및 UI 디자인 시스템 구축</li>
-</ul>
-<p class="has-line-data" data-line-start="10" data-line-end="11">✨ 지수</p>
-<a href="https://github.com/Jsgithubchannel"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
-<ul>
-<li class="has-line-data" data-line-start="11" data-line-end="12">주요 역할: 프론트엔드(Flutter) 개발, AI 모델 연동 및 R&amp;D, 백엔드 개발</li>
-<li class="has-line-data" data-line-start="12" data-line-end="21">담당 업무:<br>
-– WebSocket 기반 실시간 통신 클라이언트(RealtimeChatService) 개발<br>
-– QR 스캐너(카메라), 음성 입력(마이크) 등 디바이스 기능 구현<br>
-– UI/UX 구현: 디자인된 화면과 인터랙션을 코드로 변환<br>
-– 상태 관리: Provider 등을 사용하여 앱의 전체 상태를 효율적으로 관리<br>
-– 백엔드 API와 클라이언트 연동<br>
-– OpenAI 등 외부 AI API(GPT-4V, Realtime API) 연동<br>
-– 사용자 인증(회원가입, 로그인 등) API 개발</li>
-</ul>
-<p class="has-line-data" data-line-start="21" data-line-end="22">✨ 해원</p>
-<a href="https://github.com/HWKKK"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
-<ul>
-<li class="has-line-data" data-line-start="22" data-line-end="23">주요 역할: 프론트엔드(Flutter) 개발, 백엔드 및 클라우드 개발</li>
-<li class="has-line-data" data-line-start="23" data-line-end="29">담당 업무:<br>
-– 페르소나, 대화, QR 코드 관련 API 개발 및 관리<br>
-– Firebase(Firestore, Storage, Authentication) 기반 클라우드 인프라 설계<br>
-– 데이터베이스 스키마(컬렉션 구조) 설계<br>
-– Node.js, Cloud Functions를 활용한 서버 로직 배포 및 관리</li>
-</ul>
-<p class="has-line-data" data-line-start="29" data-line-end="30">✨ 승아</p>
-<a href="https://github.com/haepada"><img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&amp;logo=github&amp;logoColor=white"/></a>
-<ul>
-<li class="has-line-data" data-line-start="30" data-line-end="31">주요 역할: 프론트엔드(Flutter) 개발, AI 페르소나 설계 및 개발, 프롬프트 엔지니어링</li>
-<li class="has-line-data" data-line-start="31" data-line-end="35">담당 업무:<br>
-– 80개의 NPS(Nompangs Personality System) 변수 항목 및 구조 정의<br>
-– 사용자 입력(텍스트, 사진)을 성격 변수로 변환하는 생성 알고리즘 개발<br>
-– LLM이 페르소나의 정체성을 유지하도록 시스템 프롬프트 설계 및 튜닝</li>
-</ul>
+
+![team_nompangs](https://github.com/user-attachments/assets/fae9e303-419f-4598-ad7f-34a798bccc55)
+
+<a href="https://github.com/blueberrycrumble"><img src="https://img.shields.io/badge/이혜승-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
+<a href="https://github.com/Jsgithubchannel"><img src="https://img.shields.io/badge/홍지수-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
+<a href="https://github.com/HWKKK"><img src="https://img.shields.io/badge/김해원-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
+<a href="https://github.com/haepada"><img src="https://img.shields.io/badge/전승아-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 
 ---
 
@@ -76,10 +43,10 @@
 
 ### 2. **실시간 음성 대화: 1.2초 만에 응답하는 AI**
 - **End-to-End 음성 처리:** OpenAI Realtime API를 통해 사용자의 말을 즉시 텍스트로 변환하고, LLM을 거쳐 다시 음성으로 생성하는 전 과정을 평균 1.2초 내에 완료합니다.
-- **성격 기반 음성 선택:** 생성된 페르소나의 성격에 가장 잘 맞는 음성을 6가지 목소리 중 자동으로 선택하여 대화의 몰입감을 극대화합니다.
+- **성격 기반 음성 선택:** 생성된 페르소나의 성격에 가장 잘 맞는 음성을 8가지 목소리 중 자동으로 선택하여 대화의 몰입감을 극대화합니다.
 
 ### 3. **QR 코드 연동: 모든 사물을 스마트하게**
-- **즉시 연결:** 사물에 부착된 QR 코드를 스캔하는 즉시 해당 페르소나를 불러와 0.3초 안에 대화를 시작할 수 있습니다.
+- **즉시 연결:** 사물에 부착된 QR 코드를 스캔하는 즉시 해당 페르소나를 불러와 1초 안에 대화를 시작할 수 있습니다.
 - **공유 및 확장성:** 생성된 페르소나의 QR 코드를 공유하여 다른 사람도 나의 사물과 대화하게 하거나, B2B 마케팅, 전시 등 다양한 분야로 확장할 수 있습니다.
 
 ### 4. **지속적인 관계 형성**
@@ -94,8 +61,6 @@
 - **Frontend:** `Flutter`
 - **Backend & DB:** `Firebase (Firestore, Authentication)`, `Node.js (QR Profile)`
 - **AI & Voice:** `OpenAI (GPT-4V, Realtime API, STT/TTS)`
-- **State Management:** `Provider`
-- **Data Modeling:** `Freezed`
 
 ---
 
