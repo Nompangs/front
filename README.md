@@ -1,6 +1,10 @@
 # Momenti(모멘티): 모든 사물이 친구가 되는 공간
 
+<div align="center">
+    
 ## 🎥 [시연 영상](https://youtu.be/1reVGoPDxw4?feature=shared) | 🌐 [홈페이지](https://momenti.netlify.app/)
+
+</div>
 
 ![Momenti(모멘티)](https://github.com/user-attachments/assets/9e233750-30f4-461a-8f96-ba5e4e93d968)
 
@@ -13,8 +17,8 @@
 <a href="https://github.com/HWKKK"><img src="https://img.shields.io/badge/김해원-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 <a href="https://github.com/haepada"><img src="https://img.shields.io/badge/전승아-181717?style=for-the-badge&logo=github&logoColor=white"/></a>
 
-## 📁 Project Structure
-
+<details>
+<summary>📁 Project Structure</summary>
 
 ```
 nompangs/front/
@@ -48,15 +52,21 @@ nompangs/front/
 │       ├── colors.dart
 │       └── persona_utils.dart
 ```
+</details>
 
-## 📖 Appendix
+<details>
+<summary>📖 Appendix</summary>
+    
 ![Momenti_nompangs_aiffelthon_250624 (30)](https://github.com/user-attachments/assets/536c9dd1-4b47-4e7b-887e-9ee904ceb032)
 ![Momenti_nompangs_aiffelthon_250624 (31)](https://github.com/user-attachments/assets/eeebd79e-5833-4e85-b440-cb99aaa8fbcc)
 ![Momenti_nompangs_aiffelthon_250624 (32)](https://github.com/user-attachments/assets/47badf49-e403-48ad-9130-a3559ee125ad)
 ![Momenti_nompangs_aiffelthon_250624 (33)](https://github.com/user-attachments/assets/9e7689a9-72f1-4982-83cb-0f712e2e8d6b)
 ![Momenti_nompangs_aiffelthon_250624 (34)](https://github.com/user-attachments/assets/947b5a1c-0610-4e99-aa78-4da6e49a0960)
 
-## 🚀 Getting Started
+</details>
+
+<details>
+<summary>🚀 Getting Started</summary>
 
 프로젝트를 로컬 환경에서 실행하는 방법입니다.
 
@@ -93,7 +103,8 @@ nompangs/front/
 
 5.  **앱 실행**
     ```bash
-        flutter run
+    flutter run
     ```
+</details>
 
 
